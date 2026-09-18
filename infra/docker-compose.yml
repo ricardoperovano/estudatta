@@ -1,0 +1,115 @@
+# Estudatta — desenvolvimento e produção com Docker Compose.
+# Uso (na raiz do repositório): docker compose -f infra/docker-compose.yml --env-file .env up -d
+name: estudatta
+
+x-backend-env: &backend-env
+  env_file: ../.env
+  environment:
+    DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-estudatta}:${POSTGRES_PASSWORD:-estudatta}@db:5432/${POSTGRES_DB:-estudatta}
+    REDIS_URL: redis://redis:6379/0
+    SMTP_HOST: ${SMTP_HOST_DOCKER:-mailpit}
+    STORAGE_LOCAL_PATH: /data/storage
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-estudatta}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-estudatta}
+      POSTGRES_DB: ${POSTGRES_DB:-estudatta}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-estudatta} -d ${POSTGRES_DB:-estudatta}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redisdata:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    profiles: ["dev"]
+    ports:
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+
+  api:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    <<: *backend-env
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
+    ports:
+      - "127.0.0.1:${API_PORT:-8020}:8000"
+    volumes:
+      - storage:/data/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/live')"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  worker:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    <<: *backend-env
+    command: ["celery", "-A", "app.jobs.celery_app:celery_app", "worker", "-Q", "default,imports,notifications", "-l", "INFO", "--concurrency", "2"]
+    volumes:
+      - storage:/data/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  scheduler:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    <<: *backend-env
+    command: ["celery", "-A", "app.jobs.celery_app:celery_app", "beat", "-l", "INFO", "-s", "/tmp/celerybeat-schedule"]
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ../apps/web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  redisdata:
+  storage:

@@ -1,0 +1,38 @@
+# Node
+node_modules/
+apps/web/dist/
+apps/web/dist-ssr/
+apps/web/dev-dist/
+apps/web/.vite/
+apps/web/playwright-report/
+apps/web/test-results/
+apps/web/src/api/generated/openapi.json.tmp
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+backend/.pytest_cache/
+backend/.ruff_cache/
+backend/.mypy_cache/
+backend/test.db
+backend/*.db
+backend/coverage.xml
+backend/.coverage
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+infra/certs/
+
+# Local data
+backend/var/
+infra/data/
+*.log
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
+*.swp

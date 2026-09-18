@@ -1,0 +1,189 @@
+{
+  "$schema": "design-tokens/semantic-v1",
+  "brand": {
+    "name": "Estudatta",
+    "symbol": "Trilho"
+  },
+  "color": {
+    "light": {
+      "bg": {
+        "canvas": "#f3f5fe",
+        "surface": "#fafbff",
+        "surfaceRaised": "#ffffff00",
+        "inverse": "#161826"
+      },
+      "text": {
+        "primary": "#292b31",
+        "secondary": "#595d6c",
+        "tertiary": "#75798c",
+        "onAccent": "#f5f4ff",
+        "disabled": "#b2b6ca"
+      },
+      "border": {
+        "subtle": "#e4e7f5",
+        "default": "#cfd3e5",
+        "strong": "#9397ab"
+      },
+      "action": {
+        "primary": "#5d5294",
+        "primaryHover": "#423a6a",
+        "primaryPressed": "#2b2741",
+        "primaryTint": "#e7e5fe",
+        "focus": "#5d5294"
+      },
+      "brand": {
+        "primary": "#5d5294",
+        "secondary": "#595d6c"
+      },
+      "status": {
+        "success": "#276b4f",
+        "successTint": "#dff2ea",
+        "warning": "#8a5a1b",
+        "warningTint": "#fbebd6",
+        "error": "#b03a3a",
+        "errorTint": "#fbe2e2",
+        "info": "#2f6a9a",
+        "infoTint": "#e0edf8"
+      },
+      "pending": "#8a5a1b",
+      "progress": {
+        "track": "#e4e7f5",
+        "fill": "#5d5294",
+        "recovery": "#8a5a1b"
+      }
+    },
+    "dark": {
+      "bg": {
+        "canvas": "#161826",
+        "surface": "#232532",
+        "surfaceRaised": "#292b31",
+        "inverse": "#f3f5fe"
+      },
+      "text": {
+        "primary": "#e9e9ed",
+        "secondary": "#b2b6ca",
+        "tertiary": "#9397ab",
+        "onAccent": "#161826",
+        "disabled": "#595d6c"
+      },
+      "border": {
+        "subtle": "#292b31",
+        "default": "#3f424d",
+        "strong": "#595d6c"
+      },
+      "action": {
+        "primary": "#9184d9",
+        "primaryHover": "#b5abfc",
+        "primaryPressed": "#d2cefd",
+        "primaryTint": "#2b2741",
+        "focus": "#9184d9"
+      },
+      "brand": {
+        "primary": "#9184d9",
+        "secondary": "#b2b6ca"
+      },
+      "status": {
+        "success": "#7cc4a4",
+        "successTint": "#1c3a30",
+        "warning": "#d9a86a",
+        "warningTint": "#3d2e1b",
+        "error": "#d98484",
+        "errorTint": "#3f2222",
+        "info": "#84b3d9",
+        "infoTint": "#1f3141"
+      },
+      "pending": "#d9a86a",
+      "progress": {
+        "track": "#3f424d",
+        "fill": "#9184d9",
+        "recovery": "#d9a86a"
+      }
+    }
+  },
+  "font": {
+    "family": {
+      "heading": "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+      "body": "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+      "numeric": "Inter, system-ui, sans-serif"
+    },
+    "weight": {
+      "regular": 400,
+      "medium": 500,
+      "semibold": 600
+    },
+    "size": {
+      "xs": 11,
+      "sm": 13,
+      "md": 15,
+      "lg": 17,
+      "xl": 20,
+      "2xl": 25,
+      "3xl": 32,
+      "4xl": 42,
+      "timer": 64
+    },
+    "lineHeight": {
+      "tight": 1.12,
+      "normal": 1.55
+    },
+    "features": {
+      "numeric": "'tnum' 1"
+    }
+  },
+  "space": {
+    "1": 2.8,
+    "2": 5.6,
+    "3": 8.4,
+    "4": 11.2,
+    "6": 16.8,
+    "8": 22.4,
+    "12": 33.6,
+    "16": 44.8
+  },
+  "radius": {
+    "sm": 4,
+    "md": 8,
+    "lg": 14,
+    "full": 999
+  },
+  "shadow": {
+    "dark": {
+      "sm": "0 0 0 1px #3f424d",
+      "md": "0 0 0 1px #595d6c, 0 6px 18px rgba(0,0,0,0.55)",
+      "lg": "0 0 0 1px #9397ab, 0 16px 40px rgba(0,0,0,0.65)"
+    },
+    "light": {
+      "sm": "0 0 0 1px #e4e7f5",
+      "md": "0 1px 2px rgba(41,43,49,0.08), 0 6px 18px rgba(41,43,49,0.10)",
+      "lg": "0 2px 4px rgba(41,43,49,0.10), 0 16px 40px rgba(41,43,49,0.16)"
+    }
+  },
+  "motion": {
+    "duration": {
+      "fast": 120,
+      "base": 200,
+      "slow": 320
+    },
+    "easing": {
+      "standard": "cubic-bezier(0.2,0,0,1)"
+    },
+    "reducedMotion": "disable non-essential transitions"
+  },
+  "layout": {
+    "contentMaxWidth": 1200,
+    "readingMaxWidth": "58ch",
+    "gutter": {
+      "mobile": 16,
+      "desktop": "clamp(20px,5vw,72px)"
+    },
+    "grid": {
+      "mobile": 4,
+      "tablet": 8,
+      "desktop": 12
+    },
+    "bottomNavHeight": 64,
+    "sidebarWidth": 240,
+    "iconStroke": 1.5,
+    "minTouchTarget": 44
+  }
+}
