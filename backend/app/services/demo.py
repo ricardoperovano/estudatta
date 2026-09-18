@@ -1,8 +1,10 @@
 """Seed de demonstração (idempotente): reproduz o cenário dos mockups.
 
 Usuário `demo@estudatta.com.br` com objetivo "Inglês" (60 min seg–sex, iniciado há 10 dias),
-hoje com 40 min registrados, ontem sem registro, semana anterior completa; matérias
-Gramática/Listening/Vocabulário com tópicos, um material (link) e tarefas planejadas.
+hoje com 40 min registrados às 07:00 ("Listening · unidade 4", tarefa concluída) e a tarefa
+"Vocabulário · lista 12" planejada para as 19:30 (20 min); ontem sem registro, semana anterior
+completa; matérias Gramática/Listening/Vocabulário com tópicos, um material (link) e tarefas
+planejadas nos próximos dias ativos.
 
 Usa apenas os services existentes (nunca SQL direto). Reexecutar não duplica: sessões usam
 `client_uuid` determinístico e os demais itens são localizados por título/data.
@@ -18,7 +20,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
-from app.core.timeutil import today_in, utcnow
+from app.core.timeutil import local_datetime_to_utc, today_in, utcnow
 from app.models.activity import Activity
 from app.models.content import Material, Subject, Topic
 from app.models.planning import PlannedTask
@@ -37,6 +39,11 @@ ACTIVE_DAYS = [0, 1, 2, 3, 4]
 DAILY_MINUTES = 60
 DAYS_SINCE_START = 10
 TODAY_MINUTES = 40
+TODAY_DONE_TITLE = "Listening · unidade 4"
+TODAY_DONE_TIME = time(7, 0)
+TODAY_PLANNED_TITLE = "Vocabulário · lista 12"
+TODAY_PLANNED_TIME = time(19, 30)
+TODAY_PLANNED_MINUTES = 20
 
 DEMO_CONTENT: list[tuple[str, list[tuple[str, list[str]]]]] = [
     (
@@ -204,24 +211,113 @@ def _get_or_create_material(db: Session, user: User, act: Activity) -> tuple[Mat
     return m, True
 
 
+def _find_subject(db: Session, act: Activity, title: str) -> Subject | None:
+    return db.execute(
+        select(Subject).where(Subject.activity_id == act.id, Subject.title == title)
+    ).scalar_one_or_none()
+
+
+def _get_or_create_task(
+    db: Session, user: User, act: Activity, *, title: str, local_date: date, **fields
+) -> tuple[PlannedTask, bool]:
+    task = db.execute(
+        select(PlannedTask).where(
+            PlannedTask.activity_id == act.id,
+            PlannedTask.local_date == local_date,
+            PlannedTask.title == title,
+        )
+    ).scalar_one_or_none()
+    if task is not None:
+        return task, False
+    task = PlannedTask(
+        user_id=user.id, activity_id=act.id, title=title, kind="study", local_date=local_date
+    )
+    for key, value in fields.items():
+        setattr(task, key, value)
+    db.add(task)
+    db.flush()
+    return task, True
+
+
+def _seed_today_tasks(
+    db: Session, user: User, act: Activity, material: Material, today: date
+) -> tuple[PlannedTask, int]:
+    """Tela Hoje do mockup: tarefa das 07:00 concluída e a das 19:30 ainda planejada."""
+    listening = _find_subject(db, act, "Listening")
+    vocabulary = _find_subject(db, act, "Vocabulário")
+    done, c1 = _get_or_create_task(
+        db,
+        user,
+        act,
+        title=TODAY_DONE_TITLE,
+        local_date=today,
+        subject_id=listening.id if listening else None,
+        material_id=material.id,
+        start_time=TODAY_DONE_TIME,
+        estimated_seconds=TODAY_MINUTES * 60,
+        sort_order=0,
+    )
+    if done.status != "done":
+        done.status = "done"
+        done.completed_at = done.completed_at or utcnow()
+    _, c2 = _get_or_create_task(
+        db,
+        user,
+        act,
+        title=TODAY_PLANNED_TITLE,
+        local_date=today,
+        subject_id=vocabulary.id if vocabulary else None,
+        start_time=TODAY_PLANNED_TIME,
+        estimated_seconds=TODAY_PLANNED_MINUTES * 60,
+        sort_order=1,
+    )
+    db.flush()
+    return done, int(c1) + int(c2)
+
+
 def _seed_sessions(
-    db: Session, user: User, act: Activity, topics: list[Topic], start: date, today: date
+    db: Session,
+    user: User,
+    act: Activity,
+    topics: list[Topic],
+    start: date,
+    today: date,
+    today_task: PlannedTask,
 ) -> int:
     created = 0
     d = start
     i = 0
     yesterday = today - timedelta(days=1)
+    # antes das 07:40 locais a sessão das 07:00 terminaria no futuro: vale só a duração
+    ends_at = local_datetime_to_utc(today, TODAY_DONE_TIME, act.timezone) + timedelta(
+        minutes=TODAY_MINUTES
+    )
+    today_start = TODAY_DONE_TIME if ends_at <= utcnow() else None
     while d <= today:
         # hoje sempre tem 40 min (o cenário vale em qualquer dia da semana); ontem fica
         # sem registro; os demais dias ativos têm a meta completa
-        if d == today or (d.weekday() in ACTIVE_DAYS and d != yesterday):
-            minutes = TODAY_MINUTES if d == today else DAILY_MINUTES
+        if d == today:
+            _, was_created = session_service.manual_session(
+                db,
+                user,
+                act,
+                duration_seconds=TODAY_MINUTES * 60,
+                local_date=d,
+                start_time=today_start,
+                subject_id=today_task.subject_id,
+                material_id=today_task.material_id,
+                planned_task_id=today_task.id,
+                note=TODAY_DONE_TITLE,
+                client_uuid=_session_uuid(user.id, d),
+            )
+            created += 1 if was_created else 0
+        elif d.weekday() in ACTIVE_DAYS and d != yesterday:
             topic = topics[i % len(topics)] if topics else None
             _, was_created = session_service.manual_session(
                 db,
                 user,
                 act,
-                duration_seconds=minutes * 60,
+                duration_seconds=DAILY_MINUTES * 60,
                 local_date=d,
                 subject_id=topic.subject_id if topic else None,
                 topic_id=topic.id if topic else None,
@@ -235,37 +331,27 @@ def _seed_sessions(
 
 
 def _seed_tasks(db: Session, user: User, act: Activity, topics: list[Topic], today: date) -> int:
+    """Próximos 4 dias ativos (depois de hoje) com um bloco de 60 min às 19:30."""
     created = 0
-    d = today
+    d = today + timedelta(days=1)
     placed = 0
     i = 2
-    while placed < 5:
+    while placed < 4:
         if d.weekday() in ACTIVE_DAYS:
             topic = topics[i % len(topics)] if topics else None
-            title = topic.title if topic else "Sessão de estudo"
-            existing = db.execute(
-                select(PlannedTask).where(
-                    PlannedTask.activity_id == act.id,
-                    PlannedTask.local_date == d,
-                    PlannedTask.title == title,
-                )
-            ).scalar_one_or_none()
-            if existing is None:
-                db.add(
-                    PlannedTask(
-                        user_id=user.id,
-                        activity_id=act.id,
-                        subject_id=topic.subject_id if topic else None,
-                        topic_id=topic.id if topic else None,
-                        title=title,
-                        kind="study",
-                        local_date=d,
-                        start_time=time(19, 30),
-                        estimated_seconds=DAILY_MINUTES * 60,
-                        sort_order=placed,
-                    )
-                )
-                created += 1
+            _, was_created = _get_or_create_task(
+                db,
+                user,
+                act,
+                title=topic.title if topic else "Sessão de estudo",
+                local_date=d,
+                subject_id=topic.subject_id if topic else None,
+                topic_id=topic.id if topic else None,
+                start_time=TODAY_PLANNED_TIME,
+                estimated_seconds=DAILY_MINUTES * 60,
+                sort_order=placed,
+            )
+            created += 1 if was_created else 0
             placed += 1
             i += 1
         d += timedelta(days=1)
@@ -285,8 +371,9 @@ def seed_demo(db: Session, *, password: str | None = None) -> dict:
         topics[0].completed_at = topics[0].completed_at or utcnow()
         topics[1].status = "in_progress"
     material, material_created = _get_or_create_material(db, user, act)
-    n_sessions = _seed_sessions(db, user, act, topics, start, today)
-    n_tasks = _seed_tasks(db, user, act, topics, today)
+    today_task, n_today_tasks = _seed_today_tasks(db, user, act, material, today)
+    n_sessions = _seed_sessions(db, user, act, topics, start, today, today_task)
+    n_tasks = n_today_tasks + _seed_tasks(db, user, act, topics, today)
     db.flush()
     return {
         "email": DEMO_EMAIL,

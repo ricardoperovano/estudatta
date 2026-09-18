@@ -58,7 +58,7 @@ PROACTIVE_KINDS = {"planned_start", "follow_up", "end_of_window", "resume"}
 BALANCE_KINDS = PROACTIVE_KINDS | {"goal_completed"}
 DEFAULT_URLS = {
     "weekly_summary": "/app/relatorio",
-    "system": "/app/configuracoes/notificacoes",
+    "system": "/app/preferencias",
 }
 
 
@@ -792,7 +792,7 @@ def render_row(
         show_name=prefs.show_activity_name,
         **ctx,
     )
-    url = p.get("url") or DEFAULT_URLS.get(row.kind, "/app/hoje")
+    url = p.get("url") or DEFAULT_URLS.get(row.kind, "/app")
     return title, body, url
 
 

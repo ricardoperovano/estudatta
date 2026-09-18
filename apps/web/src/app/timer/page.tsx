@@ -30,7 +30,7 @@ export default function TimerPage() {
   const hydrated = useTimerStore((s) => s.hydrated);
   const setTimer = useTimerStore((s) => s.set);
   const clearTimer = useTimerStore((s) => s.clear);
-  const [now, setNow] = React.useState(Date.now());
+  const [now, setNow] = React.useState(() => Date.now());
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [finishOpen, setFinishOpen] = React.useState(false);
@@ -57,48 +57,37 @@ export default function TimerPage() {
     };
   }, [timer]);
 
-  // sessão ativa no servidor (outro aparelho) sem cronômetro local → oferece retomar
+  // sessão ativa no servidor sem cronômetro local: no mesmo aparelho retoma sozinha;
+  // em outro aparelho, oferece transferência explícita (nunca inicia outra em silêncio)
   const serverActive = active.data ?? null;
+  const fromOtherDevice = !!serverActive && !!serverActive.device_id && serverActive.device_id !== deviceOf();
+  const adopt = React.useCallback(async () => {
+    if (!serverActive || !user) return;
+    const act = activities.data?.find((a) => a.id === serverActive.activity_id);
+    await setTimer({
+      user_id: user.id,
+      session_id: serverActive.id,
+      client_uuid: serverActive.client_uuid || uuid(),
+      activity_id: serverActive.activity_id,
+      activity_title: act?.title || "Objetivo",
+      subject_id: serverActive.subject_id,
+      topic_id: serverActive.topic_id,
+      kind: (serverActive.kind as "timer" | "pomodoro") || "timer",
+      status: serverActive.status as "active" | "paused",
+      started_at: serverActive.started_at || new Date().toISOString(),
+      intervals: (serverActive.intervals || []).map((i) => ({ kind: i.kind as "focus" | "pause", started_at: i.started_at, ended_at: i.ended_at ?? null })),
+      version: serverActive.version,
+      synced: true,
+    });
+  }, [serverActive, user, activities.data, setTimer]);
   React.useEffect(() => {
-    if (!hydrated || !user) return;
-    if (serverActive && !timer) {
-      const act = activities.data?.find((a) => a.id === serverActive.activity_id);
-      const focusIntervals = (serverActive.intervals || []).map((i) => ({ kind: i.kind as "focus" | "pause", started_at: i.started_at, ended_at: i.ended_at ?? null }));
-      if (serverActive.device_id && serverActive.device_id !== deviceOf()) {
-        setConflict({ session_id: serverActive.id, activity_id: serverActive.activity_id, device_id: serverActive.device_id });
-      }
-      setTimer({
-        user_id: user.id,
-        session_id: serverActive.id,
-        client_uuid: serverActive.client_uuid || uuid(),
-        activity_id: serverActive.activity_id,
-        activity_title: act?.title || "Objetivo",
-        subject_id: serverActive.subject_id,
-        topic_id: serverActive.topic_id,
-        kind: (serverActive.kind as "timer" | "pomodoro") || "timer",
-        status: serverActive.status as "active" | "paused",
-        started_at: serverActive.started_at || new Date().toISOString(),
-        intervals: focusIntervals,
-        version: serverActive.version,
-        synced: true,
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serverActive, hydrated, user]);
-
-  // vindo de "Começar sessão" na tela Hoje: inicia de imediato (uma vez) quando não há cronômetro
-  const autoStarted = React.useRef(false);
-  React.useEffect(() => {
-    if (!hydrated || !user || timer || autoStarted.current || !objetivoParam || starting) return;
-    if (active.isPending || activities.isPending) return;
-    if (active.data) return;
-    autoStarted.current = true;
-    void start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, user, timer, objetivoParam, active.isPending, active.data, activities.isPending]);
+    if (!hydrated || !user || timer || !serverActive || fromOtherDevice) return;
+    void adopt();
+  }, [hydrated, user, timer, serverActive, fromOtherDevice, adopt]);
 
   const cards = today.data?.data.cards ?? [];
-  const card = timer ? cards.find((c) => c.activity.id === timer.activity_id) : cards.find((c) => c.activity.id === activityId);
+  const defaultActivityId = activityId || activities.data?.find((a) => a.status === "active")?.id || cards[0]?.activity.id || "";
+  const card = timer ? cards.find((c) => c.activity.id === timer.activity_id) : cards.find((c) => c.activity.id === defaultActivityId);
   const elapsed = elapsedSeconds(timer, now);
   const goalTarget = card?.summary ? card.summary.next_step_seconds + card.summary.logged : 0;
   const remainingToday = card?.summary ? Math.max(0, card.summary.next_step_seconds - elapsed) : 0;
@@ -149,6 +138,17 @@ export default function TimerPage() {
       setStarting(false);
     }
   };
+
+  // vindo de "Começar sessão" na tela Hoje: inicia de imediato (uma vez) quando não há cronômetro
+  const autoStarted = React.useRef(false);
+  React.useEffect(() => {
+    if (!hydrated || !user || timer || autoStarted.current || !objetivoParam || starting) return;
+    if (active.isPending || activities.isPending) return;
+    if (active.data) return;
+    autoStarted.current = true;
+    queueMicrotask(() => void start());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, user, timer, objetivoParam, active.isPending, active.data, activities.isPending]);
 
   const transition = async (kind: "pause" | "resume") => {
     if (!timer || !user) return;
@@ -224,10 +224,11 @@ export default function TimerPage() {
   };
 
   const takeOver = async () => {
-    if (!conflict || !user) return;
+    if (!user) return;
     // transferência explícita: adota a sessão do outro aparelho neste
     setConflict(null);
-    qc.invalidateQueries({ queryKey: keys.activeSession });
+    await qc.invalidateQueries({ queryKey: keys.activeSession });
+    await adopt();
   };
 
   if (!hydrated || activities.isPending) {
@@ -246,7 +247,7 @@ export default function TimerPage() {
       <div className="mx-auto flex max-w-[440px] flex-col gap-4">
         <h1 className="text-[25px]">Começar sessão</h1>
         {error ? <Banner kind="error">{error}</Banner> : null}
-        {conflict ? (
+        {conflict || fromOtherDevice ? (
           <Banner
             kind="conflict"
             actions={
@@ -294,7 +295,7 @@ export default function TimerPage() {
   // --- estado: em sessão ------------------------------------------------------
   const label = [timer.activity_title, timer.label].filter(Boolean).join(" · ");
   return (
-    <div className="glow-center -mx-gutter -mt-[max(56px,calc(24px+env(safe-area-inset-top,0px)))] flex min-h-[calc(100dvh-var(--layout-bottom-nav-height))] flex-col items-center gap-4 px-4 pb-6 pt-[max(56px,calc(24px+env(safe-area-inset-top,0px)))] text-center max-xs:-mx-3 desktop:-mx-12 desktop:-mt-10 desktop:min-h-dvh desktop:pt-10">
+    <div className="glow-center -mx-gutter -mt-[max(56px,calc(24px+env(safe-area-inset-top,0px)))] flex min-h-dvh flex-col items-center gap-4 px-4 pb-6 pt-[max(56px,calc(24px+env(safe-area-inset-top,0px)))] text-center max-xs:-mx-3 desktop:-mx-12 desktop:-mt-10 desktop:min-h-dvh desktop:pt-10">
       <div className="flex w-full max-w-[560px] items-center justify-between">
         <Button variant="ghost-muted" size="md" onClick={() => nav("/app")}>
           Minimizar

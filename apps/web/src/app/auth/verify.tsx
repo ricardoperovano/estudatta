@@ -9,14 +9,10 @@ export default function VerifyPage() {
   const [params] = useSearchParams();
   const token = params.get("token") || "";
   const { refresh } = useAuthActions();
-  const [state, setState] = React.useState<"loading" | "ok" | "error">("loading");
-  const [msg, setMsg] = React.useState("");
+  const [state, setState] = React.useState<"loading" | "ok" | "error">(token ? "loading" : "error");
+  const [msg, setMsg] = React.useState(token ? "" : "Link inválido.");
   React.useEffect(() => {
-    if (!token) {
-      setState("error");
-      setMsg("Link inválido.");
-      return;
-    }
+    if (!token) return;
     api.POST("/api/v1/auth/verify-email", { body: { token } })
       .then((r) => {
         unwrap(r);

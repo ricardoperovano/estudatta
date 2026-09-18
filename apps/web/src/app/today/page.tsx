@@ -23,13 +23,14 @@ export default function TodayPage() {
   const timer = useTimerStore((s) => s.timer);
   const nav = useNavigate();
 
-  React.useEffect(() => {
-    if (params.get("registrar") === "1" && today.data?.data.cards.length) {
-      setManualFor(today.data.data.cards[0]);
+  const wantsManual = params.get("registrar") === "1";
+  const closeManual = () => {
+    setManualFor(null);
+    if (wantsManual) {
       params.delete("registrar");
       setParams(params, { replace: true });
     }
-  }, [params, setParams, today.data]);
+  };
 
   React.useEffect(() => {
     if (user) useTimerStore.getState().load(user.id);
@@ -135,7 +136,9 @@ export default function TodayPage() {
       {cards.length > 0 ? <WeekDots card={first} /> : null}
       {cards.length > 0 ? <ObjectiveRow cards={cards} /> : null}
 
-      {manualFor ? <ManualEntrySheet card={manualFor} cards={cards} open onOpenChange={(o) => !o && setManualFor(null)} /> : null}
+      {(manualFor ?? (wantsManual ? first : null)) ? (
+        <ManualEntrySheet card={(manualFor ?? first)!} cards={cards} open onOpenChange={(o) => !o && closeManual()} />
+      ) : null}
     </div>
   );
 }

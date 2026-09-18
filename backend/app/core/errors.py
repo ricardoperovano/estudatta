@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -102,8 +103,25 @@ async def http_error_handler(request: Request, exc: StarletteHTTPException) -> J
     )
 
 
+def _safe_errors(exc: RequestValidationError) -> list[dict]:
+    """`ctx` de validadores próprios traz a exceção original (não serializável) e `input`
+    devolveria o corpo enviado (pode conter senha): ficam de fora."""
+    out = []
+    for err in exc.errors():
+        item = {k: v for k, v in err.items() if k not in ("ctx", "input", "url")}
+        ctx = err.get("ctx")
+        if isinstance(ctx, dict):
+            clean = {k: v for k, v in ctx.items() if isinstance(v, str | int | float | bool)}
+            if clean:
+                item["ctx"] = clean
+        out.append(item)
+    return out
+
+
 async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     return JSONResponse(
         status_code=422,
-        content=_payload("validation_failed", "Dados inválidos.", exc.errors(), request),
+        content=_payload(
+            "validation_failed", "Dados inválidos.", jsonable_encoder(_safe_errors(exc)), request
+        ),
     )

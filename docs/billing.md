@@ -79,7 +79,7 @@ Testes injetam um provedor falso com `set_provider_override(provider)` (ou
    e reaproveita um checkout `pending` do mesmo preço criado há menos de 1 h (idempotência entre
    cliques). Cria a linha local `subscriptions` com `status=pending`, `external_reference`
    (20 hex) e `metadata` (`interval`, `amount_cents`, `currency`, `billing_mode`), e só então
-   chama `POST /preapproval` com `back_url = {APP_URL}/app/assinatura?retorno=checkout`.
+   chama `POST /preapproval` com `back_url = {APP_URL}/app/planos?retorno=checkout`.
    Devolve `checkout_url` (`init_point`). Se o provedor falhar, nada fica gravado (503
    `provider_unavailable`).
 2. O usuário paga no Mercado Pago e volta para a URL de sucesso. **Voltar não libera nada**:

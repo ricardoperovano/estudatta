@@ -147,6 +147,25 @@
   --shadow-sm: 0 0 0 1px #e4e7f5;
   --shadow-md: 0 1px 2px rgba(41, 43, 49, 0.08), 0 6px 18px rgba(41, 43, 49, 0.1);
   --shadow-lg: 0 2px 4px rgba(41, 43, 49, 0.1), 0 16px 40px rgba(41, 43, 49, 0.16);
+  /* rampas no tema claro: invertidas para manter a mesma função (texto, trilha, tinta) — ver D3 */
+  --color-neutral-100: #292b31;
+  --color-neutral-200: #3f424d;
+  --color-neutral-300: #595d6c;
+  --color-neutral-400: #595d6c;
+  --color-neutral-500: #75798c;
+  --color-neutral-600: #9397ab;
+  --color-neutral-700: #cfd3e5;
+  --color-neutral-800: #e4e7f5;
+  --color-neutral-900: #f3f5fe;
+  --color-accent-100: #2b2741;
+  --color-accent-200: #423a6a;
+  --color-accent-300: #5d5294;
+  --color-accent-400: #423a6a;
+  --color-accent-500: #796cbf;
+  --color-accent-600: #796cbf;
+  --color-accent-700: #b5abfc;
+  --color-accent-800: #d2cefd;
+  --color-accent-900: #e7e5fe;
 }
 
 @media (prefers-color-scheme: light) {
@@ -187,6 +206,25 @@
     --shadow-sm: 0 0 0 1px #e4e7f5;
     --shadow-md: 0 1px 2px rgba(41, 43, 49, 0.08), 0 6px 18px rgba(41, 43, 49, 0.1);
     --shadow-lg: 0 2px 4px rgba(41, 43, 49, 0.1), 0 16px 40px rgba(41, 43, 49, 0.16);
+    /* rampas no tema claro: invertidas para manter a mesma função (texto, trilha, tinta) — ver D3 */
+    --color-neutral-100: #292b31;
+    --color-neutral-200: #3f424d;
+    --color-neutral-300: #595d6c;
+    --color-neutral-400: #595d6c;
+    --color-neutral-500: #75798c;
+    --color-neutral-600: #9397ab;
+    --color-neutral-700: #cfd3e5;
+    --color-neutral-800: #e4e7f5;
+    --color-neutral-900: #f3f5fe;
+    --color-accent-100: #2b2741;
+    --color-accent-200: #423a6a;
+    --color-accent-300: #5d5294;
+    --color-accent-400: #423a6a;
+    --color-accent-500: #796cbf;
+    --color-accent-600: #796cbf;
+    --color-accent-700: #b5abfc;
+    --color-accent-800: #d2cefd;
+    --color-accent-900: #e7e5fe;
   }
 }
 

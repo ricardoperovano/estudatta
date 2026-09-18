@@ -239,7 +239,9 @@ function ReportBody({ data, period, activityId, activities, online }: { data: Su
           <Card elev="sm" className="gap-2 p-4 text-[14px] desktop:flex-1 desktop:p-5">
             <span className="kicker">Leitura {period === "week" ? "da semana" : period === "month" ? "do mês" : "do trimestre"}</span>
             {data.reading ? <p>{data.reading}</p> : <p className="text-neutral-400">Ainda não há registros suficientes para uma leitura {period === "week" ? "desta semana" : "deste período"}.</p>}
-            <p className="text-[13px] text-neutral-400">Tempo registrado mede constância, não aprendizado.</p>
+            {/constância/i.test(data.reading ?? "") ? null : (
+              <p className="text-[13px] text-neutral-400">Tempo registrado mede constância, não aprendizado.</p>
+            )}
             <p className="tnum text-[13px] text-neutral-400">
               Sequência atual: {data.streak_current} {data.streak_current === 1 ? "dia" : "dias"} · melhor sequência: {data.streak_best} {data.streak_best === 1 ? "dia" : "dias"}.
             </p>
@@ -526,7 +528,7 @@ function SessionHistory({ start, end, activityId, online }: { start: string; end
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                     <span className="tnum shrink-0 text-[13px] text-neutral-400">
-                      {s.local_date ? fmtDayTiny(s.local_date) : "—"}
+                      {s.local_date ? fmtDayTiny(s.local_date) : s.started_at ? fmtDayTiny(s.started_at) : "—"}
                       {s.started_at && s.kind === "timer" ? ` · ${fmtTime(s.started_at)}` : ""}
                     </span>
                     <span className="truncate">{s.activity_title ?? "Objetivo"}</span>

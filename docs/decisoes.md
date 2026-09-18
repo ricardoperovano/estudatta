@@ -36,8 +36,21 @@ Registro vivo das decisões tomadas durante a implementação. Cada item indica 
 - **Auto-plano com `task_ids`:** a distribuição é sempre calculada sobre todas as tarefas móveis do período; `task_ids` só restringe quais tarefas são movidas/reportadas. Assim, aplicar parte da prévia leva cada tarefa escolhida à mesma data que a prévia completa mostrou (as tarefas não escolhidas não viram blocos fixos; fixados, séries e tempo registrado continuam ocupando o dia).
 - **Histórico de sessões (`/reports/sessions`)** ordenado pelo dia local em que a sessão contou (`max(local_date)` das alocações — vale para cronômetro e lançamento por duração), depois `started_at`, `created_at` e `id`; ordem total e estável entre páginas mesmo com `created_at` idêntico.
 
+## 2026-09-18 — Integração final
+
+- **Formatação de minutos:** valores do dia usam minutos até 119 ("60 min", "90 min") e horas a partir de 2h, igual aos mockups; totais semanais usam horas ("3h40").
+- **Capacidade de recuperação:** capacidade extra = limite confortável − max(meta, tarefas planejadas, tempo registrado). A duração estimada das tarefas ocupa a meta e não é descontada duas vezes.
+- **Transferência de sessão entre aparelhos:** uma sessão ativa do mesmo aparelho é retomada sozinha; de outro aparelho, só com "Continuar neste aparelho". Nunca se inicia outra sessão em silêncio.
+- **Rampas no tema claro:** `neutral-*` e `accent-*` se invertem no tema claro para manter a função (texto, trilha, tinta), conforme o D3.
+- **Cronômetro em tela cheia:** sem navegação inferior, como a tela 04.
+- **Erros 422:** não ecoam mais o corpo da requisição (`input`), para não devolver senhas em mensagens de validação.
+- **Banco de testes:** um arquivo SQLite por processo, o que permite rodar suítes em paralelo.
+- **Usuário de demonstração:** `demo@estudatta.com.br`, porque o validador de e-mail recusa `.local`. A senha é gerada no `seed-demo` ou informada com `--password`.
+
 ## Pendências que dependem exclusivamente do responsável
 
 - **[pendente do responsável]** Preço dos planos (catálogo mostra "Valor a definir" até ser editado no painel).
 - **[pendente do responsável]** Credenciais do Mercado Pago (teste e produção), Google OAuth, chaves VAPID de produção, SMTP, bucket S3, chave de IA.
-- **[pendente do responsável]** Domínio, TLS e publicação; razão social/CNPJ e revisão jurídica dos textos de termos e privacidade.
+- **[pendente do responsável]** Domínio, TLS e publicação; razão social/CNPJ, endereço, encarregado (DPO) e foro, marcados nas páginas de termos e privacidade; revisão jurídica dos textos.
+- **[pendente do responsável]** Reexportar os PNGs de divulgação com a Inter instalada (limitação declarada no material de marca).
+- **[pendente do responsável]** Teste manual de push e instalação em iPhone/Android com o domínio HTTPS.

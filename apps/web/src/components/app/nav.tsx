@@ -17,6 +17,9 @@ const items = [
 
 /** Navegação inferior 64px no celular: 4 itens (Hoje · Plano · Objetivos · Relatório). */
 export function BottomNav() {
+  const { pathname } = useLocation();
+  // cronômetro em tela cheia (tela 04): sem navegação inferior; "Minimizar" volta para Hoje
+  if (pathname.startsWith("/app/sessao")) return null;
   return (
     <nav aria-label="Principal" className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(var(--layout-bottom-nav-height)+env(safe-area-inset-bottom,0px))] items-center justify-around border-t border-divider bg-canvas pb-[calc(6px+env(safe-area-inset-bottom,0px))] text-[11px] desktop:hidden">
       {items.map(({ to, label, icon: Icon, end }) => (

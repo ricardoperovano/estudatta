@@ -118,7 +118,7 @@ export default function OnboardingPage() {
   }
 
   const kicker = category ? kickerOf[category] : "";
-  const Progress = () => (
+  const progress = (
     <div className="flex gap-1" aria-label={`Etapa ${step} de 3`} role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={3}>
       {[1, 2, 3].map((i) => (
         <div key={i} className={cn("h-[2px] flex-1", i <= step ? "bg-accent" : "bg-neutral-800")} />
@@ -129,7 +129,7 @@ export default function OnboardingPage() {
   return (
     <div className="flex min-h-dvh flex-col bg-canvas">
       <div className="mx-auto flex w-full max-w-[440px] flex-1 flex-col gap-4 px-4 pb-6 pt-[max(56px,calc(32px+env(safe-area-inset-top,0px)))]">
-        <Progress />
+        {progress}
         <span className="text-[10px] uppercase tracking-[0.1em] text-accent">{kicker}</span>
         {error ? <Banner kind="error">{error}</Banner> : null}
 

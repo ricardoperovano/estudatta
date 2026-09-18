@@ -13,11 +13,11 @@ os.environ.setdefault("STORAGE_LOCAL_PATH", "var/test-storage")
 os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-with-enough-length-1234")
 
-import pytest
-from fastapi.testclient import TestClient
+import pytest  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
 
-from app.core.db import Base, engine
-from app.main import app
+from app.core.db import Base, engine  # noqa: E402
+from app.main import app  # noqa: E402
 
 
 @pytest.fixture(scope="session", autouse=True)

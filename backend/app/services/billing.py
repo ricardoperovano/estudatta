@@ -216,7 +216,7 @@ def start_checkout(
             currency=price.currency,
             frequency=frequency,
             frequency_type=frequency_type,
-            back_url=f"{settings.APP_URL.rstrip('/')}/app/assinatura?retorno=checkout",
+            back_url=f"{settings.APP_URL.rstrip('/')}/app/planos?retorno=checkout",
         )
     except ProviderError as exc:
         log.warning("billing.checkout_failed", user_id=str(user.id), error=exc.message)
@@ -393,7 +393,7 @@ def _on_transition(db: Session, sub: Subscription, previous: str, now: datetime)
             kind="billing_active",
             title=f"Plano {plan_name} ativado",
             body="Sua assinatura foi confirmada. Todos os recursos do plano já estão liberados.",
-            url="/app/assinatura",
+            url="/app/planos",
         )
     elif sub.status == "cancelled" and previous not in ("cancelled", "expired"):
         until = sub.current_period_end
@@ -408,7 +408,7 @@ def _on_transition(db: Session, sub: Subscription, previous: str, now: datetime)
             kind="billing_cancelled",
             title="Renovação cancelada",
             body=f"A renovação automática foi cancelada.{extra} Nada será apagado.",
-            url="/app/assinatura",
+            url="/app/planos",
         )
     elif sub.status == "paused" and previous != "paused":
         notify_inapp(
@@ -417,7 +417,7 @@ def _on_transition(db: Session, sub: Subscription, previous: str, now: datetime)
             kind="billing_paused",
             title="Assinatura pausada",
             body="A cobrança está pausada no provedor de pagamento. O plano gratuito continua disponível e seus dados estão guardados.",
-            url="/app/assinatura",
+            url="/app/planos",
         )
     elif sub.status == "past_due" and previous != "past_due":
         notify_inapp(
@@ -426,7 +426,7 @@ def _on_transition(db: Session, sub: Subscription, previous: str, now: datetime)
             kind="billing_past_due",
             title="Pagamento pendente",
             body="Não recebemos a confirmação da última cobrança. Verifique a forma de pagamento para manter o plano.",
-            url="/app/assinatura",
+            url="/app/planos",
         )
     elif sub.status == "expired" and previous not in ("pending", "expired"):
         notify_inapp(
@@ -435,7 +435,7 @@ def _on_transition(db: Session, sub: Subscription, previous: str, now: datetime)
             kind="billing_expired",
             title="Assinatura encerrada",
             body="Seu período de acesso terminou. Seus objetivos e registros continuam guardados no plano gratuito.",
-            url="/app/assinatura",
+            url="/app/planos",
         )
     apply_entitlement_changes(db, user, now=now)
 

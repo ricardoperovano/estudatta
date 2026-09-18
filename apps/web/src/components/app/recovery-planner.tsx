@@ -134,7 +134,7 @@ export function RecoveryPlanner({ activityId, onDone, inDialog }: Props) {
     setError(null);
     try {
       if (option === "keep") {
-        if (balance.data?.has_recovery_plan) await cancel.mutateAsync();
+        await cancel.mutateAsync();
         toast.info("Pendência mantida", `${fmtMinutes(pending)} continuam visíveis no plano.`);
         finish();
         return;

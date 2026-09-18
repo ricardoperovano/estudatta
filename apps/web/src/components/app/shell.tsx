@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Outlet } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import { BottomNav, Sidebar } from "./nav";
 import { useUser } from "@/api/session";
 import { useOnline } from "@/lib/online";
@@ -16,6 +16,7 @@ export function AppShell() {
   const sync = useSyncStore();
   const pwa = usePwaStore();
   const timerActive = useTimerStore((s) => s.timer?.status === "active");
+  const fullScreen = useLocation().pathname.startsWith("/app/sessao");
 
   React.useEffect(() => {
     if (!user) return;
@@ -29,7 +30,7 @@ export function AppShell() {
   return (
     <div className="flex min-h-dvh">
       <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col pb-[calc(var(--layout-bottom-nav-height)+env(safe-area-inset-bottom,0px))] desktop:pb-0">
+      <div className={"flex min-w-0 flex-1 flex-col desktop:pb-0 " + (fullScreen ? "pb-[env(safe-area-inset-bottom,0px)]" : "pb-[calc(var(--layout-bottom-nav-height)+env(safe-area-inset-bottom,0px))]")}>
         {!online ? (
           <div className="px-gutter pt-3">
             <Banner kind="offline">

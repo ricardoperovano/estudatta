@@ -4,6 +4,7 @@ Planejador de estudo e prática: mostra o que fazer hoje, registra o tempo (cron
 
 - Identidade visual e design: `../Identidade visual e design system PWA Estudatta/` (referência; os assets usados estão copiados em `apps/web/src/assets` e `apps/web/public`). Mapeamento em `docs/design-implementation.md`.
 - Regras de saldo: `docs/regras-de-saldo.md`. Decisões e suposições: `docs/decisoes.md`.
+- Verificações executadas: `docs/verificacoes.md`. Verificação visual: `docs/visual-comparison/README.md`.
 - Publicação: `docs/deploy.md`. Cobrança: `docs/billing.md`. Importação/materiais: `docs/importacao-e-materiais.md`. IA: `docs/ia.md`.
 
 ## Estrutura
@@ -23,7 +24,7 @@ Requisitos: Docker + Compose v2, Node ≥ 20, [uv](https://docs.astral.sh/uv/) (
 make setup      # cria .env a partir de .env.example, instala backend (uv) e frontend (npm)
 make up         # Postgres :5450, Redis :6400, Mailpit :8050 (UI) / :1050 (SMTP)
 make migrate    # alembic upgrade head
-make seed       # catálogo de planos + dados de demonstração (usuário demo@estudatta.com.br / senha no terminal)
+make seed       # catálogo de planos + dados de demonstração (DEMO_MODE=true; usuário demo@estudatta.com.br, senha exibida no terminal)
 make dev-api    # API em http://localhost:8020 (docs em /api/docs)
 make dev-web    # PWA e site em http://localhost:5180 (proxy /api → 8020)
 ```

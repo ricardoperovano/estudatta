@@ -158,12 +158,17 @@ def _record(
     db.commit()
 
 
-def _check_available(db: Session, user: User, action: str, input_chars: int) -> None:
+def _ensure_enabled() -> None:
+    """Com a IA desligada, toda ação responde 503 antes de qualquer outra validação."""
     if not settings.ai_available:
         raise ServiceUnavailable(
             "Os recursos de IA não estão habilitados neste ambiente. Você pode organizar o conteúdo manualmente.",
             code="ai_disabled",
         )
+
+
+def _check_available(db: Session, user: User, action: str, input_chars: int) -> None:
+    _ensure_enabled()
     if input_chars > settings.AI_MAX_INPUT_CHARS:
         raise ValidationFailed(
             f"O texto tem {input_chars} caracteres; o limite para IA é {settings.AI_MAX_INPUT_CHARS}.",
@@ -253,6 +258,7 @@ STRUCTURE_INSTRUCTIONS = (
 def suggest_structure(
     db: Session, user: User, *, text: str | None, import_id: uuid.UUID | None
 ) -> SuggestStructureOut:
+    _ensure_enabled()
     truncated = False
     job: ImportJob | None = None
     if import_id is not None:
@@ -328,6 +334,7 @@ def suggest_plan(
     objective: str | None,
     topic_ids: list[uuid.UUID] | None,
 ) -> SuggestPlanOut:
+    _ensure_enabled()
     today = today_in(act.timezone)
     start = start or today
     if start < today:
@@ -460,6 +467,7 @@ def weekly_facts(db: Session, act: Activity, week_start: date | None) -> dict:
 def weekly_summary(
     db: Session, user: User, act: Activity, *, week_start: date | None
 ) -> WeeklySummaryOut:
+    _ensure_enabled()
     facts = weekly_facts(db, act, week_start)
     prompt = f"<documento>\n{json.dumps(facts, ensure_ascii=False)}\n</documento>"
     parsed, result = _call(

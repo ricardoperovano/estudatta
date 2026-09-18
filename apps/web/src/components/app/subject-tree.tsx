@@ -219,7 +219,7 @@ function SubjectSheet({ activityId, subject, subjects, open, onOpenChange }: { a
             <Textarea id="s-desc" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} />
           </Field>
           <Button type="submit" size="xl" block loading={create.isPending || update.isPending}>
-            {subject ? "Salvar" : "Adicionar matéria"}
+            Salvar
           </Button>
           {subject ? (
             <div className="flex items-center justify-between">

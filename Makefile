@@ -37,7 +37,7 @@ migrate:
 	cd backend && set -a && . ../.env && set +a && .venv/bin/alembic upgrade head
 
 seed: migrate
-	cd backend && set -a && . ../.env && set +a && .venv/bin/python -m app.cli ensure-plans && .venv/bin/python -m app.cli seed-demo
+	cd backend && set -a && . ../.env && set +a && .venv/bin/python -m app.cli ensure-plans && DEMO_MODE=true .venv/bin/python -m app.cli seed-demo
 
 admin:
 	cd backend && set -a && . ../.env && set +a && .venv/bin/python -m app.cli create-admin

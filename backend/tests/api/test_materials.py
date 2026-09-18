@@ -211,7 +211,9 @@ def test_signed_url_is_owner_only_and_signature_is_verified(client):
     # assinatura válida para um arquivo que não existe
     missing = "users/x/materials/nada.pdf"
     fresh = int(time.time()) + 60
-    r = client.get(f"{API}/files/{missing}", params={"exp": fresh, "sig": sign_local(missing, fresh)})
+    r = client.get(
+        f"{API}/files/{missing}", params={"exp": fresh, "sig": sign_local(missing, fresh)}
+    )
     assert r.status_code == 404
     # a URL legítima continua funcionando dentro da validade, sem sessão
     client.cookies.clear()

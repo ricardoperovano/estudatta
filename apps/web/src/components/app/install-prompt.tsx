@@ -11,12 +11,8 @@ import { isIOS, isStandalone } from "@/lib/device";
 export function InstallPrompt({ compact = false }: { compact?: boolean }) {
   const prompt = usePwaStore((s) => s.installPrompt);
   const set = usePwaStore((s) => s.set);
-  const [standalone, setStandalone] = React.useState(true);
-  const [ios, setIos] = React.useState(false);
-  React.useEffect(() => {
-    setStandalone(isStandalone());
-    setIos(isIOS());
-  }, []);
+  const [standalone] = React.useState(() => (typeof window === "undefined" ? true : isStandalone()));
+  const [ios] = React.useState(() => (typeof window === "undefined" ? false : isIOS()));
   if (standalone) return null;
   const install = async () => {
     if (!prompt) return;

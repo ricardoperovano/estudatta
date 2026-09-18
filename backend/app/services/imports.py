@@ -550,13 +550,16 @@ def create_from_file(
                 f"O arquivo é grande demais para importação como texto (limite {MAX_TEXT_CHARS} caracteres).",
                 code="text_too_long",
             )
-        return create_from_content(
+        job = create_from_content(
             db,
             user,
             act,
             source=("text" if source == "text" else "csv"),
             content=_decode_text(data),
         )
+        job.file_name = (file_name or "")[:255] or None
+        db.flush()
+        return job
     raise ValidationFailed(
         "Formato não reconhecido. Envie um PDF com texto, um CSV no modelo ou cole o conteúdo como texto.",
         code="unsupported_file",

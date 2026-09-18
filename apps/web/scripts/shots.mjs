@@ -32,9 +32,11 @@ const appPages = [
   ["preferencias", "/app/preferencias"],
   ["planos", "/app/planos"],
   ["materiais", "/app/materiais"],
+  ["notificacoes", "/app/notificacoes"],
+  ["importar", "/app/importar"],
 ];
 
-const browser = await chromium.launch({ channel: "chrome", headless: true });
+const browser = await chromium.launch({ channel: "chrome", headless: true, args: ["--lang=pt-BR"] });
 for (const [name, viewport, mobile] of [
   ["mobile", { width: 390, height: 844 }, true],
   ["desktop", { width: 1440, height: 900 }, false],
@@ -58,6 +60,18 @@ for (const [name, viewport, mobile] of [
       await page.locator('[role="status"][aria-label="Carregando"]').first().waitFor({ state: "detached", timeout: 15000 }).catch(() => {});
       await page.waitForTimeout(800);
       await page.screenshot({ path: path.join(outDir, `${name}-${slug}.png`), fullPage: name === "desktop" });
+    }
+    // cronômetro em andamento (tela 04): inicia, captura e descarta a sessão
+    await page.goto(base + "/app/sessao", { waitUntil: "networkidle" });
+    const startBtn = page.getByRole("button", { name: "Começar sessão" });
+    if (await startBtn.waitFor({ state: "visible", timeout: 10000 }).then(() => true, () => false)) {
+      await startBtn.click();
+      await page.getByText("Em sessão").waitFor({ timeout: 10000 }).catch(() => {});
+      await page.waitForTimeout(2500);
+      await page.screenshot({ path: path.join(outDir, `${name}-sessao-ativa.png`) });
+      await page.getByRole("button", { name: "Encerrar" }).click();
+      await page.getByRole("button", { name: "Descartar" }).click();
+      await page.waitForURL(/\/app$/, { timeout: 10000 }).catch(() => {});
     }
     if (name === "desktop") {
       // relatório em tema claro (D3)

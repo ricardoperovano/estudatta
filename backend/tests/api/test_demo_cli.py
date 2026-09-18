@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 
 from freezegun import freeze_time
@@ -57,7 +58,7 @@ def test_seed_demo_is_idempotent_and_matches_mockup(client):
     assert first["subjects_created"] == 3 and first["topics_created"] == 13
     assert first["material_created"] is True
     assert first["sessions_created"] == 6  # 07–11/09 completos + hoje; ontem (14/09) sem registro
-    assert first["tasks_created"] == 5
+    assert first["tasks_created"] == 6  # 2 de hoje + 4 próximos dias ativos
     assert first["today"] == "2026-09-15" and first["start_date"] == "2026-09-05"
     counts = _counts()
     assert counts == {
@@ -67,7 +68,7 @@ def test_seed_demo_is_idempotent_and_matches_mockup(client):
         "topics": 13,
         "materials": 1,
         "sessions": 6,
-        "tasks": 5,
+        "tasks": 6,
     }
 
     with SessionLocal() as db:
@@ -112,11 +113,33 @@ def test_seed_demo_is_idempotent_and_matches_mockup(client):
     tasks = client.get(f"{API}/tasks", params={"start": "2026-09-15", "end": "2026-09-30"}).json()
     assert [t["local_date"] for t in tasks] == [
         "2026-09-15",
+        "2026-09-15",
         "2026-09-16",
         "2026-09-17",
         "2026-09-18",
         "2026-09-21",
     ]
+    # tela Hoje: 07:00 concluída (40 min registrados) e 19:30 planejada (20 min)
+    today = {t["title"]: t for t in tasks if t["local_date"] == "2026-09-15"}
+    done, planned = today["Listening · unidade 4"], today["Vocabulário · lista 12"]
+    assert done["status"] == "done" and done["start_time"] == "07:00"
+    assert planned["status"] == "planned" and planned["start_time"] == "19:30"
+    assert planned["estimated_seconds"] == 1200
+    with SessionLocal() as db:
+        sess = db.execute(
+            select(StudySession).where(StudySession.planned_task_id == uuid.UUID(done["id"]))
+        ).scalar_one()
+        assert sess.duration_seconds == 2400 and sess.entry_mode == "timed"
+        assert sess.started_at.isoformat().startswith("2026-09-15T10:00")  # 07:00 em São Paulo
+
+
+@freeze_time("2026-09-14 12:00:00")  # segunda: "ontem" é domingo (descanso), nada a recuperar
+def test_seed_demo_on_monday_has_no_pending_from_rest_day():
+    with SessionLocal() as db:
+        first = seed_demo(db, password="demo-senha-123")
+        db.commit()
+    # 04/09 e 07–11/09 completos + hoje; domingo não é dia ativo
+    assert first["sessions_created"] == 7 and first["tasks_created"] == 6
 
 
 @freeze_time("2026-09-15 12:00:00")
@@ -173,9 +196,13 @@ def test_cli_commands(client, capsys):
     assert main(["seed-demo", "--force"]) == 0
     capsys.readouterr()
     # administradores
-    assert main(["create-admin", "--email", "adm@example.com", "--password", "senha-forte-123"]) == 0
+    assert (
+        main(["create-admin", "--email", "adm@example.com", "--password", "senha-forte-123"]) == 0
+    )
     assert "Administrador criado: adm@example.com" in capsys.readouterr().out
-    assert main(["create-admin", "--email", "adm@example.com", "--password", "senha-forte-123"]) == 1
+    assert (
+        main(["create-admin", "--email", "adm@example.com", "--password", "senha-forte-123"]) == 1
+    )
     assert "erro:" in capsys.readouterr().err
     assert main(["promote", "--email", "nao@existe.com"]) == 1
     signup(client, email="ana@example.com")
