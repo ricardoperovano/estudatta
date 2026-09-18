@@ -39,6 +39,15 @@ Cobertura dos testes obrigatórios (seção 21 do escopo):
 | Build de produção | `npm run build` | ok; service worker gerado; 8 rotas públicas pré-renderizadas; sitemap e robots gerados |
 | Independência da pasta de design | busca por "Identidade visual" em `src/`, `vite.config.ts`, `index.html` | 0 ocorrências; os assets estão no repositório |
 
+## Imagens de produção
+
+| Verificação | Resultado |
+|---|---|
+| `docker compose -f infra/docker-compose.yml build api web` | as duas imagens constroem só com o conteúdo do repositório (`estudatta-web` 80 MB, `estudatta-api` 1,0 GB) |
+| Imagem da API | importa a aplicação e expõe 126 rotas no OpenAPI |
+| Imagem web | contém as páginas pré-renderizadas, `app.html`, `sw.js`, manifest, sitemap e robots |
+| `nginx -t` na imagem web | válido na rede do Compose, onde o upstream `api` existe; isolado falha só por não resolver `api` |
+
 ## Ponta a ponta (Playwright + Chrome, API real em Postgres dedicado)
 
 `npx playwright test` teve **6 de 6 aprovados** nos projetos mobile (390×844) e desktop (1440×900).
