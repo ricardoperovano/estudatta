@@ -1,6 +1,6 @@
 # Convenções do frontend (apps/web)
 
-Vite 7 + React 19 + TypeScript + Tailwind 3.4 + Radix (shadcn-like) + React Router 7 (modo data router) + TanStack Query 5 + React Hook Form + Zod + Dexie + Workbox. Node ≥ 20. Comandos: `npm run dev` (porta 5180, proxy `/api` → `http://localhost:8020`), `npm run typecheck`, `npm run lint`, `npm run build` (inclui pré-renderização), `npm run test`, `npm run test:e2e`.
+Vite 7 + React 19 + TypeScript + Tailwind 3.4 + Radix (shadcn-like) + React Router 7 (modo data router) + TanStack Query 5 + React Hook Form + Zod + Dexie + Workbox. Node ≥ 20. Comandos: `npm run dev` (porta 5180, proxy `/api` → `http://localhost:8020`), `npm run typecheck`, `npm run lint`, `npm run build`, `npm run test`, `npm run test:e2e`. Este projeto é só o app; o site público fica em `estudatta-site` (HTML puro). Links para páginas do site usam `siteLink()` de `src/design/brand.ts`.
 
 ## Design system (obrigatório)
 - Fonte de verdade: `src/design/tokens.css` (variáveis derivadas de `design-tokens.json`) mapeadas no `tailwind.config.ts`. **Nunca use hex direto**; use classes `bg-canvas`, `bg-surface`, `text-primary/secondary/tertiary`, `text-neutral-400/500`, `text-accent`, `bg-accent-900`, `text-pending`, `text-success`, `border-divider`, `shadow-sm/md/lg`, `shadow-accent-ring`, `shadow-inset-accent`, `rounded-md` (8px), `rounded-lg` (14px), `tnum` (números tabulares), `kicker`, `hr-fade`, `recovery-stripes`.

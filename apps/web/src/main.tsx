@@ -1,6 +1,5 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { hydrateRoot } from "react-dom/client";
 import { RouterProvider, createBrowserRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { routes } from "./app/routes";
@@ -29,8 +28,6 @@ const app = (
   </React.StrictMode>
 );
 
-// Páginas públicas chegam pré-renderizadas: hidrata; o app chega vazio: renderiza.
-if (root.hasChildNodes() && root.dataset.prerendered === "1") hydrateRoot(root, app);
-else ReactDOM.createRoot(root).render(app);
+ReactDOM.createRoot(root).render(app);
 
 registerServiceWorker();

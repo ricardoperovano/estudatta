@@ -1,5 +1,7 @@
 # Verificação visual
 
+Este registro cobre o **app**. O site público (referência `06 Landing.dc.html`) virou o projeto `estudatta-site`, com a própria verificação em `docs/verificacao-visual/`.
+
 Comparação entre os mockups fornecidos e as telas implementadas, nas mesmas dimensões (390×844 mobile, 1440×900 desktop), feita com Chrome headless.
 
 - `reference/` — renderizações dos documentos `.dc.html` originais (runtime `support.js` + Nocturne), capturadas da pasta de design.
@@ -27,7 +29,6 @@ Os números do cenário de demonstração reproduzem os dos mockups: meta de 60 
 | Desktop D2 Plano | `desktop-plano.png` | Grade de 7 colunas com estado por dia e diálogo de replanejamento. |
 | Desktop D3 Relatório (claro) | `desktop-relatorio-claro.png` | Mesma paleta clara, com item ativo #e7e5fe/#5d5294 e barras #5d5294. |
 | Desktop D4 Planos | `desktop-planos.png` | Três elementos: plano atual, Gratuito e Completo, com a nota do preço configurável. |
-| Landing | `desktop-landing.png`, `mobile-landing.png` | Hero, mockup do telefone, faixa índigo, Como funciona, Para quem, Planos, FAQ e cadastro. |
 
 ## Divergências encontradas e corrigidas
 

@@ -8,10 +8,10 @@ flags e chaves públicas (ex.: VAPID public key, client id do Google).
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -37,8 +37,11 @@ class Settings(BaseSettings):
     SESSION_TTL_DAYS: int = 30
     COOKIE_SECURE: bool = False  # True em produção (HTTPS)
     COOKIE_DOMAIN: str | None = None
-    CORS_ORIGINS: list[str] = Field(default_factory=list)
-    TRUSTED_ORIGINS: list[str] = Field(default_factory=list)  # usado no check de Origin em mutações
+    # Aceita lista separada por vírgula no .env (NoDecode evita a leitura como JSON)
+    CORS_ORIGINS: Annotated[list[str], NoDecode] = Field(default_factory=list)
+    TRUSTED_ORIGINS: Annotated[list[str], NoDecode] = Field(
+        default_factory=list
+    )  # check de Origin em mutações
     RATE_LIMIT_ENABLED: bool = True
     REQUIRE_EMAIL_VERIFICATION: bool = False  # se True, login exige e-mail confirmado
 

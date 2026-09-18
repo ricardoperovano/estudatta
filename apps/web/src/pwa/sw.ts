@@ -14,9 +14,9 @@ declare const self: ServiceWorkerGlobalScope;
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
-// Rotas do app (SPA) — as páginas públicas são pré-renderizadas e também estão no precache
-const handler = createHandlerBoundToURL("/app.html");
-registerRoute(new NavigationRoute(handler, { allowlist: [/^\/app(\/|$)/, /^\/admin(\/|$)/, /^\/(entrar|cadastro|onboarding|confirmar-email|recuperar-senha|redefinir-senha)(\/|$)/] }));
+// Todas as navegações do domínio do app usam o shell (SPA); a API nunca é navegação
+const handler = createHandlerBoundToURL("/index.html");
+registerRoute(new NavigationRoute(handler, { denylist: [/^\/api\//] }));
 
 // Leituras da API: rede primeiro; cache curto só para GETs de leitura do plano (nunca auth/billing/arquivos)
 registerRoute(

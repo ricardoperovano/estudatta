@@ -1,5 +1,5 @@
 /**
- * Captura telas implementadas nas mesmas dimensões das referências (390×844 mobile, 1440×900 desktop)
+ * Captura telas do app (o site público tem o próprio projeto) nas mesmas dimensões das referências (390×844 mobile, 1440×900 desktop)
  * para comparação visual com os mockups. Uso:
  *   node scripts/shots.mjs [baseURL] [email] [senha]
  * Padrão: http://localhost:5180 e o usuário de demonstração (DEMO_EMAIL/DEMO_PASSWORD).
@@ -16,13 +16,7 @@ const password = process.argv[4] || process.env.DEMO_PASSWORD || "";
 const outDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../docs/visual-comparison/implemented");
 fs.mkdirSync(outDir, { recursive: true });
 
-const publicPages = [
-  ["landing", "/"],
-  ["ingles", "/ingles"],
-  ["concursos", "/concursos"],
-  ["planos-site", "/planos"],
-  ["faq", "/faq"],
-];
+const publicPages = [];
 const appPages = [
   ["hoje", "/app"],
   ["sessao", "/app/sessao"],

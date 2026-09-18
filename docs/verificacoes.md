@@ -7,8 +7,8 @@ Executadas em 18/09/2026, na máquina de desenvolvimento (CachyOS, Docker 29, No
 | Verificação | Comando | Resultado |
 |---|---|---|
 | Lint | `ruff check app tests` | sem problemas |
-| Formatação | `ruff format --check app tests` | 121 arquivos ok |
-| Testes (pytest, SQLite) | `pytest tests -q` | **167 passaram**, 0 falharam |
+| Formatação | `ruff format --check app tests` | 123 arquivos ok |
+| Testes (pytest, SQLite) | `pytest tests -q` | **169 passaram**, 0 falharam (inclui CORS para a origem do site) |
 | Migrações em Postgres 16 vazio | `alembic upgrade head` + `alembic check` | aplicadas; modelos e migração sem divergência |
 | Ida e volta de migração | `alembic downgrade base` + `upgrade head` | ok |
 | API real | `GET /api/v1/health/ready` | `{"database":"ok","redis":"ok"}` |
@@ -36,7 +36,7 @@ Cobertura dos testes obrigatórios (seção 21 do escopo):
 | Tipos | `tsc -b` | sem erros |
 | Lint | `eslint .` | 0 erros; 8 avisos `react-refresh/only-export-components` em módulos que exportam constantes |
 | Testes unitários | `vitest run` | 4 passaram |
-| Build de produção | `npm run build` | ok; service worker gerado; 8 rotas públicas pré-renderizadas; sitemap e robots gerados |
+| Build de produção | `npm run build` | ok; service worker com 95 arquivos no precache; `robots.txt` bloqueia indexação do app |
 | Independência da pasta de design | busca por "Identidade visual" em `src/`, `vite.config.ts`, `index.html` | 0 ocorrências; os assets estão no repositório |
 
 ## Imagens de produção
@@ -45,12 +45,12 @@ Cobertura dos testes obrigatórios (seção 21 do escopo):
 |---|---|
 | `docker compose -f infra/docker-compose.yml build api web` | as duas imagens constroem só com o conteúdo do repositório (`estudatta-web` 80 MB, `estudatta-api` 1,0 GB) |
 | Imagem da API | importa a aplicação e expõe 126 rotas no OpenAPI |
-| Imagem web | contém as páginas pré-renderizadas, `app.html`, `sw.js`, manifest, sitemap e robots |
+| Imagem web | contém só o app: `index.html`, `assets/`, `sw.js`, manifest e `robots.txt` |
 | `nginx -t` na imagem web | válido na rede do Compose, onde o upstream `api` existe; isolado falha só por não resolver `api` |
 
 ## Ponta a ponta (Playwright + Chrome, API real em Postgres dedicado)
 
-`npx playwright test` teve **6 de 6 aprovados** nos projetos mobile (390×844) e desktop (1440×900).
+Após a separação do site, `npx playwright test` teve **6 de 6 aprovados** nos projetos mobile (390×844) e desktop (1440×900).
 
 - **Fluxo principal:**
   1. Cadastro e onboarding com Inglês a 60 min/dia, iniciado há 3 dias; a tela Hoje mostra meta de 60 min e 3h de pendência.
@@ -61,6 +61,10 @@ Cobertura dos testes obrigatórios (seção 21 do escopo):
   6. Consulta do relatório.
 - **Cronômetro:** iniciar, abrir uma segunda aba sem criar outra sessão, pausar, retomar e encerrar.
 - **Logout:** a rota privada volta a exigir login e o IndexedDB fica sem snapshots do usuário.
+
+## Site público (repositório separado)
+
+O site agora é o projeto `estudatta-site`, em HTML puro. Suas verificações (páginas, formulários, catálogo pela API, CORS, imagem Docker com URLs limpas e 404, fonte e política de segurança) estão em `estudatta-site/docs/verificacao-visual/README.md`.
 
 ## Verificação visual
 

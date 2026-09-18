@@ -47,6 +47,16 @@ Registro vivo das decisões tomadas durante a implementação. Cada item indica 
 - **Banco de testes:** um arquivo SQLite por processo, o que permite rodar suítes em paralelo.
 - **Usuário de demonstração:** `demo@estudatta.com.br`, porque o validador de e-mail recusa `.local`. A senha é gerada no `seed-demo` ou informada com `--password`.
 
+## 2026-09-18 — Site público separado
+
+- **Pedido do responsável:** o site público sai deste repositório e vira um projeto próprio em HTML, sem React (`../estudatta-site`, com Git próprio e sem remoto; o responsável cria o repositório remoto).
+- **Domínios:** site em `estudatta.com.br`; app e API em `app.estudatta.com.br`, na mesma origem (cookies da sessão continuam `SameSite=Lax`, sem CORS para o app). Os links antigos do app no domínio principal são redirecionados pelo Nginx do servidor.
+- **Integração:** o site usa só `GET /api/v1/public/plans`, `POST /api/v1/public/waitlist` e `POST /api/v1/public/contact`, sem cookie. A API libera a origem do site em `CORS_ORIGINS`, que agora aceita lista separada por vírgula no `.env`.
+- **Site sem JavaScript:** conteúdo, preço "Valor a definir" e links para o app funcionam sem JS; o JS só troca o catálogo pelo real e envia os formulários. Nenhum preço fica escrito no HTML.
+- **Textos jurídicos:** privacidade e termos foram extraídos do HTML gerado pelas páginas anteriores, com o mesmo texto palavra por palavra.
+- **App:** removidos a pré-renderização, as páginas públicas e a imagem de compartilhamento; `/` redireciona para Hoje (ou para a entrada); o app inteiro é `noindex`; termos e privacidade apontam para o site (`VITE_SITE_URL`, padrão `https://estudatta.com.br`; em dev `http://localhost:5190`).
+- **CSP do site:** estilos inline foram trocados por classes para a política `style-src 'self'` do Nginx do site.
+
 ## Pendências que dependem exclusivamente do responsável
 
 - **[pendente do responsável]** Preço dos planos (catálogo mostra "Valor a definir" até ser editado no painel).

@@ -35,3 +35,11 @@ export function RedirectIfAuthed() {
   if (data) return <Navigate to={data.user.onboarding_completed_at ? "/app" : "/onboarding"} replace />;
   return <Outlet />;
 }
+
+/** "/" no domínio do app: vai para Hoje (ou para a entrada, sem sessão). */
+export function RootRedirect() {
+  const { data, isPending } = useSession();
+  if (isPending) return <FullPageLoading />;
+  if (!data) return <Navigate to="/entrar" replace />;
+  return <Navigate to={data.user.onboarding_completed_at ? "/app" : "/onboarding"} replace />;
+}

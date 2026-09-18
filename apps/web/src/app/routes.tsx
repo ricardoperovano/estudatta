@@ -1,9 +1,7 @@
 import * as React from "react";
 import type { RouteObject } from "react-router";
 import { AppShell } from "@/components/app/shell";
-import { RedirectIfAuthed, RequireAdmin, RequireAuth } from "./guards";
-import { SiteLayout } from "@/site/layout";
-import { HomePage } from "@/site/pages/home";
+import { RedirectIfAuthed, RequireAdmin, RequireAuth, RootRedirect } from "./guards";
 import { ErrorPage } from "./error-page";
 
 const lazy = (loader: () => Promise<{ default: React.ComponentType }>) => {
@@ -15,22 +13,9 @@ const lazy = (loader: () => Promise<{ default: React.ComponentType }>) => {
   );
 };
 
-/** Rotas públicas (pré-renderizadas no build) + app privado + admin. */
+/** Rotas do app (PWA). O site público é um projeto separado (estudatta-site). */
 export const routes: RouteObject[] = [
-  {
-    element: <SiteLayout />,
-    errorElement: <ErrorPage />,
-    children: [
-      { path: "/", element: <HomePage /> },
-      { path: "/ingles", element: lazy(() => import("@/site/pages/ingles")) },
-      { path: "/concursos", element: lazy(() => import("@/site/pages/concursos")) },
-      { path: "/planos", element: lazy(() => import("@/site/pages/planos")) },
-      { path: "/faq", element: lazy(() => import("@/site/pages/faq")) },
-      { path: "/contato", element: lazy(() => import("@/site/pages/contato")) },
-      { path: "/privacidade", element: lazy(() => import("@/site/pages/privacidade")) },
-      { path: "/termos", element: lazy(() => import("@/site/pages/termos")) },
-    ],
-  },
+  { path: "/", element: <RootRedirect />, errorElement: <ErrorPage /> },
   {
     element: <RedirectIfAuthed />,
     errorElement: <ErrorPage />,
@@ -74,5 +59,5 @@ export const routes: RouteObject[] = [
     errorElement: <ErrorPage />,
     children: [{ path: "/admin/*", element: lazy(() => import("@/app/admin/page")) }],
   },
-  { path: "*", element: lazy(() => import("@/site/pages/not-found")), errorElement: <ErrorPage /> },
+  { path: "*", element: lazy(() => import("@/app/not-found")), errorElement: <ErrorPage /> },
 ];

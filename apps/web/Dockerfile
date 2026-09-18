@@ -1,4 +1,4 @@
-# Build do site + PWA e servidor Nginx (static + proxy /api para a API)
+# Build do app (PWA) e servidor Nginx (estáticos + fallback SPA + proxy /api para a API)
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./

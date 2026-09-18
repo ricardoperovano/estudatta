@@ -14,7 +14,7 @@ help:
 	@echo "make dev-web     PWA/site em :5180"
 	@echo "make worker      Celery worker · make beat   scheduler"
 	@echo "make test        testes backend + frontend · make e2e  Playwright"
-	@echo "make build       build de produção do frontend (inclui pré-renderização)"
+	@echo "make build       build de produção do app"
 	@echo "make vapid       gera par de chaves VAPID para .env"
 	@echo "make backup      dump do banco + materiais em infra/backups/"
 	@echo "make prod-build  constrói imagens · make prod-up  sobe tudo (api, worker, scheduler, web)"

@@ -8,6 +8,7 @@ import { Button, Field, Input, Banner } from "@/components/ui";
 import { useAuthActions } from "@/api/session";
 import { errorMessage } from "@/api/client";
 import { detectTimezone } from "@/lib/device";
+import { siteLink } from "@/design/brand";
 
 const schema = z.object({
   name: z.string().max(120).optional(),
@@ -38,7 +39,7 @@ export default function RegisterPage() {
       subtitle="Você define a meta. O plano mostra o que fazer hoje e como retomar se atrasar."
       footer={
         <span>
-          Já tem conta? <Link to="/entrar">Entrar</Link> · Ao criar a conta você concorda com os <Link to="/termos">termos</Link> e a <Link to="/privacidade">privacidade</Link>.
+          Já tem conta? <Link to="/entrar">Entrar</Link> · Ao criar a conta você concorda com os <a href={siteLink("/termos")}>termos</a> e a <a href={siteLink("/privacidade")}>privacidade</a>.
         </span>
       }
     >
