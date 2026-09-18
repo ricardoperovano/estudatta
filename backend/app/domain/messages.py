@@ -7,7 +7,7 @@ Tone = str  # acolhedor | direto | firme
 
 def fmt_minutes(seconds: int) -> str:
     minutes = max(0, int(round(seconds / 60)))
-    if minutes >= 60:
+    if minutes >= 120:
         h, m = divmod(minutes, 60)
         return f"{h}h{m:02d}" if m else f"{h}h"
     return f"{minutes} min"

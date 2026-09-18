@@ -86,6 +86,17 @@ export default function TimerPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverActive, hydrated, user]);
 
+  // vindo de "Começar sessão" na tela Hoje: inicia de imediato (uma vez) quando não há cronômetro
+  const autoStarted = React.useRef(false);
+  React.useEffect(() => {
+    if (!hydrated || !user || timer || autoStarted.current || !objetivoParam || starting) return;
+    if (active.isPending || activities.isPending) return;
+    if (active.data) return;
+    autoStarted.current = true;
+    void start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, user, timer, objetivoParam, active.isPending, active.data, activities.isPending]);
+
   const cards = today.data?.data.cards ?? [];
   const card = timer ? cards.find((c) => c.activity.id === timer.activity_id) : cards.find((c) => c.activity.id === activityId);
   const elapsed = elapsedSeconds(timer, now);

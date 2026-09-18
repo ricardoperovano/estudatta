@@ -12,6 +12,7 @@ from app.core.errors import ApiError, NotFound, Unauthorized
 from app.models.user import AuthSession, User
 from app.schemas.auth import (
     AuthSessionOut,
+    AuthStateOut,
     ChangePasswordRequest,
     EntitlementsOut,
     ForgotPasswordRequest,
@@ -19,7 +20,6 @@ from app.schemas.auth import (
     PublicConfigOut,
     RegisterRequest,
     ResetPasswordRequest,
-    AuthStateOut,
     UserOut,
     VerifyEmailRequest,
 )

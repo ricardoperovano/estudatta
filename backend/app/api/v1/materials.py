@@ -122,7 +122,14 @@ def create_link(
         url=payload.url,
         description=payload.description,
     )
-    audit(db, actor_id=user.id, action="material.create", target_type="material", target_id=str(m.id), metadata={"kind": "link"})
+    audit(
+        db,
+        actor_id=user.id,
+        action="material.create",
+        target_type="material",
+        target_id=str(m.id),
+        metadata={"kind": "link"},
+    )
     db.commit()
     db.refresh(m)
     return to_detail(m)
@@ -145,7 +152,14 @@ def create_physical(
         page_to=payload.page_to,
         pages_total=payload.pages_total,
     )
-    audit(db, actor_id=user.id, action="material.create", target_type="material", target_id=str(m.id), metadata={"kind": "physical"})
+    audit(
+        db,
+        actor_id=user.id,
+        action="material.create",
+        target_type="material",
+        target_id=str(m.id),
+        metadata={"kind": "physical"},
+    )
     db.commit()
     db.refresh(m)
     return to_detail(m)

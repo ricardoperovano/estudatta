@@ -10,11 +10,22 @@ export const faqItems = [
   { q: "Posso cancelar quando quiser?", a: "Sim. O cancelamento é feito na tela de planos, sem obstáculos. Seu histórico e a exportação dos seus dados continuam disponíveis." },
 ];
 
-export function FaqSection({ items = faqItems.slice(0, 5), title = "O que o app faz — e o que não faz" }: { items?: typeof faqItems; title?: string }) {
+export function FaqSection({
+  items = faqItems.slice(0, 5),
+  title = "O que o app faz — e o que não faz",
+  id = "faq",
+  kicker = "Perguntas",
+}: {
+  items?: typeof faqItems;
+  title?: string;
+  /** Âncora da seção; passe um valor distinto ao usar várias seções na mesma página. */
+  id?: string;
+  kicker?: string;
+}) {
   return (
-    <section id="faq" className="grid gap-8 pb-24 tablet:grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
+    <section id={id} className="grid gap-8 pb-24 tablet:grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
       <div>
-        <span className="text-[13px] uppercase tracking-[0.06em] text-accent">Perguntas</span>
+        <span className="text-[13px] uppercase tracking-[0.06em] text-accent">{kicker}</span>
         <h2 className="mt-3 text-[32px] leading-[1.15]">{title}</h2>
       </div>
       <div className="flex flex-col">

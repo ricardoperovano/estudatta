@@ -28,12 +28,27 @@ celery_app.conf.update(
     },
     beat_schedule={
         # Jobs curtos e idempotentes: selecionam trabalho vencido por next_run_at/datas e usam locks
-        "schedule-reminders": {"task": "app.jobs.tasks_notifications.schedule_reminders", "schedule": 300.0},
-        "dispatch-outbox": {"task": "app.jobs.tasks_notifications.dispatch_outbox", "schedule": 60.0},
+        "schedule-reminders": {
+            "task": "app.jobs.tasks_notifications.schedule_reminders",
+            "schedule": 300.0,
+        },
+        "dispatch-outbox": {
+            "task": "app.jobs.tasks_notifications.dispatch_outbox",
+            "schedule": 60.0,
+        },
         "close-days": {"task": "app.jobs.tasks_maintenance.close_days", "schedule": 1800.0},
-        "weekly-summaries": {"task": "app.jobs.tasks_notifications.weekly_summaries", "schedule": crontab(minute=0)},
-        "billing-reconcile": {"task": "app.jobs.tasks_billing.reconcile_subscriptions", "schedule": crontab(minute=15, hour="*/6")},
-        "cleanup": {"task": "app.jobs.tasks_maintenance.cleanup", "schedule": crontab(minute=30, hour=3)},
+        "weekly-summaries": {
+            "task": "app.jobs.tasks_notifications.weekly_summaries",
+            "schedule": crontab(minute=0),
+        },
+        "billing-reconcile": {
+            "task": "app.jobs.tasks_billing.reconcile_subscriptions",
+            "schedule": crontab(minute=15, hour="*/6"),
+        },
+        "cleanup": {
+            "task": "app.jobs.tasks_maintenance.cleanup",
+            "schedule": crontab(minute=30, hour=3),
+        },
     },
     include=[
         "app.jobs.tasks_imports",

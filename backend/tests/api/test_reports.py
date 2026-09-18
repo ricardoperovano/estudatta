@@ -15,7 +15,12 @@ CLOSING = "Tempo registrado mede constância, não aprendizado."
 def _log(client, act_id, local_date, seconds, **extra):
     r = client.post(
         f"{API}/sessions/manual",
-        json={"activity_id": act_id, "duration_seconds": seconds, "local_date": local_date, **extra},
+        json={
+            "activity_id": act_id,
+            "duration_seconds": seconds,
+            "local_date": local_date,
+            **extra,
+        },
     )
     assert r.status_code == 201, r.text
     return r.json()
@@ -57,7 +62,13 @@ def test_weekly_summary_reads_recovered_day_honestly(user_client):
     sun = next(d for d in s["per_day"] if d["local_date"] == "2026-09-20")
     assert sun["is_rest"] is True and sun["target"] == 0
     assert s["by_activity"] == [
-        {"activity_id": act["id"], "title": "Inglês", "logged": 18000, "target": 18000, "percent": 100.0}
+        {
+            "activity_id": act["id"],
+            "title": "Inglês",
+            "logged": 18000,
+            "target": 18000,
+            "percent": 100.0,
+        }
     ]
     assert {r["title"]: r["logged"] for r in s["by_subject"]} == {
         "Gramática": 3600,
@@ -120,7 +131,9 @@ def test_sessions_report_includes_titles_and_pagination(user_client):
     assert older["version"] == 1 and older["elapsed_seconds"] == 3600  # campos de SessionOut
     r = user_client.get(f"{API}/reports/sessions", params={"limit": 1, "offset": 1})
     assert [x["id"] for x in r.json()] == [older["id"]]
-    r = user_client.get(f"{API}/reports/sessions", params={"start": "2026-09-16", "end": "2026-09-20"})
+    r = user_client.get(
+        f"{API}/reports/sessions", params={"start": "2026-09-16", "end": "2026-09-20"}
+    )
     assert [x["id"] for x in r.json()] == [newest["id"]]
 
 
@@ -173,7 +186,9 @@ def test_export_csv_has_bom_semicolon_and_period_filter(user_client):
 
 def test_content_report_separates_topics_and_tasks_from_time(user_client):
     act = make_activity(user_client)
-    subj = user_client.post(f"{API}/activities/{act['id']}/subjects", json={"title": "Gramática"}).json()
+    subj = user_client.post(
+        f"{API}/activities/{act['id']}/subjects", json={"title": "Gramática"}
+    ).json()
     t1 = user_client.post(
         f"{API}/subjects/{subj['id']}/topics", json={"title": "Verbos", "estimated_minutes": 30}
     ).json()
@@ -183,7 +198,12 @@ def test_content_report_separates_topics_and_tasks_from_time(user_client):
     user_client.patch(f"{API}/topics/{t1['id']}", json={"status": "done"})
     task = user_client.post(
         f"{API}/tasks",
-        json={"activity_id": act["id"], "title": "Exercícios", "local_date": MON, "subject_id": subj["id"]},
+        json={
+            "activity_id": act["id"],
+            "title": "Exercícios",
+            "local_date": MON,
+            "subject_id": subj["id"],
+        },
     ).json()
     user_client.post(f"{API}/tasks/{task['id']}/complete")
     user_client.post(
@@ -201,7 +221,11 @@ def test_content_report_separates_topics_and_tasks_from_time(user_client):
     assert gram["estimated_minutes_total"] == 90 and gram["estimated_minutes_done"] == 30
     assert gram["tasks_total"] == 1 and gram["tasks_done"] == 1
     loose = body["by_subject"][1]
-    assert loose["subject_id"] is None and loose["title"] == "Sem matéria" and loose["tasks_total"] == 1
+    assert (
+        loose["subject_id"] is None
+        and loose["title"] == "Sem matéria"
+        and loose["tasks_total"] == 1
+    )
     assert "não lança minutos" in body["note"]
 
 

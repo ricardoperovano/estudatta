@@ -49,9 +49,7 @@ class HttpAiClient(AiClient):
         self.model = settings.AI_MODEL
         self.timeout = settings.AI_TIMEOUT_SECONDS
 
-    def complete_json(
-        self, *, system: str, user: str, max_tokens: int | None = None
-    ) -> AiResult:
+    def complete_json(self, *, system: str, user: str, max_tokens: int | None = None) -> AiResult:
         payload = {
             "model": self.model,
             "messages": [

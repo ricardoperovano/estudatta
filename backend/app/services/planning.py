@@ -728,6 +728,11 @@ def auto_plan(
     ocorrências de série nem tarefas concluídas/puladas; elas ocupam o dia como blocos fixos.
     Tarefas com horário só entram em dias sem conflito de horário. Dias já passados não
     recebem tarefas. O que não cabe fica em `unplaced` para decisão do usuário.
+
+    `task_ids` restringe quais tarefas podem ser movidas (e aparecem em `moves`/`unplaced`).
+    A distribuição em si é sempre calculada sobre todas as tarefas móveis do período — as
+    demais não viram blocos fixos —, de modo que aplicar só parte da prévia leva cada tarefa
+    escolhida exatamente para a data que a prévia completa mostrou.
     """
     check_range(start, end)
     today = today_in(act.timezone)
@@ -737,25 +742,30 @@ def auto_plan(
         PlannedTask.status == "planned",
         PlannedTask.kind == "study",
     )
+    rows = list(
+        db.execute(
+            base.where(PlannedTask.local_date >= start, PlannedTask.local_date <= end)
+        ).scalars()
+    )
+    selected: set[uuid.UUID] | None = None
     if task_ids:
-        rows = list(db.execute(base.where(PlannedTask.id.in_(task_ids))).scalars())
-        found = {r.id for r in rows}
-        missing = [str(i) for i in task_ids if i not in found]
+        chosen = list(db.execute(base.where(PlannedTask.id.in_(task_ids))).scalars())
+        selected = {t.id for t in chosen}
+        missing = [str(i) for i in task_ids if i not in selected]
         if missing:
             raise NotFound(
                 "Alguma tarefa não foi encontrada neste objetivo.", details={"ids": missing}
             )
-    else:
-        rows = list(
-            db.execute(
-                base.where(PlannedTask.local_date >= start, PlannedTask.local_date <= end)
-            ).scalars()
-        )
+        known = {t.id for t in rows}
+        rows.extend(t for t in chosen if t.id not in known)  # escolhidas fora do período
     rows.sort(key=lambda t: (t.local_date, t.sort_order, t.created_at, str(t.id)))
     movable = [t for t in rows if not t.pinned and t.series_id is None]
     candidates = [t for t in movable if (t.estimated_seconds or 0) > 0]
     no_estimate = [t for t in movable if not (t.estimated_seconds or 0)]
     cand_ids = {t.id for t in candidates}
+
+    def can_move(t: PlannedTask) -> bool:
+        return selected is None or t.id in selected
 
     # blocos fixos no período: tudo que é estudo planejado e não é candidato (inclui séries)
     fixed_seconds: dict[date, int] = defaultdict(int)
@@ -801,7 +811,7 @@ def auto_plan(
     moves = []
     for t in candidates:
         new = res.placements.get(str(t.id))
-        if new is not None and new != t.local_date:
+        if can_move(t) and new is not None and new != t.local_date:
             moves.append(
                 {"task_id": t.id, "title": t.title, "from_date": t.local_date, "to_date": new}
             )
@@ -813,15 +823,18 @@ def auto_plan(
             "reason": "nao_coube",
         }
         for i in res.unplaced
+        if can_move(by_id[i])
     ] + [
         {"task_id": t.id, "title": t.title, "local_date": t.local_date, "reason": "sem_estimativa"}
         for t in no_estimate
+        if can_move(t)
     ]
+    # "depois" reflete o que seria aplicado: só as tarefas escolhidas trocam de data
     before: dict[date, list[PlannedTask]] = defaultdict(list)
     after: dict[date, list[PlannedTask]] = defaultdict(list)
     for t in candidates:
         before[t.local_date].append(t)
-        placed = res.placements.get(str(t.id))
+        placed = res.placements.get(str(t.id)) if can_move(t) else None
         after[placed if placed is not None else t.local_date].append(t)
     days = []
     for c in caps:

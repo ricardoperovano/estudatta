@@ -396,7 +396,28 @@ def list_sessions(
         if end:
             sub = sub.where(SessionDayAllocation.local_date <= end)
         q = q.where(StudySession.id.in_(sub))
-    q = q.order_by(StudySession.created_at.desc()).limit(limit).offset(offset)
+    # Mais recente primeiro pelo dia local em que a sessão contou (vale para cronômetro e para
+    # lançamento por duração), depois início, criação e id: ordem total, estável entre páginas.
+    last_day = (
+        select(
+            SessionDayAllocation.session_id.label("session_id"),
+            func.max(SessionDayAllocation.local_date).label("last_date"),
+        )
+        .where(SessionDayAllocation.user_id == user.id)
+        .group_by(SessionDayAllocation.session_id)
+        .subquery()
+    )
+    q = (
+        q.outerjoin(last_day, last_day.c.session_id == StudySession.id)
+        .order_by(
+            last_day.c.last_date.desc().nulls_last(),
+            StudySession.started_at.desc().nulls_last(),
+            StudySession.created_at.desc(),
+            StudySession.id.desc(),
+        )
+        .limit(limit)
+        .offset(offset)
+    )
     rows = list(db.execute(q).scalars())
     return rows, _titles(db, rows)
 

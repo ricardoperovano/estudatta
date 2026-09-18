@@ -169,15 +169,29 @@ def committed_seconds_by_date(
 def day_capacities(
     db: Session, act: Activity, start: date, end: date, *, today_logged: int = 0
 ) -> list[DayCapacity]:
+    """Capacidade extra por dia = limite confortável − max(meta, tarefas planejadas, registrado).
+
+    As tarefas de conteúdo ocupam a disponibilidade da meta (não criam obrigação extra); só o
+    que ultrapassa a meta reduz a capacidade de recuperação. O tempo já registrado hoje também
+    conta uma única vez.
+    """
     targets = project_targets(db, act, start, end)
     committed = committed_seconds_by_date(db, act, start, end)
     caps = []
     for t in targets:
-        c = committed.get(t.local_date, 0)
+        planned = committed.get(t.local_date, 0)
+        occupied = planned
         if t.local_date == start:
-            c += today_logged
+            occupied = max(planned, today_logged)
+        extra_committed = max(0, occupied - t.target)
         caps.append(
-            DayCapacity(t.local_date, t.target, t.daily_limit, c, t.target > 0 and not t.is_paused)
+            DayCapacity(
+                t.local_date,
+                t.target,
+                t.daily_limit,
+                extra_committed,
+                t.target > 0 and not t.is_paused,
+            )
         )
     return caps
 

@@ -54,7 +54,6 @@ STATUS_MAP = {
 OPEN_STATUSES = ("pending", "active", "past_due", "paused", "cancelled")
 PENDING_CHECK_AFTER = timedelta(hours=1)
 PENDING_EXPIRES_AFTER = timedelta(days=7)
-PERIOD_END_WINDOW = timedelta(days=2)
 PAST_DUE_GRACE = timedelta(days=3)
 CHECKOUT_REUSE_WINDOW = timedelta(hours=1)
 DOWNGRADE_LOOKBACK = timedelta(days=2)
@@ -551,6 +550,12 @@ def _event_type(topic: str, action: str | None) -> str:
     return (f"{topic}.{action}" if action else topic)[:80]
 
 
+def _is_not_found(exc: ProviderError) -> bool:
+    """404 do provedor: o recurso não existe (ou não é desta conta). Não é falha transitória,
+    então o evento é ignorado em vez de ficar em `failed` esperando reenvio."""
+    return exc.status_code == 404
+
+
 def locate_subscription(
     db: Session, provider: BillingProvider, *, topic: str, data_id: str | None
 ) -> Subscription | None:
@@ -561,7 +566,12 @@ def locate_subscription(
     if topic_l in ("subscription_preapproval", "preapproval"):
         preapproval_id = data_id
     elif topic_l in ("subscription_authorized_payment", "authorized_payment"):
-        info = provider.get_authorized_payment(data_id)
+        try:
+            info = provider.get_authorized_payment(data_id)
+        except ProviderError as exc:
+            if not _is_not_found(exc):
+                raise
+            info = None
         preapproval_id = _first((info or {}).get("preapproval_id"))
     else:
         return None  # payment, merchant_order, etc.: não tratados aqui
@@ -580,7 +590,12 @@ def locate_subscription(
     )
     if sub is not None:
         return sub
-    remote = provider.get_preapproval(preapproval_id)
+    try:
+        remote = provider.get_preapproval(preapproval_id)
+    except ProviderError as exc:
+        if _is_not_found(exc):
+            return None  # não existe no provedor: nada a sincronizar
+        raise
     if remote.external_reference:
         sub = (
             db.execute(
@@ -704,9 +719,10 @@ def reconcile_subscriptions(
     """Corrige assinaturas consultando o provedor. Idempotente; não faz commit.
 
     - `pending` há mais de 1h: consulta o provedor (webhook pode ter se perdido);
-      há mais de 7 dias: `expired`.
-    - `active`/`past_due`/`paused`/`cancelled` com `current_period_end` próximo ou vencido:
-      consulta e aplica; `cancelled` vencida → `expired`.
+      há mais de 7 dias: `expired`, sem consultar o provedor.
+    - `active`/`past_due`/`paused`/`cancelled`: consulta o provedor e aplica o estado real
+      (pausa, cancelamento ou renovação cujo webhook se perdeu); `cancelled`/`past_due` com
+      período vencido → `expired`.
     - `active` cujo período venceu há mais de 3 dias sem renovação confirmada → `past_due`.
     - pedidos de cancelamento não confirmados (`cancel_pending`) são reenviados.
     - usuários com acesso promocional encerrado recentemente passam pelo rebaixamento.
@@ -766,10 +782,9 @@ def reconcile_subscriptions(
                         subscription_id=str(sub.id),
                         error=exc.message,
                     )
-            due = (
-                sub.current_period_end is None or sub.current_period_end <= now + PERIOD_END_WINDOW
-            )
-            if provider is not None and sub.provider_ref and (due or cancel_pending):
+            # Toda assinatura aberta é conferida no provedor: o estado local nunca depende de
+            # um webhook ter chegado (pausa, cancelamento ou renovação podem ter se perdido).
+            if provider is not None and sub.provider_ref:
                 sync_subscription(db, sub, provider, now=now)
                 summary["synced"] += 1
             if (
@@ -810,8 +825,9 @@ def apply_entitlement_changes(
     db: Session, user: User, *, now: datetime | None = None
 ) -> list[Activity]:
     """Após qualquer transição de direitos: se o usuário tem mais objetivos ativos do que o
-    plano permite, mantém o mais recente (`updated_at`) ativo e pausa os demais. Nunca apaga.
-    Retorna os objetivos pausados (vazio quando nada mudou)."""
+    plano permite, mantém o atualizado mais recentemente (`updated_at`, desempate por
+    `created_at`) ativo e pausa os demais. Nunca apaga. Retorna os objetivos pausados
+    (vazio quando nada mudou)."""
     now = now or utcnow()
     ent = get_entitlements(db, user.id)
     limit = ent.limit("max_active_activities")
@@ -821,11 +837,19 @@ def apply_entitlement_changes(
         limit = int(limit)
     except (TypeError, ValueError):
         return []
+    # `updated_at`/`created_at` podem empatar (em SQLite o `server_default` tem resolução de
+    # segundo); o desempate precisa ser determinístico e portátil: `sort_order` (posição na
+    # lista, definida na criação como "último da fila" e editável pelo usuário) e, por fim, o id.
     active = list(
         db.execute(
             select(Activity)
             .where(Activity.user_id == user.id, Activity.status == "active")
-            .order_by(Activity.updated_at.desc(), Activity.created_at.desc())
+            .order_by(
+                Activity.updated_at.desc(),
+                Activity.created_at.desc(),
+                Activity.sort_order.desc(),
+                Activity.id.desc(),
+            )
         ).scalars()
     )
     if len(active) <= limit:

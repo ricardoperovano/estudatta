@@ -1,6 +1,6 @@
 """Seed de demonstração (idempotente): reproduz o cenário dos mockups.
 
-Usuário `demo@estudatta.local` com objetivo "Inglês" (60 min seg–sex, iniciado há 10 dias),
+Usuário `demo@estudatta.com.br` com objetivo "Inglês" (60 min seg–sex, iniciado há 10 dias),
 hoje com 40 min registrados, ontem sem registro, semana anterior completa; matérias
 Gramática/Listening/Vocabulário com tópicos, um material (link) e tarefas planejadas.
 
@@ -28,7 +28,10 @@ from app.services import auth as auth_service
 from app.services import materials as materials_service
 from app.services import sessions as session_service
 
-DEMO_EMAIL = "demo@estudatta.local"
+DEMO_EMAIL = "demo@estudatta.com.br"
+# E-mails usados por versões anteriores do seed. `.local` é um domínio reservado e o
+# validador de e-mail do login o recusa; um usuário antigo é renomeado, nunca duplicado.
+LEGACY_DEMO_EMAILS = ("demo@estudatta.local",)
 DEMO_NAMESPACE = uuid.UUID("5a3f0c3e-9b1d-4f1a-8e2c-3d6b7a1f2c90")
 ACTIVE_DAYS = [0, 1, 2, 3, 4]
 DAILY_MINUTES = 60
@@ -71,8 +74,21 @@ def _session_uuid(user_id: uuid.UUID, d: date) -> uuid.UUID:
     return uuid.uuid5(DEMO_NAMESPACE, f"demo-session:{user_id}:{d.isoformat()}")
 
 
-def _get_or_create_user(db: Session, password: str | None) -> tuple[User, str | None, bool]:
+def _find_demo_user(db: Session) -> User | None:
     user = db.execute(select(User).where(User.email == DEMO_EMAIL)).scalar_one_or_none()
+    if user is not None:
+        return user
+    for old in LEGACY_DEMO_EMAILS:
+        user = db.execute(select(User).where(User.email == old)).scalar_one_or_none()
+        if user is not None:
+            user.email = DEMO_EMAIL
+            db.flush()
+            return user
+    return None
+
+
+def _get_or_create_user(db: Session, password: str | None) -> tuple[User, str | None, bool]:
+    user = _find_demo_user(db)
     if user is not None:
         if password:
             user.password_hash = hash_password(password)
@@ -168,7 +184,9 @@ def _get_or_create_content(db: Session, user: User, act: Activity) -> tuple[list
 def _get_or_create_material(db: Session, user: User, act: Activity) -> tuple[Material, bool]:
     m = db.execute(
         select(Material).where(
-            Material.user_id == user.id, Material.kind == "link", Material.url == DEMO_MATERIAL["url"]
+            Material.user_id == user.id,
+            Material.kind == "link",
+            Material.url == DEMO_MATERIAL["url"],
         )
     ).scalar_one_or_none()
     if m is not None:
@@ -192,8 +210,11 @@ def _seed_sessions(
     created = 0
     d = start
     i = 0
+    yesterday = today - timedelta(days=1)
     while d <= today:
-        if d.weekday() in ACTIVE_DAYS and d != today - timedelta(days=1):
+        # hoje sempre tem 40 min (o cenário vale em qualquer dia da semana); ontem fica
+        # sem registro; os demais dias ativos têm a meta completa
+        if d == today or (d.weekday() in ACTIVE_DAYS and d != yesterday):
             minutes = TODAY_MINUTES if d == today else DAILY_MINUTES
             topic = topics[i % len(topics)] if topics else None
             _, was_created = session_service.manual_session(

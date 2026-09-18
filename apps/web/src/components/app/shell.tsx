@@ -7,6 +7,7 @@ import { syncNow, useSyncStore, refreshCounts } from "@/offline/sync";
 import { usePwaStore } from "@/pwa/register";
 import { Banner, Button } from "@/components/ui";
 import { useTimerStore } from "@/app/timer/store";
+import { refreshPushSubscription } from "@/app/push";
 
 /** Shell autenticado: lateral (tablet/desktop) + conteúdo + navegação inferior (celular). */
 export function AppShell() {
@@ -19,7 +20,10 @@ export function AppShell() {
   React.useEffect(() => {
     if (!user) return;
     refreshCounts(user.id);
-    if (online) syncNow(user.id);
+    if (online) {
+      syncNow(user.id);
+      refreshPushSubscription();
+    }
   }, [user, online]);
 
   return (

@@ -358,9 +358,7 @@ def _apply_one(db: Session, user: User, op: SyncOperationIn, device_id: str | No
 
 def _existing(db: Session, user: User, op_id: uuid.UUID) -> SyncOperation | None:
     return db.execute(
-        select(SyncOperation).where(
-            SyncOperation.user_id == user.id, SyncOperation.op_id == op_id
-        )
+        select(SyncOperation).where(SyncOperation.user_id == user.id, SyncOperation.op_id == op_id)
     ).scalar_one_or_none()
 
 

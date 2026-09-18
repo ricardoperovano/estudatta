@@ -201,14 +201,18 @@ def _call[T: BaseModel](
     prompt: str,
     schema: type[T],
     max_tokens: int | None = None,
+    input_chars: int | None = None,
 ) -> tuple[T, AiResult]:
-    _check_available(db, user, action, len(prompt))
+    """Chama o modelo e valida a saída. `input_chars` é o tamanho do *documento* (sem o
+    envelope <documento>); é o que conta para o limite e para o registro de uso."""
+    chars = len(prompt) if input_chars is None else input_chars
+    _check_available(db, user, action, chars)
     try:
         result = ai_client.get_client().complete_json(
             system=system, user=prompt, max_tokens=max_tokens
         )
     except AiError as exc:
-        _record(db, user, action, "failed", input_chars=len(prompt), error_code=exc.code)
+        _record(db, user, action, "failed", input_chars=chars, error_code=exc.code)
         if exc.code == "ai_disabled":
             raise ServiceUnavailable(exc.message, code="ai_disabled") from exc
         status_code = 502 if exc.code == "ai_bad_output" else 503
@@ -217,14 +221,20 @@ def _call[T: BaseModel](
         parsed = schema.model_validate(result.data)
     except ValidationError as exc:
         _record(
-            db, user, action, "failed", input_chars=len(prompt), result=result, error_code="ai_bad_output"
+            db,
+            user,
+            action,
+            "failed",
+            input_chars=chars,
+            result=result,
+            error_code="ai_bad_output",
         )
         raise ApiError(
             "A IA devolveu uma resposta em formato inválido. Nada foi alterado; tente de novo.",
             code="ai_bad_output",
             status_code=502,
         ) from exc
-    _record(db, user, action, "ok", input_chars=len(prompt), result=result)
+    _record(db, user, action, "ok", input_chars=chars, result=result)
     return parsed, result
 
 
@@ -235,7 +245,7 @@ STRUCTURE_INSTRUCTIONS = (
     'Formato exato: {"subjects":[{"title":"...","topics":[{"title":"...","page":null,'
     '"children":[{"title":"...","page":null}]}]}]}. '
     "Regras: no máximo 2 níveis abaixo da matéria (tópico → subtópico); títulos curtos em português "
-    "(mantenha o idioma original dos termos técnicos); use \"page\" (inteiro) só quando o documento "
+    '(mantenha o idioma original dos termos técnicos); use "page" (inteiro) só quando o documento '
     "indicar a página; não invente itens que não estejam no documento; no máximo 60 matérias."
 )
 
@@ -269,6 +279,7 @@ def suggest_structure(
         system=f"{SYSTEM_BASE}\n{STRUCTURE_INSTRUCTIONS}",
         prompt=prompt,
         schema=ProposalIn,
+        input_chars=len(source),
     )
     if job is not None:
         job.ai_used = True
@@ -337,7 +348,9 @@ def suggest_plan(
     caps = balance_service.day_capacities(db, act, start, end, today_logged=today_logged)
     day_info = {
         c.local_date: {
-            "target_seconds": max(0, c.target_seconds - (today_logged if c.local_date == today else 0)),
+            "target_seconds": max(
+                0, c.target_seconds - (today_logged if c.local_date == today else 0)
+            ),
             "max_seconds": max(0, c.daily_limit_seconds - c.committed_seconds)
             if c.is_active
             else 0,
@@ -444,7 +457,9 @@ def weekly_facts(db: Session, act: Activity, week_start: date | None) -> dict:
     }
 
 
-def weekly_summary(db: Session, user: User, act: Activity, *, week_start: date | None) -> WeeklySummaryOut:
+def weekly_summary(
+    db: Session, user: User, act: Activity, *, week_start: date | None
+) -> WeeklySummaryOut:
     facts = weekly_facts(db, act, week_start)
     prompt = f"<documento>\n{json.dumps(facts, ensure_ascii=False)}\n</documento>"
     parsed, result = _call(
@@ -458,6 +473,16 @@ def weekly_summary(db: Session, user: User, act: Activity, *, week_start: date |
     )
     text = parsed.text[:SUMMARY_MAX_CHARS]
     if BANNED_PROMISES.search(text):
+        # a chamada real já contou na cota (status ok); este registro é só observabilidade
+        _record(
+            db,
+            user,
+            "weekly_summary",
+            "rejected",
+            input_chars=len(prompt),
+            result=result,
+            error_code="ai_banned_text",
+        )
         raise ApiError(
             "A IA devolveu um texto fora das regras do produto (promessas ou cobrança). Nada foi alterado.",
             code="ai_bad_output",

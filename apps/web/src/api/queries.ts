@@ -4,6 +4,7 @@ import { api, unwrap, rawJson } from "./client";
 import type { Activity, ActivityDetail, Balance, TodayOut, StudySession, RecoveryPreview, RecoveryPlan } from "./types";
 import { loadSnapshot, saveSnapshot } from "@/offline/db";
 import { useUser } from "./session";
+import { useSyncStore } from "@/offline/sync";
 import type { components } from "./schema";
 
 export const keys = {
@@ -25,6 +26,7 @@ export function useToday() {
       try {
         const data = unwrap(await api.GET("/api/v1/dashboard/today"));
         if (user) void saveSnapshot(user.id, "today", data);
+        useSyncStore.getState().set({ lastSyncAt: new Date().toISOString() });
         return { data, offline: false, savedAt: null as string | null };
       } catch (e) {
         if (user) {

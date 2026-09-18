@@ -23,7 +23,9 @@ SyncStatus = Literal["applied", "duplicate", "rejected", "conflict"]
 
 class SyncOperationIn(BaseModel):
     op_id: UUID
-    kind: SyncKind
+    # `str` (e não `SyncKind`) de propósito: um tipo desconhecido é rejeitado por operação
+    # (`unknown_kind`) sem derrubar o lote inteiro com 422.
+    kind: str = Field(min_length=1, max_length=32)
     payload: dict[str, Any] = Field(default_factory=dict)
     client_created_at: datetime | None = None
 

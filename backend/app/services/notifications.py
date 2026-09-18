@@ -475,9 +475,7 @@ def schedule_reminders(db: Session, *, now: datetime | None = None) -> dict:
             prefs = get_preferences(db, user)
             acts = list(
                 db.execute(
-                    select(Activity).where(
-                        Activity.user_id == user.id, Activity.status == "active"
-                    )
+                    select(Activity).where(Activity.user_id == user.id, Activity.status == "active")
                 ).scalars()
             )
             n = 0
@@ -540,6 +538,8 @@ def weekly_summary_text(
                 f"{act.title}: {fmt_minutes(a_logged)} de {fmt_minutes(a_target)} "
                 f"({a_days} de {a_planned} dias)."
             )
+    if planned_days == 0 and logged == 0:
+        return None  # semana sem meta nem registro (objetivo recém-criado): nada a resumir
     head = (
         f"Semana de {_fmt_day(week_start)} a {_fmt_day(week_end)}: "
         f"{fmt_minutes(logged)} registrados de {fmt_minutes(target)} planejados, "

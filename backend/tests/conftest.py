@@ -5,7 +5,9 @@ from __future__ import annotations
 import os
 
 os.environ.setdefault("APP_ENV", "test")
-os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
+# um arquivo SQLite por processo: permite rodar suítes em paralelo sem "database is locked"
+os.makedirs("var", exist_ok=True)
+os.environ.setdefault("DATABASE_URL", f"sqlite:///./var/test-{os.getpid()}.db")
 os.environ.setdefault("EMAIL_BACKEND", "memory")
 os.environ.setdefault("STORAGE_LOCAL_PATH", "var/test-storage")
 os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
@@ -16,6 +18,18 @@ from fastapi.testclient import TestClient
 
 from app.core.db import Base, engine
 from app.main import app
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _remove_db_file():
+    yield
+    try:
+        url = os.environ["DATABASE_URL"]
+        if url.startswith("sqlite:///./var/test-"):
+            engine.dispose()
+            os.remove(url.replace("sqlite:///", ""))
+    except OSError:
+        pass
 
 
 @pytest.fixture(autouse=True)

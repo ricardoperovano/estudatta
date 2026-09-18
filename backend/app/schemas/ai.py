@@ -51,7 +51,9 @@ class SuggestPlanOut(BaseModel):
     items: list[PlanItemOut]
     rejected: list[dict] = Field(default_factory=list)
     model: str | None = None
-    note: str = "Prévia gerada por IA. Nada foi agendado; aplique pelo planejamento se fizer sentido."
+    note: str = (
+        "Prévia gerada por IA. Nada foi agendado; aplique pelo planejamento se fizer sentido."
+    )
 
 
 class WeeklySummaryIn(BaseModel):

@@ -18,6 +18,7 @@ import unicodedata
 import uuid
 from dataclasses import dataclass
 
+from pydantic import ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -40,6 +41,8 @@ CSV_REQUIRED = ("materia", "topico")
 CSV_COLUMNS = ("materia", "topico", "subtopico", "paginas", "minutos_estimados")
 SYNC_SOURCES = ("text", "csv")
 DEFAULT_SUBJECT_TITLE = "Geral"
+MAX_PAGE = 100_000  # mesmo teto dos schemas (ProposalSubtopic.page)
+SUBJECT_TITLE_MAX = 160  # Subject.title é String(160); Topic.title é String(200)
 
 
 class ImportFailure(ValidationFailed):
@@ -50,6 +53,11 @@ class ImportFailure(ValidationFailed):
 class Line:
     text: str
     page: int | None = None
+
+
+def _valid_page(p: int | None) -> int | None:
+    """Página fora de 1..MAX_PAGE vira None (a proposta precisa validar no schema)."""
+    return p if p is not None and 1 <= p <= MAX_PAGE else None
 
 
 # --- Heurística de texto ---------------------------------------------------------
@@ -155,7 +163,7 @@ def build_proposal(lines: list[Line], *, source: str = "text", strict: bool = Fa
         if not title:
             stats["skipped"] += 1
             continue
-        page = page_ref if page_ref is not None else ln.page
+        page = _valid_page(page_ref if page_ref is not None else ln.page)
         if level == 0:
             if len(subjects) >= MAX_SUBJECTS:
                 stats["truncated"] = True
@@ -199,9 +207,11 @@ def _parse_pages(raw: str) -> tuple[int | None, int | None]:
     nums = [int(n) for n in re.findall(r"\d{1,5}", raw or "")]
     if not nums:
         return None, None
-    first = nums[0]
-    last = nums[1] if len(nums) > 1 and nums[1] >= first else None
-    return (first or None), last
+    first = _valid_page(nums[0])
+    if first is None:
+        return None, None
+    last = _valid_page(nums[1]) if len(nums) > 1 and nums[1] >= first else None
+    return first, last
 
 
 def _parse_minutes(raw: str) -> int | None:
@@ -327,13 +337,16 @@ def extract_pdf_pages(data: bytes) -> tuple[list[tuple[int, str]], int]:
     try:
         reader = PdfReader(io.BytesIO(data))
         if reader.is_encrypted:
+            # `decrypt` devolve 0 (sem exceção) quando a senha vazia não abre o arquivo
             try:
-                reader.decrypt("")
-            except Exception as exc:  # noqa: BLE001
+                opened = bool(reader.decrypt(""))
+            except Exception:  # noqa: BLE001
+                opened = False
+            if not opened:
                 raise ImportFailure(
                     "O PDF está protegido por senha. Remova a senha e envie novamente.",
                     code="pdf_encrypted",
-                ) from exc
+                )
         total = len(reader.pages)
     except ImportFailure:
         raise
@@ -538,7 +551,11 @@ def create_from_file(
                 code="text_too_long",
             )
         return create_from_content(
-            db, user, act, source=("text" if source == "text" else "csv"), content=_decode_text(data)
+            db,
+            user,
+            act,
+            source=("text" if source == "text" else "csv"),
+            content=_decode_text(data),
         )
     raise ValidationFailed(
         "Formato não reconhecido. Envie um PDF com texto, um CSV no modelo ou cole o conteúdo como texto.",
@@ -552,7 +569,8 @@ def _create_pdf(
     size = len(data)
     if size > settings.MAX_UPLOAD_MB * 1024 * 1024:
         raise ValidationFailed(
-            f"O arquivo tem {size / 1024 / 1024:.0f} MB; o limite é {settings.MAX_UPLOAD_MB} MB. Nada foi alterado.",
+            f"O arquivo tem {size / 1024 / 1024:.0f} MB; o limite é {settings.MAX_UPLOAD_MB} MB. "
+            "Nada do seu plano foi alterado.",
             code="file_too_large",
         )
     material: Material | None = None
@@ -636,9 +654,7 @@ def mark_failed(db: Session, import_id: uuid.UUID, code: str, message: str) -> N
 
 def update_proposal(db: Session, job: ImportJob, proposal: ProposalIn) -> ImportJob:
     if job.status != "needs_review":
-        raise Conflict(
-            "A proposta só pode ser editada enquanto aguarda revisão.", code="bad_state"
-        )
+        raise Conflict("A proposta só pode ser editada enquanto aguarda revisão.", code="bad_state")
     data = proposal.as_dict()
     stats = (job.proposal or {}).get("stats") or _empty_stats(job.source)
     stats = {**stats, "edited": True}
@@ -671,7 +687,17 @@ def confirm(
             code="bad_state",
             details={"status": job.status},
         )
-    data = proposal if proposal is not None else ProposalIn.model_validate(job.proposal or {})
+    if proposal is not None:
+        data = proposal
+    else:
+        try:
+            data = ProposalIn.model_validate(job.proposal or {})
+        except ValidationError as exc:
+            raise ValidationFailed(
+                "A proposta salva está inválida; edite-a antes de confirmar.",
+                code="bad_proposal",
+                details=exc.errors(include_url=False),
+            ) from exc
     if not data.subjects:
         raise ValidationFailed("A proposta está vazia: nada a importar.", code="empty_proposal")
     act = db.get(Activity, job.activity_id)
@@ -691,7 +717,10 @@ def confirm(
     import_ref = str(job.id)
     for si, s in enumerate(data.subjects):
         subject = Subject(
-            user_id=user.id, activity_id=act.id, title=s.title, sort_order=base_order + si
+            user_id=user.id,
+            activity_id=act.id,
+            title=s.title[:SUBJECT_TITLE_MAX],
+            sort_order=base_order + si,
         )
         db.add(subject)
         db.flush()

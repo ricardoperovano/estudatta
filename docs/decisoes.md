@@ -28,6 +28,14 @@ Registro vivo das decisões tomadas durante a implementação. Cada item indica 
 - **Sobreposição** é verificada apenas entre sessões com horário. Registros só por duração validam plausibilidade (≤ 16 h por registro, ≤ 24 h por dia somando todos os objetivos).
 - **Uma sessão ativa por usuário:** índice único parcial em `study_sessions(user_id) WHERE status IN ('active','paused')`; `client_uuid` torna o início idempotente entre abas/reenvios.
 
+## 2026-09-18 — Cobrança, planejamento e relatórios (ajustes de comportamento)
+
+- **Reconciliação consulta toda assinatura aberta** (`active`, `past_due`, `paused`, `cancelled` com `provider_ref`), não só as com período prestes a vencer: um webhook perdido de pausa, cancelamento ou renovação nunca deixa o estado local defasado por semanas. Pendentes com mais de 7 dias expiram sem consultar o provedor. Ver `docs/billing.md`.
+- **Webhook cujo recurso não existe no provedor (404)** é registrado como `ignored` e respondido com 200, não como `failed`/503: 503 pede reenvio, e reenviar um evento de recurso inexistente nunca resolveria nada.
+- **Rebaixamento de plano com desempate determinístico:** mantém o objetivo atualizado mais recentemente (`updated_at`, depois `created_at`), e, em empate (SQLite grava o `server_default` com resolução de segundo), `sort_order` decrescente e `id`. Nada é apagado; os demais ficam `paused`.
+- **Auto-plano com `task_ids`:** a distribuição é sempre calculada sobre todas as tarefas móveis do período; `task_ids` só restringe quais tarefas são movidas/reportadas. Assim, aplicar parte da prévia leva cada tarefa escolhida à mesma data que a prévia completa mostrou (as tarefas não escolhidas não viram blocos fixos; fixados, séries e tempo registrado continuam ocupando o dia).
+- **Histórico de sessões (`/reports/sessions`)** ordenado pelo dia local em que a sessão contou (`max(local_date)` das alocações — vale para cronômetro e lançamento por duração), depois `started_at`, `created_at` e `id`; ordem total e estável entre páginas mesmo com `created_at` idêntico.
+
 ## Pendências que dependem exclusivamente do responsável
 
 - **[pendente do responsável]** Preço dos planos (catálogo mostra "Valor a definir" até ser editado no painel).

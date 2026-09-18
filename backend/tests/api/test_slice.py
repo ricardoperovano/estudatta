@@ -46,7 +46,7 @@ def test_main_acceptance_60_min_per_day_skip_a_day(user_client):
     assert s["target"] == 3600
     assert s["pending_prior"] == 3600  # segunda sem registro
     assert s["remaining_total"] == 7200
-    assert "1h da meta" in card["next_step"] and "20 min de recuperação" in card["next_step"]
+    assert "60 min da meta" in card["next_step"] and "20 min de recuperação" in card["next_step"]
     # registra 90 minutos manualmente
     r = user_client.post(
         "/api/v1/sessions/manual",

@@ -17,6 +17,13 @@ export function fmtMinutes(seconds: number): string {
   return `${m} min`;
 }
 
+/** Valores do dia: "60 min", "90 min"; horas só a partir de 2h ("2h10"). Mesma regra do backend. */
+export function fmtMinutesShort(seconds: number): string {
+  const m = minutesOf(seconds);
+  if (m >= 120) return fmtMinutes(seconds);
+  return `${m} min`;
+}
+
 /** "40" (só o número em minutos) */
 export function fmtMin(seconds: number): string {
   return String(minutesOf(seconds));

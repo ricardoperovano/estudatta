@@ -159,7 +159,8 @@ def test_reschedule_keeps_same_id_and_original_date(user_client):
     act = make_activity(user_client, start_date=MON)
     t = _task(user_client, act["id"], "Unidade 4", "2026-09-15", estimated_seconds=1800)
     r = user_client.post(
-        f"{API}/tasks/{t['id']}/reschedule", json={"local_date": "2026-09-16", "start_time": "20:00"}
+        f"{API}/tasks/{t['id']}/reschedule",
+        json={"local_date": "2026-09-16", "start_time": "20:00"},
     )
     assert r.status_code == 200, r.text
     assert r.json()["id"] == t["id"] and r.json()["local_date"] == "2026-09-16"
@@ -171,7 +172,12 @@ def test_reschedule_keeps_same_id_and_original_date(user_client):
     # ocorrência de série reprogramada não reaparece como virtual no dia original
     s = user_client.post(
         f"{API}/tasks/series",
-        json={"activity_id": act["id"], "title": "Anki", "weekdays": [0, 1, 2, 3, 4], "start_date": MON},
+        json={
+            "activity_id": act["id"],
+            "title": "Anki",
+            "weekdays": [0, 1, 2, 3, 4],
+            "start_date": MON,
+        },
     ).json()
     occ = user_client.post(f"{API}/tasks/series/{s['id']}/occurrences/2026-09-16", json={}).json()
     r = user_client.post(f"{API}/tasks/{occ['id']}/reschedule", json={"local_date": "2026-09-19"})
@@ -194,7 +200,13 @@ def test_reschedule_keeps_same_id_and_original_date(user_client):
 def test_auto_plan_is_deterministic_keeps_pinned_and_avoids_time_overlap(user_client):
     act = make_activity(user_client, start_date=MON)  # 60 min/dia seg–sex, limite 120
     a = _task(
-        user_client, act["id"], "A fixa", MON, estimated_seconds=1800, start_time="19:00", pinned=True
+        user_client,
+        act["id"],
+        "A fixa",
+        MON,
+        estimated_seconds=1800,
+        start_time="19:00",
+        pinned=True,
     )
     b = _task(user_client, act["id"], "B 19:15", MON, estimated_seconds=1800, start_time="19:15")
     c = _task(user_client, act["id"], "C livre", MON, estimated_seconds=1800)
@@ -262,7 +274,9 @@ def test_calendar_shows_recovery_overload_and_virtual_series(user_client):
     )
     assert r.status_code == 201, r.text
     _task(user_client, act["id"], "Maratona", "2026-09-17", estimated_seconds=3 * 3600)
-    _task(user_client, act["id"], "Checklist", "2026-09-17", kind="checklist", estimated_seconds=3600)
+    _task(
+        user_client, act["id"], "Checklist", "2026-09-17", kind="checklist", estimated_seconds=3600
+    )
     r = user_client.post(
         f"{API}/tasks/series",
         json={
@@ -346,7 +360,9 @@ def test_week_print_returns_seven_days_and_range_is_limited(user_client):
 def test_planning_isolation_and_cross_references(client):
     signup(client, email="a@example.com")
     act_a = make_activity(client)
-    subj = client.post(f"{API}/activities/{act_a['id']}/subjects", json={"title": "Gramática"}).json()
+    subj = client.post(
+        f"{API}/activities/{act_a['id']}/subjects", json={"title": "Gramática"}
+    ).json()
     t = _task(client, act_a["id"], "Tarefa A", date.today().isoformat())
     series = client.post(
         f"{API}/tasks/series",
@@ -359,26 +375,48 @@ def test_planning_isolation_and_cross_references(client):
     assert client.patch(f"{API}/tasks/{t['id']}", json={"title": "hack"}).status_code == 404
     assert client.delete(f"{API}/tasks/{t['id']}").status_code == 404
     assert client.post(f"{API}/tasks/{t['id']}/complete").status_code == 404
-    assert client.post(f"{API}/tasks/{t['id']}/reschedule", json={"local_date": MON}).status_code == 404
-    r = client.post(f"{API}/tasks", json={"activity_id": act_a["id"], "title": "x", "local_date": MON})
+    assert (
+        client.post(f"{API}/tasks/{t['id']}/reschedule", json={"local_date": MON}).status_code
+        == 404
+    )
+    r = client.post(
+        f"{API}/tasks", json={"activity_id": act_a["id"], "title": "x", "local_date": MON}
+    )
     assert r.status_code == 404
-    assert client.patch(f"{API}/tasks/series/{series['id']}", json={"title": "x"}).status_code == 404
+    assert (
+        client.patch(f"{API}/tasks/series/{series['id']}", json={"title": "x"}).status_code == 404
+    )
     assert client.delete(f"{API}/tasks/series/{series['id']}").status_code == 404
     r = client.post(f"{API}/tasks/series/{series['id']}/occurrences/{MON}", json={})
     assert r.status_code == 404
     assert _tasks(client, MON, "2026-09-20") == []
-    assert client.get(f"{API}/tasks", params={"start": MON, "end": MON, "activity_id": act_a["id"]}).status_code == 404
+    assert (
+        client.get(
+            f"{API}/tasks", params={"start": MON, "end": MON, "activity_id": act_a["id"]}
+        ).status_code
+        == 404
+    )
     r = client.post(
         f"{API}/activities/{act_a['id']}/auto-plan/preview", json={"start": MON, "end": MON}
     )
     assert r.status_code == 404
-    assert client.get(f"{API}/calendar", params={"start": MON, "end": MON, "activity_id": act_a["id"]}).status_code == 404
+    assert (
+        client.get(
+            f"{API}/calendar", params={"start": MON, "end": MON, "activity_id": act_a["id"]}
+        ).status_code
+        == 404
+    )
 
     # referência cruzada: matéria de outro usuário/objetivo é recusada
     act_b = make_activity(client)
     r = client.post(
         f"{API}/tasks",
-        json={"activity_id": act_b["id"], "title": "x", "local_date": MON, "subject_id": subj["id"]},
+        json={
+            "activity_id": act_b["id"],
+            "title": "x",
+            "local_date": MON,
+            "subject_id": subj["id"],
+        },
     )
     assert r.status_code == 422 and r.json()["error"]["code"] == "bad_subject"
     r = client.post(

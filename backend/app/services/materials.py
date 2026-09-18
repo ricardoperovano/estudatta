@@ -19,7 +19,9 @@ from app.services.plans import get_entitlements
 
 PDF_MAGIC = b"%PDF-"
 ALLOWED_UPLOAD_TYPES = {"application/pdf"}
-LOCAL_PATH_RE = re.compile(r"^([a-zA-Z]:\\|\\\\|/|file:)")
+# Caminho local (Windows `C:\...`/`C:/...`, UNC `\\servidor`, POSIX `/home/...`, `~/...`,
+# `file:`): não é acessível de outros aparelhos e o servidor nunca tenta abri-lo.
+LOCAL_PATH_RE = re.compile(r"^([a-zA-Z]:[\\/]|\\\\|/|~[\\/]|file:)", re.IGNORECASE)
 
 
 def get_material(db: Session, user: User, material_id: uuid.UUID) -> Material:
@@ -263,7 +265,7 @@ def link_topic(
     if topic is None or topic.user_id != user.id:
         raise ValidationFailed("Tópico inválido.", code="bad_topic")
     if page_from is not None and page_to is not None and page_to < page_from:
-        raise ValidationFailed("Página final antes da inicial.")
+        raise ValidationFailed("Página final antes da inicial.", code="bad_pages")
     link = db.execute(
         select(MaterialTopic).where(
             MaterialTopic.material_id == m.id, MaterialTopic.topic_id == topic_id

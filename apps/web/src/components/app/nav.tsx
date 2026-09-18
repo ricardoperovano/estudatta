@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router";
-import { CalendarBlank, ChartBar, Clock, ListBullets, Gear, Bell } from "@phosphor-icons/react";
+import { CalendarBlank, ChartBar, Clock, ListBullets, Gear, Bell, CreditCard } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { Logo, Symbol } from "./brand";
 import { useSyncStore } from "@/offline/sync";
@@ -61,24 +61,27 @@ export function Sidebar() {
       </div>
       {items.map(({ to, label, labelLong, icon: Icon, end }) => (
         <NavLink key={to} to={to} end={end} className={({ isActive }) => linkCls(isActive)} title={labelLong || label}>
-          <Icon size={24} aria-hidden className="shrink-0" />
+          <Icon size={24} aria-hidden className="shrink-0 desktop:hidden" />
           <span className="hidden desktop:inline">{labelLong || label}</span>
         </NavLink>
       ))}
       <div className="mt-auto flex flex-col gap-1">
         <NavLink to="/app/notificacoes" className={({ isActive }) => linkCls(isActive)} title="Notificações">
-          <span className="relative">
+          <span className="relative desktop:hidden">
             <Bell size={24} aria-hidden className="shrink-0" />
             {unread > 0 ? <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-pending" aria-label={`${unread} não lidas`} /> : null}
           </span>
-          <span className="hidden desktop:inline">Notificações</span>
+          <span className="hidden desktop:inline">
+            Notificações
+            {unread > 0 ? <span className="ml-2 inline-block h-2 w-2 rounded-full bg-pending align-middle" aria-label={`${unread} não lidas`} /> : null}
+          </span>
         </NavLink>
         <NavLink to="/app/preferencias" className={({ isActive }) => linkCls(isActive || pathname.startsWith("/app/preferencias"))} title="Preferências">
-          <Gear size={24} aria-hidden className="shrink-0" />
+          <Gear size={24} aria-hidden className="shrink-0 desktop:hidden" />
           <span className="hidden desktop:inline">Preferências</span>
         </NavLink>
         <NavLink to="/app/planos" className={({ isActive }) => linkCls(isActive)} title="Planos">
-          <ListBullets size={24} aria-hidden className="shrink-0 desktop:hidden" />
+          <CreditCard size={24} aria-hidden className="shrink-0 desktop:hidden" />
           <span className="hidden desktop:inline">Planos</span>
         </NavLink>
         <div className="hidden items-center gap-2 px-[10px] py-[9px] text-[12px] desktop:flex">

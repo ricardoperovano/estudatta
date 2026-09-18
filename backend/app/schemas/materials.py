@@ -25,7 +25,11 @@ class MaterialPhysicalIn(BaseModel):
 
     @model_validator(mode="after")
     def _pages(self):
-        if self.page_from is not None and self.page_to is not None and self.page_to < self.page_from:
+        if (
+            self.page_from is not None
+            and self.page_to is not None
+            and self.page_to < self.page_from
+        ):
             raise ValueError("Página final antes da inicial.")
         return self
 

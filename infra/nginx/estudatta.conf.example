@@ -1,0 +1,33 @@
+# Nginx do servidor (fora do Docker) com TLS, na frente do container `web` (porta ${WEB_PORT}, padrão 8090).
+# Certificado via certbot: certbot --nginx -d estudatta.com.br -d www.estudatta.com.br
+server {
+    listen 80;
+    server_name estudatta.com.br www.estudatta.com.br;
+    return 301 https://estudatta.com.br$request_uri;
+}
+server {
+    listen 443 ssl http2;
+    server_name www.estudatta.com.br;
+    ssl_certificate /etc/letsencrypt/live/estudatta.com.br/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/estudatta.com.br/privkey.pem;
+    return 301 https://estudatta.com.br$request_uri;
+}
+server {
+    listen 443 ssl http2;
+    server_name estudatta.com.br;
+    ssl_certificate /etc/letsencrypt/live/estudatta.com.br/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/estudatta.com.br/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    client_max_body_size 30m;
+
+    location / {
+        proxy_pass http://127.0.0.1:8090;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 120s;
+    }
+}

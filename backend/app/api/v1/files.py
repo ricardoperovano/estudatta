@@ -22,7 +22,7 @@ from app.models.content import Material
 
 router = APIRouter(prefix="/files", tags=["files"])
 
-_UNSAFE = re.compile(r'[^A-Za-z0-9._ -]')
+_UNSAFE = re.compile(r"[^A-Za-z0-9._ -]")
 
 
 def safe_filename(name: str | None, default: str) -> tuple[str, str]:

@@ -4,7 +4,7 @@ import { Check } from "@phosphor-icons/react";
 import { useToday, useToggleTask } from "@/api/queries";
 import { useUser } from "@/api/session";
 import { Banner, Button, Card, Checkbox, EmptyState, GoalBar, Legend, Spinner, Tag } from "@/components/ui";
-import { fmtDayLong, fmtDayShort, fmtMinutes, fmtTime } from "@/lib/format";
+import { fmtDayLong, fmtDayShort, fmtMinutes, fmtMinutesShort, fmtTime } from "@/lib/format";
 import { useOnline } from "@/lib/online";
 import { useSyncStore } from "@/offline/sync";
 import { ManualEntrySheet } from "./manual-entry";
@@ -133,6 +133,7 @@ export default function TodayPage() {
       </div>
 
       {cards.length > 0 ? <WeekDots card={first} /> : null}
+      {cards.length > 0 ? <ObjectiveRow cards={cards} /> : null}
 
       {manualFor ? <ManualEntrySheet card={manualFor} cards={cards} open onOpenChange={(o) => !o && setManualFor(null)} /> : null}
     </div>
@@ -195,7 +196,7 @@ function ActivityTodayCard({ card, onManual, onStart, hideActionsOnDesktop }: { 
           <Tag variant="success">Dia concluído</Tag>
         ) : (
           <span className="text-[12px] text-neutral-400 desktop:text-[13px]">
-            meta base {fmtMinutes(s.target)}
+            meta base {fmtMinutesShort(s.target)}
             <span className="hidden desktop:inline"> · {daysLabel}</span>
           </span>
         )}
@@ -210,15 +211,15 @@ function ActivityTodayCard({ card, onManual, onStart, hideActionsOnDesktop }: { 
 
       {goalDone && s.pending_prior === 0 ? (
         <div className="tnum grid grid-cols-2 gap-[10px]">
-          <Stat value={fmtMinutes(s.logged)} label="Registrado hoje" />
+          <Stat value={fmtMinutesShort(s.logged)} label="Registrado hoje" />
           <Stat value="0 min" label="Pendência" />
         </div>
       ) : (
         <div className="tnum grid grid-cols-2 gap-[10px] desktop:grid-cols-4 desktop:gap-4">
-          <Stat value={fmtMinutes(s.logged)} label="Registrado hoje" desktopValue={<><span>{Math.round(s.logged / 60)}</span> <span className="text-[14px] font-normal text-neutral-400">/ {Math.round(s.target / 60)}</span></>} />
-          <Stat value={fmtMinutes(s.missing_today)} label="Falta para a meta" desktopLabel="Falta para a meta de hoje" />
-          <Stat value={fmtMinutes(s.pending_prior)} label="Pendência anterior" desktopLabel="Pendência de dias anteriores" pending />
-          <Stat value={fmtMinutes(s.suggested_recovery)} label="Recuperação sugerida" desktopLabel="Recuperação sugerida hoje" pending />
+          <Stat value={fmtMinutesShort(s.logged)} label="Registrado hoje" desktopValue={<><span>{Math.round(s.logged / 60)}</span> <span className="text-[14px] font-normal text-neutral-400">/ {Math.round(s.target / 60)}</span></>} />
+          <Stat value={fmtMinutesShort(s.missing_today)} label="Falta para a meta" desktopLabel="Falta para a meta de hoje" />
+          <Stat value={fmtMinutesShort(s.pending_prior)} label="Pendência anterior" desktopLabel="Pendência de dias anteriores" pending />
+          <Stat value={fmtMinutesShort(s.suggested_recovery)} label="Recuperação sugerida" desktopLabel="Recuperação sugerida hoje" pending />
         </div>
       )}
 
@@ -330,6 +331,44 @@ function Agenda({ items, cards }: { items: AgendaItem[]; cards: TodayCard[] }) {
           ))}
         </>
       ) : null}
+    </div>
+  );
+}
+
+/** Desktop (D1): cartões resumidos por objetivo + "Novo objetivo". */
+function ObjectiveRow({ cards }: { cards: TodayCard[] }) {
+  return (
+    <div className="hidden gap-4 desktop:grid desktop:grid-cols-3">
+      {cards.map((c) => {
+        const rule = c.activity.current_rule;
+        const perWeek = rule ? Object.values(rule.minutes_by_weekday).filter((m) => Number(m) > 0).length : 0;
+        const pending = c.summary?.pending_prior ?? 0;
+        return (
+          <Link key={c.activity.id} to={`/app/objetivos/${c.activity.id}`} className="no-underline hover:text-primary">
+            <Card className="h-full gap-2 p-4">
+              <div className="flex justify-between">
+                <span className="font-medium text-primary">{c.activity.title}</span>
+                <Tag variant="neutral">{perWeek}×/sem</Tag>
+              </div>
+              <div className="h-[6px] overflow-hidden rounded-[3px] bg-neutral-800">
+                <div className="h-full rounded-[3px] bg-accent" style={{ width: `${c.week_target ? Math.min(100, (c.week_logged / c.week_target) * 100) : 0}%` }} />
+              </div>
+              <div className="tnum flex justify-between text-[12px] text-neutral-400">
+                <span>
+                  {fmtMinutes(c.week_logged)} de {fmtMinutes(c.week_target)}
+                </span>
+                {pending > 0 ? <span className="text-pending">{fmtMinutes(pending)} a recuperar</span> : <span className="text-success">em dia</span>}
+              </div>
+            </Card>
+          </Link>
+        );
+      })}
+      <Card className="items-start justify-center gap-2 bg-transparent p-4 shadow-inset-divider">
+        <span className="text-[14px] text-neutral-400">Novo objetivo: concurso, instrumento, rotina da casa…</span>
+        <Button asChild variant="secondary">
+          <Link to="/app/objetivos/novo">+ Criar objetivo</Link>
+        </Button>
+      </Card>
     </div>
   );
 }

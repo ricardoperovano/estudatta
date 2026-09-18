@@ -1,10 +1,10 @@
 """Comandos de operação: `python -m app.cli <comando>`.
 
-    create-admin --email E [--password P]   cria administrador (senha pedida com segurança se omitida)
-    promote --email E                       promove usuário existente a administrador
-    seed-demo [--force] [--password P]      cenário de demonstração (só com DEMO_MODE=true ou --force)
-    ensure-plans                            garante o catálogo inicial de planos
-    vapid                                   gera par de chaves VAPID e imprime as variáveis para .env
+create-admin --email E [--password P]   cria administrador (senha pedida com segurança se omitida)
+promote --email E                       promove usuário existente a administrador
+seed-demo [--force] [--password P]      cenário de demonstração (só com DEMO_MODE=true ou --force)
+ensure-plans                            garante o catálogo inicial de planos
+vapid                                   gera par de chaves VAPID e imprime as variáveis para .env
 """
 
 from __future__ import annotations
@@ -41,7 +41,11 @@ def cmd_create_admin(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         try:
             user = auth_service.create_user(
-                db, email=args.email, password=password, name=args.name or "Admin", email_verified=True
+                db,
+                email=args.email,
+                password=password,
+                name=args.name or "Admin",
+                email_verified=True,
             )
         except ApiError as exc:
             return _fail(exc.message)
