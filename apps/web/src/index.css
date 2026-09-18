@@ -1,0 +1,179 @@
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "./design/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    border-color: var(--color-border-default);
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    background: var(--color-bg-canvas);
+  }
+  body {
+    margin: 0;
+    background: var(--color-bg-canvas);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-body);
+    font-size: 15px;
+    line-height: 1.55;
+    font-weight: 400;
+    text-wrap: pretty;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-family-heading);
+    font-weight: 500;
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+    margin: 0;
+  }
+  p {
+    margin: 0;
+  }
+  a {
+    color: var(--color-action-primary);
+    text-underline-offset: 3px;
+  }
+  a:hover {
+    color: var(--color-action-primary-hover);
+  }
+  img,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+  button {
+    font: inherit;
+    color: inherit;
+  }
+  :focus {
+    outline: none;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-action-focus);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--color-action-primary) 30%, transparent);
+  }
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+  [hidden] {
+    display: none !important;
+  }
+}
+
+@layer components {
+  /* números tabulares (cronômetro, valores) */
+  .tnum {
+    font-feature-settings: "tnum" 1;
+    font-variant-numeric: tabular-nums;
+  }
+  /* kicker: 11px maiúsculas com tracking 0,1em em acento */
+  .kicker {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-tertiary);
+  }
+  .kicker-accent {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-action-primary);
+  }
+  .kicker-pending {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-pending);
+  }
+  /* divisória que esmaece a transparente 48px em cada ponta */
+  .hr-fade {
+    height: 1px;
+    border: 0;
+    background: linear-gradient(
+      to right,
+      transparent,
+      var(--color-divider) 48px,
+      var(--color-divider) calc(100% - 48px),
+      transparent
+    );
+  }
+  /* brilho radial dos mockups (boas-vindas, cronômetro, landing) */
+  .glow-top-right {
+    background:
+      radial-gradient(600px 400px at 90% -10%, var(--color-accent-900), transparent 60%),
+      var(--color-bg-canvas);
+  }
+  .glow-center {
+    background:
+      radial-gradient(500px 500px at 50% 40%, var(--color-accent-900), transparent 70%),
+      var(--color-bg-canvas);
+  }
+  .glow-landing {
+    background:
+      radial-gradient(1200px 720px at 82% -160px, color-mix(in srgb, var(--color-accent-900) 75%, transparent), transparent 60%),
+      radial-gradient(1100px 800px at -10% 100%, color-mix(in srgb, black 30%, transparent), transparent 55%),
+      var(--color-bg-canvas);
+  }
+  /* preenchimento tracejado de recuperação (damasco) */
+  .recovery-stripes {
+    background: repeating-linear-gradient(90deg, var(--color-progress-recovery) 0 4px, transparent 4px 7px);
+  }
+  .recovery-stripes-v {
+    background: repeating-linear-gradient(0deg, var(--color-status-warning-tint) 0 3px, transparent 3px 6px);
+  }
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid var(--color-action-primary);
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex: none;
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+    color: #292b31;
+  }
+}

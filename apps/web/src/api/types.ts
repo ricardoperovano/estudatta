@@ -1,0 +1,20 @@
+import type { components } from "./schema";
+
+export type Schemas = components["schemas"];
+export type User = Schemas["UserOut"];
+export type AuthState = Schemas["AuthStateOut"];
+export type Entitlements = Schemas["EntitlementsOut"];
+export type PublicConfig = Schemas["PublicConfigOut"];
+export type Activity = Schemas["ActivityOut"];
+export type ActivityDetail = Schemas["ActivityDetailOut"];
+export type GoalRule = Schemas["GoalRuleOut"];
+export type Balance = Schemas["BalanceOut"];
+export type TodaySummary = Schemas["TodaySummaryOut"];
+export type DayBalance = Schemas["DayBalanceOut"];
+export type StudySession = Schemas["SessionOut"];
+export type TodayOut = Schemas["TodayOut"];
+export type TodayCard = Schemas["TodayCard"];
+export type AgendaItem = Schemas["AgendaItem"];
+export type RecoveryPreview = Schemas["RecoveryPreviewOut"];
+export type RecoveryPlan = Schemas["RecoveryPlanOut"];
+export type Preferences = Schemas["PreferencesOut"];

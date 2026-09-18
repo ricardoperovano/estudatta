@@ -19,7 +19,7 @@ from app.schemas.auth import (
     PublicConfigOut,
     RegisterRequest,
     ResetPasswordRequest,
-    SessionOut,
+    AuthStateOut,
     UserOut,
     VerifyEmailRequest,
 )
@@ -47,9 +47,9 @@ def clear_session_cookie(response: Response) -> None:
     response.delete_cookie(settings.SESSION_COOKIE_NAME, domain=settings.COOKIE_DOMAIN, path="/")
 
 
-def session_payload(db: Session, user: User, sess: AuthSession) -> SessionOut:
+def session_payload(db: Session, user: User, sess: AuthSession) -> AuthStateOut:
     ent = get_entitlements(db, user.id)
-    return SessionOut(
+    return AuthStateOut(
         user=UserOut.model_validate(user),
         csrf_token=sess.csrf_token,
         entitlements=EntitlementsOut(**ent.__dict__),
@@ -75,13 +75,13 @@ def public_config() -> PublicConfigOut:
 
 @router.post(
     "/register",
-    response_model=SessionOut,
+    response_model=AuthStateOut,
     status_code=201,
     dependencies=[Depends(rate_limit("register", 10, 3600))],
 )
 def register(
     payload: RegisterRequest, request: Request, response: Response, db: Session = Depends(get_db)
-) -> SessionOut:
+) -> AuthStateOut:
     user = auth_service.create_user(
         db,
         email=payload.email,
@@ -107,11 +107,11 @@ def register(
 
 
 @router.post(
-    "/login", response_model=SessionOut, dependencies=[Depends(rate_limit("login", 20, 900))]
+    "/login", response_model=AuthStateOut, dependencies=[Depends(rate_limit("login", 20, 900))]
 )
 def login(
     payload: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)
-) -> SessionOut:
+) -> AuthStateOut:
     user = auth_service.authenticate(db, email=payload.email, password=payload.password)
     if settings.REQUIRE_EMAIL_VERIFICATION and user.email_verified_at is None:
         raise ApiError(
@@ -141,10 +141,10 @@ def logout(
     return OkResponse(message="Sessão encerrada.")
 
 
-@router.get("/session", response_model=SessionOut)
+@router.get("/session", response_model=AuthStateOut)
 def current_session(
     request: Request, db: Session = Depends(get_db), user: User | None = Depends(get_optional_user)
-) -> SessionOut:
+) -> AuthStateOut:
     if user is None:
         raise Unauthorized("Não autenticado.")
     return session_payload(db, user, request.state.auth_session)

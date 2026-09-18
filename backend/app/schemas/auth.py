@@ -60,7 +60,7 @@ class EntitlementsOut(BaseModel):
     cancel_at_period_end: bool = False
 
 
-class SessionOut(BaseModel):
+class AuthStateOut(BaseModel):
     user: UserOut
     csrf_token: str
     entitlements: EntitlementsOut

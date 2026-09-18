@@ -7,7 +7,7 @@ import uuid
 from urllib.parse import urlparse
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import settings
 from app.core.errors import NotFound, PlanLimit, ValidationFailed
@@ -30,10 +30,46 @@ def get_material(db: Session, user: User, material_id: uuid.UUID) -> Material:
 
 
 def list_materials(db: Session, user: User, activity_id: uuid.UUID | None = None) -> list[Material]:
-    q = select(Material).where(Material.user_id == user.id, Material.archived_at.is_(None))
+    q = (
+        select(Material)
+        .options(selectinload(Material.topic_links).selectinload(MaterialTopic.topic))
+        .where(Material.user_id == user.id, Material.archived_at.is_(None))
+    )
     if activity_id:
         q = q.where(Material.activity_id == activity_id)
     return list(db.execute(q.order_by(Material.created_at.desc())).scalars())
+
+
+def update_material(
+    db: Session,
+    m: Material,
+    *,
+    title: str | None = None,
+    description: str | None = None,
+    page_from: int | None = None,
+    page_to: int | None = None,
+    last_position: str | None = None,
+    activity_id: uuid.UUID | None = None,
+    clear_activity: bool = False,
+) -> Material:
+    if title is not None:
+        m.title = title.strip()[:200]
+    if description is not None:
+        m.description = description
+    if page_from is not None:
+        m.page_from = page_from
+    if page_to is not None:
+        m.page_to = page_to
+    if m.page_from is not None and m.page_to is not None and m.page_to < m.page_from:
+        raise ValidationFailed("Página final antes da inicial.", code="bad_pages")
+    if last_position is not None:
+        m.last_position = last_position.strip()[:120] or None
+    if activity_id is not None:
+        m.activity_id = activity_id
+    if clear_activity:
+        m.activity_id = None
+    db.flush()
+    return m
 
 
 def validate_link(url: str) -> str:

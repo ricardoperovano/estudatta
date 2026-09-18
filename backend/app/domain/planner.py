@@ -151,3 +151,53 @@ def auto_place_tasks(tasks: list[TaskToPlace], days: list[DayCapacity]) -> AutoP
         if not placed:
             result.unplaced.append(t.task_id)
     return result
+
+
+@dataclass(frozen=True)
+class TimedTaskToPlace(TaskToPlace):
+    """Tarefa com horário opcional (segundos desde a meia-noite local)."""
+
+    start_seconds: int | None = None
+
+
+def _overlaps(a_start: int, a_end: int, b_start: int, b_end: int) -> bool:
+    return a_start < b_end and b_start < a_end
+
+
+def auto_place_tasks_timed(
+    tasks: list[TimedTaskToPlace],
+    days: list[DayCapacity],
+    busy: dict[date, list[tuple[int, int]]] | None = None,
+) -> AutoPlanResult:
+    """Como `auto_place_tasks`, mas respeita horários: uma tarefa com `start_seconds` só
+    entra em um dia onde seu intervalo [início, início + duração) não cruza nenhum bloco
+    fixo de `busy` nem outra tarefa já colocada com horário. Determinístico: mesma
+    entrada, mesma saída."""
+    result = AutoPlanResult()
+    ordered = sorted(tasks, key=lambda t: (t.due_date or date.max, t.priority, t.order))
+    active_days = [d for d in sorted(days, key=lambda x: x.local_date) if d.is_active]
+    room: dict[date, int] = {
+        d.local_date: max(0, d.target_seconds - d.committed_seconds) for d in active_days
+    }
+    slots: dict[date, list[tuple[int, int]]] = {
+        d.local_date: list((busy or {}).get(d.local_date, [])) for d in active_days
+    }
+    for t in ordered:
+        placed = False
+        for d in active_days:
+            if t.due_date is not None and d.local_date > t.due_date:
+                break
+            if room[d.local_date] < t.estimated_seconds:
+                continue
+            if t.start_seconds is not None:
+                s, e = t.start_seconds, t.start_seconds + t.estimated_seconds
+                if any(_overlaps(s, e, bs, be) for bs, be in slots[d.local_date]):
+                    continue
+                slots[d.local_date].append((s, e))
+            room[d.local_date] -= t.estimated_seconds
+            result.placements[t.task_id] = d.local_date
+            placed = True
+            break
+        if not placed:
+            result.unplaced.append(t.task_id)
+    return result
