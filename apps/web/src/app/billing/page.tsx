@@ -41,12 +41,16 @@ export default function BillingPage() {
   const [redirectingTo, setRedirectingTo] = React.useState<string | null>(null);
   usePageTour(planosTour, !!plans.data && (!!sub.data || sub.isError));
 
-  // o retorno do pagamento chega como ?checkout=sucesso (ou ?retorno=checkout); nenhum dos dois ativa nada
-  const checkoutReturn = params.get("checkout") ?? (params.get("retorno") === "checkout" ? "sucesso" : null);
+  // o retorno do pagamento chega como ?checkout=sucesso ou ?retorno=checkout&status=sucesso|cancelado|expirado
+  // (Asaas); nenhum deles ativa nada: só a confirmação do provedor libera o plano
+  const retStatus = params.get("status");
+  const checkoutReturn =
+    params.get("checkout") ?? (params.get("retorno") === "checkout" ? (retStatus === "cancelado" || retStatus === "expirado" ? "falhou" : "sucesso") : null);
   const clearReturn = () => {
     const next = new URLSearchParams(params);
     next.delete("checkout");
     next.delete("retorno");
+    next.delete("status");
     setParams(next, { replace: true });
   };
 

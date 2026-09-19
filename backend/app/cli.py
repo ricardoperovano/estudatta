@@ -6,6 +6,7 @@ seed-demo [--force] [--password P]      cenário de demonstração (só com DEMO
 ensure-plans                            garante o catálogo inicial de planos
 apply-catalog [--overwrite]             aplica o catálogo sugerido (preços e limites) a um banco existente
 vapid                                   gera par de chaves VAPID e imprime as variáveis para .env
+asaas-webhook list|create URL EMAIL|delete ID   webhook do Asaas (usa ASAAS_API_KEY e ASAAS_WEBHOOK_TOKEN)
 """
 
 from __future__ import annotations
@@ -188,9 +189,72 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.set_defaults(func=cmd_apply_catalog)
 
+    p = sub.add_parser(
+        "asaas-webhook", help="webhook do Asaas: list | create URL EMAIL | delete ID"
+    )
+    p.add_argument("action", choices=["list", "create", "delete"])
+    p.add_argument("url", nargs="?", help="create: URL pública da API; delete: id do webhook")
+    p.add_argument("email", nargs="?", help="create: e-mail para avisos do Asaas")
+    p.set_defaults(func=cmd_asaas_webhook)
     p = sub.add_parser("vapid", help="gera chaves VAPID para Web Push")
     p.set_defaults(func=cmd_vapid)
     return parser
+
+
+def cmd_asaas_webhook(args: argparse.Namespace) -> int:
+    """Cadastra/lista/remove o webhook do Asaas que aponta para /api/v1/billing/webhooks/asaas."""
+    from app.integrations.asaas import asaas_base_url, build_asaas_client
+    from app.integrations.mercadopago import ProviderError
+
+    if not settings.ASAAS_API_KEY:
+        print("Defina ASAAS_API_KEY no .env.", file=sys.stderr)
+        return 2
+    client = build_asaas_client()
+    print(f"Asaas: {asaas_base_url(settings.ASAAS_API_KEY, settings.ASAAS_ENVIRONMENT)}")
+    try:
+        if args.action == "list":
+            items = client.list_webhooks()
+            for w in items:
+                # o authToken nunca volta na resposta; `hasAuthToken` diz se foi cadastrado
+                print(
+                    w.get("id"),
+                    w.get("url"),
+                    "ativo" if w.get("enabled") else "inativo",
+                    "com token" if w.get("hasAuthToken") else "SEM TOKEN (a API vai recusar)",
+                    f"falhas={w.get('penalizedRequestsCount', 0)}",
+                    "FILA INTERROMPIDA" if w.get("interrupted") else "",
+                )
+            if not items:
+                print("Nenhum webhook cadastrado.")
+        elif args.action == "create":
+            token = settings.ASAAS_WEBHOOK_TOKEN or ""
+            if len(token) < 32:
+                print(
+                    "Defina ASAAS_WEBHOOK_TOKEN com 32+ caracteres (openssl rand -hex 32).",
+                    file=sys.stderr,
+                )
+                return 2
+            if not args.url or not args.email:
+                print(
+                    "Uso: asaas-webhook create https://api.estudatta.com.br voce@exemplo.com",
+                    file=sys.stderr,
+                )
+                return 2
+            url = f"{args.url.rstrip('/')}/api/v1/billing/webhooks/asaas"
+            data = client.create_webhook(url=url, email=args.email, token=token)
+            print(
+                f"Webhook criado: {data.get('id')} → {data.get('url')} ({len(data.get('events') or [])} eventos)"
+            )
+        elif args.action == "delete":
+            if not args.url:
+                print("Uso: asaas-webhook delete <id>", file=sys.stderr)
+                return 2
+            client.delete_webhook(args.url)
+            print("Webhook removido.")
+    except ProviderError as exc:
+        print(exc.message, file=sys.stderr)
+        return 1
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:

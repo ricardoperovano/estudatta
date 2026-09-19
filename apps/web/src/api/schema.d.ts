@@ -2085,6 +2085,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/billing/webhooks/asaas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Asaas Webhook
+         * @description Sem auth/CSRF. Valida o `asaas-access-token`, grava o evento (idempotente) e sincroniza a
+         *     assinatura consultando o Asaas. Eventos sem assinatura nossa respondem 200 (`ignored`).
+         */
+        post: operations["asaas_webhook_api_v1_billing_webhooks_asaas_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ai/status": {
         parameters: {
             query?: never;
@@ -10734,6 +10755,39 @@ export interface operations {
         };
     };
     mercadopago_webhook_api_v1_billing_webhooks_mercadopago_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": unknown;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    asaas_webhook_api_v1_billing_webhooks_asaas_post: {
         parameters: {
             query?: never;
             header?: never;

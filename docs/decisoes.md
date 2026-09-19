@@ -98,6 +98,13 @@ Registro vivo das decisões tomadas durante a implementação. Cada item indica 
 - **Troca rápida:** botão de tema na barra lateral (tablet e desktop) e no topo, ao lado do "?", no celular.
 - **Vale em todos os aparelhos:** a escolha fica na conta; um aparelho sem escolha própria adota o tema salvo na conta.
 
+## 2026-09-19 — Cobrança pelo Asaas
+
+- **Pedido do responsável:** usar o Asaas, como o ai-runner, com webhook.
+- **Checkout hospedado do Asaas**, recorrente no cartão: o Estudatta não recebe CPF nem cartão.
+- **Mesma regra de antes:** o webhook (validado pelo `asaas-access-token`) só aponta qual assinatura conferir; o estado sai da consulta ao Asaas. O Mercado Pago continua disponível por `BILLING_PROVIDER`.
+- **Termos e privacidade do site** passaram a citar o Asaas.
+
 ## Pendências que dependem exclusivamente do responsável
 
 - **[pendente do responsável]** Validar os preços sugeridos (R$ 9,90 e R$ 19,90) e os tetos de IA após o primeiro mês com dados reais de uso.

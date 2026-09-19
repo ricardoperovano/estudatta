@@ -176,3 +176,39 @@ def mercadopago_webhook(
             code="provider_unavailable",
         )
     return WebhookAck(status=outcome.status)
+
+
+@router.post("/webhooks/asaas", response_model=WebhookAck)
+def asaas_webhook(
+    request: Request,
+    payload: Any = Body(default=None),
+    db: Session = Depends(get_db),
+) -> WebhookAck:
+    """Sem auth/CSRF. Valida o `asaas-access-token`, grava o evento (idempotente) e sincroniza a
+    assinatura consultando o Asaas. Eventos sem assinatura nossa respondem 200 (`ignored`)."""
+    if (
+        not settings.billing_enabled
+        or settings.BILLING_PROVIDER != "asaas"
+        or not settings.ASAAS_WEBHOOK_TOKEN
+    ):
+        raise ServiceUnavailable(
+            "Webhook de cobrança não configurado neste ambiente.", code="billing_disabled"
+        )
+    provider = get_provider()
+    outcome = billing_service.handle_asaas_webhook(
+        db,
+        provider=provider,
+        token=request.headers.get("asaas-access-token"),
+        body=payload,
+        expected_token=settings.ASAAS_WEBHOOK_TOKEN,
+    )
+    db.commit()
+    if outcome.status == "invalid_signature":
+        raise Unauthorized("Token do webhook inválido.", code="invalid_signature")
+    if outcome.status == "failed":
+        # 503 faz o Asaas reenviar; o evento fica `failed` e é reprocessado
+        raise ServiceUnavailable(
+            "Não foi possível consultar o provedor de pagamento; tente novamente.",
+            code="provider_unavailable",
+        )
+    return WebhookAck(status=outcome.status)

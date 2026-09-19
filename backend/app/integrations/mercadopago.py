@@ -342,7 +342,13 @@ def set_provider_override(provider: BillingProvider | None) -> None:
 
 
 def build_provider() -> BillingProvider:
-    if not settings.billing_enabled or settings.BILLING_PROVIDER != "mercadopago":
+    if not settings.billing_enabled:
+        raise ServiceUnavailable(BILLING_DISABLED_MESSAGE, code="billing_disabled")
+    if settings.BILLING_PROVIDER == "asaas":
+        from app.integrations.asaas import build_asaas_client
+
+        return build_asaas_client()
+    if settings.BILLING_PROVIDER != "mercadopago":
         raise ServiceUnavailable(BILLING_DISABLED_MESSAGE, code="billing_disabled")
     return MercadoPagoClient(
         access_token=settings.MERCADOPAGO_ACCESS_TOKEN or "",

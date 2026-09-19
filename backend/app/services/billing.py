@@ -229,8 +229,10 @@ def start_checkout(
             "O provedor não devolveu o link de pagamento. Tente novamente em instantes.",
             code="provider_unavailable",
         )
-    sub.provider_ref = remote.id
+    sub.provider_ref = remote.id or None  # Asaas: a assinatura só existe depois do pagamento
     sub.checkout_url = remote.init_point
+    if remote.raw.get("checkout_id"):
+        sub.metadata_ = {**(sub.metadata_ or {}), "checkout_id": remote.raw["checkout_id"]}
     sub.provider_payer_ref = remote.payer_id
     sub.last_synced_at = now
     db.flush()
@@ -448,6 +450,8 @@ def sync_subscription(
 ) -> Subscription:
     """Consulta o provedor e aplica o estado real. Erros do provedor sobem como ProviderError."""
     now = now or utcnow()
+    if sub.provider != provider.name:
+        return sub  # assinatura de outro provedor (troca de provedor): não consulta o errado
     remote: ProviderSubscription | None = None
     if sub.provider_ref:
         remote = provider.get_preapproval(sub.provider_ref)
@@ -710,6 +714,157 @@ def handle_webhook(
         return WebhookOutcome(event, "failed")
 
 
+# --- Webhook do Asaas ---------------------------------------------------------------------
+
+
+def _asaas_locate(db: Session, *, sub_id: str | None, ref: str | None, checkout_id: str | None):
+    from app.integrations.asaas import ASAAS_PROVIDER_NAME
+
+    base = select(Subscription).where(Subscription.provider == ASAAS_PROVIDER_NAME)
+    if sub_id:
+        found = (
+            db.execute(
+                base.where(Subscription.provider_ref == sub_id).order_by(
+                    Subscription.created_at.desc()
+                )
+            )
+            .scalars()
+            .first()
+        )
+        if found is not None:
+            return found
+    if ref:
+        found = (
+            db.execute(
+                base.where(Subscription.external_reference == ref).order_by(
+                    Subscription.created_at.desc()
+                )
+            )
+            .scalars()
+            .first()
+        )
+        if found is not None:
+            return found
+    if checkout_id:
+        for cand in db.execute(base.where(Subscription.status == "pending")).scalars():
+            if (cand.metadata_ or {}).get("checkout_id") == checkout_id:
+                return cand
+    return None
+
+
+def handle_asaas_webhook(
+    db: Session,
+    *,
+    provider: BillingProvider,
+    token: str | None,
+    body: Any,
+    expected_token: str | None,
+    now: datetime | None = None,
+) -> WebhookOutcome:
+    """Webhook do Asaas: valida o token (`asaas-access-token`), grava o evento (idempotente por
+    id) e sincroniza a assinatura CONSULTANDO o Asaas — o conteúdo do evento só serve para achar
+    qual assinatura conferir. Não faz commit."""
+    from app.integrations.asaas import ASAAS_PROVIDER_NAME, verify_webhook_token
+
+    now = now or utcnow()
+    body = body if isinstance(body, dict) else {}
+    name = _first(body.get("event")) or "unknown"
+    payment = body.get("payment") if isinstance(body.get("payment"), dict) else {}
+    subscription = body.get("subscription") if isinstance(body.get("subscription"), dict) else {}
+    sub_id = _first(payment.get("subscription"), subscription.get("id"))
+    ref = _first(payment.get("externalReference"), subscription.get("externalReference"))
+    checkout_id = _first(payment.get("checkoutSession"))
+    resource = _first(payment.get("id"), subscription.get("id"))
+    event_id = (_first(body.get("id")) or f"{name}:{resource}")[:160]
+    # guarda só o necessário (sem dados de cartão nem do pagador)
+    slim = {
+        "id": body.get("id"),
+        "event": name,
+        "dateCreated": body.get("dateCreated"),
+        "payment": {
+            k: payment.get(k)
+            for k in (
+                "id",
+                "subscription",
+                "checkoutSession",
+                "status",
+                "value",
+                "dueDate",
+                "externalReference",
+            )
+            if k in payment
+        },
+        "subscription": {
+            k: subscription.get(k)
+            for k in ("id", "status", "externalReference")
+            if k in subscription
+        },
+    }
+    valid = verify_webhook_token(token, expected_token)
+    existing = db.execute(
+        select(BillingEvent).where(
+            BillingEvent.provider == ASAAS_PROVIDER_NAME, BillingEvent.event_id == event_id
+        )
+    ).scalar_one_or_none()
+    if not valid:
+        if existing is None:
+            existing = BillingEvent(
+                provider=ASAAS_PROVIDER_NAME,
+                event_id=event_id,
+                event_type=name[:80],
+                resource_id=resource[:120] if resource else None,
+                payload=slim,
+                signature_valid=False,
+                status="ignored",
+                error="invalid_token",
+                received_at=now,
+                processed_at=now,
+            )
+            db.add(existing)
+            db.flush()
+        log.warning("billing.asaas_webhook_invalid_token", event_id=event_id, has_token=bool(token))
+        return WebhookOutcome(existing, "invalid_signature")
+    if existing is not None and existing.signature_valid and existing.status != "failed":
+        return WebhookOutcome(existing, "duplicate")
+
+    event = existing or BillingEvent(
+        provider=ASAAS_PROVIDER_NAME,
+        event_id=event_id,
+        event_type=name[:80],
+        resource_id=resource[:120] if resource else None,
+        payload=slim,
+        received_at=now,
+    )
+    event.signature_valid = True
+    event.status = "received"
+    event.error = None
+    db.add(event)
+    db.flush()
+    try:
+        sub = _asaas_locate(db, sub_id=sub_id, ref=ref, checkout_id=checkout_id)
+        if sub is None or not (sub_id or sub.provider_ref or sub.external_reference):
+            event.status = "ignored"
+            event.error = "subscription_not_found"
+            event.processed_at = now
+            db.flush()
+            return WebhookOutcome(event, "ignored")
+        if sub_id and not sub.provider_ref:
+            sub.provider_ref = sub_id
+        sync_subscription(db, sub, provider, now=now)
+        event.subscription_id = sub.id
+        event.status = "processed"
+        event.processed_at = now
+        db.flush()
+        return WebhookOutcome(event, "processed")
+    except ProviderError as exc:
+        event.status = "failed"
+        event.error = exc.message[:500]
+        event.processed_at = now
+        db.flush()
+        log.warning("billing.asaas_webhook_provider_failed", event_id=event_id, error=exc.message)
+        return WebhookOutcome(event, "failed")
+
+
 # --- Reconciliação ---------------------------------------------------------------------
 
 
@@ -771,7 +926,12 @@ def reconcile_subscriptions(
 
             meta = sub.metadata_ or {}
             cancel_pending = bool(meta.get("cancel_pending"))
-            if cancel_pending and provider is not None and sub.provider_ref:
+            if (
+                cancel_pending
+                and provider is not None
+                and sub.provider_ref
+                and sub.provider == provider.name
+            ):
                 try:
                     provider.cancel_preapproval(sub.provider_ref)
                     summary["cancel_retried"] += 1

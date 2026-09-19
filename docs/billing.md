@@ -1,4 +1,66 @@
-# Cobrança — Mercado Pago (assinaturas / `preapproval`)
+# Cobrança
+
+O backend aceita dois provedores de assinatura, escolhidos por `BILLING_PROVIDER`:
+
+- **`asaas` (produção atual):** checkout hospedado do Asaas, recorrente no cartão. Seção abaixo.
+- **`mercadopago`:** assinaturas `preapproval`. Documentação original a partir de "Mercado Pago".
+
+Os dois usam a mesma regra: o estado local nunca é decidido pelo conteúdo de um evento; todo
+webhook dispara uma consulta ao provedor, aplicada de forma idempotente (`apply_provider_state`),
+e a reconciliação a cada 6 h corrige o que um webhook perdido deixou para trás.
+
+## Asaas
+
+Mesmo desenho do ai-runner. Código: `app/integrations/asaas.py` (cliente `AsaasClient`),
+`app/services/billing.py` (`handle_asaas_webhook`), rota `POST /api/v1/billing/webhooks/asaas`,
+testes em `tests/api/test_billing_asaas.py` (servidor Asaas simulado).
+
+**Fluxo**
+1. `POST /billing/checkout` cria a assinatura local `pending` e um checkout no Asaas
+   (`POST /v3/checkouts`, `chargeTypes=RECURRENT`, `billingTypes=CREDIT_CARD`, ciclo `MONTHLY` ou
+   `YEARLY`, `externalReference` aleatória). A pessoa informa nome, CPF e cartão na página do
+   Asaas; o Estudatta não recebe esses dados. Voltar do checkout não libera nada.
+2. O Asaas cria a assinatura e a cobrança. O webhook (`PAYMENT_*`, `SUBSCRIPTION_*`) chega com o
+   cabeçalho `asaas-access-token`, comparado em tempo constante com `ASAAS_WEBHOOK_TOKEN`.
+3. O evento só serve para achar a assinatura local (id da assinatura no Asaas, `externalReference`
+   ou id do checkout). O estado vem de `GET /v3/subscriptions/{id}` e `GET /v3/subscriptions/{id}/payments`:
+   - removida, `INACTIVE` ou `EXPIRED` → cancelada (acesso até o fim do período pago);
+   - `ACTIVE` sem cobrança paga → continua pendente;
+   - `ACTIVE` com cobrança paga (`CONFIRMED`/`RECEIVED`) → ativa; o período vai até o vencimento
+     da cobrança em aberto mais antiga (fim do dia, horário de Brasília) ou até o `nextDueDate`.
+4. Cobrança vencida e não paga: a reconciliação marca `past_due` depois de 3 dias e encerra o
+   acesso no fim do período. Nada é apagado; objetivos acima do limite do plano gratuito são pausados.
+5. Cancelar no app remove a assinatura no Asaas (`DELETE /v3/subscriptions/{id}`); o acesso segue
+   até o fim do período já pago.
+
+**Idempotência:** eventos gravados em `billing_events` por `(provider, id do evento)`; repetição
+responde `duplicate`. Falha ao consultar o Asaas responde 503 e o evento fica `failed` até o
+reenvio. Eventos de cobranças que não são do Estudatta (a mesma conta Asaas pode atender outros
+sistemas, como o ai-runner) respondem 200 `ignored`.
+
+**Configuração**
+
+```
+BILLING_PROVIDER=asaas
+BILLING_MODE=test                 # test com chave de sandbox; production com chave de produção
+ASAAS_API_KEY=$aact_...           # "hmlg" no prefixo = sandbox (ASAAS_ENVIRONMENT=auto)
+ASAAS_WEBHOOK_TOKEN=...           # 32+ caracteres (openssl rand -hex 32)
+```
+
+Cadastrar o webhook no Asaas (na raiz do repositório, no servidor):
+
+```
+bash infra/scripts/dc.sh exec api python -m app.cli asaas-webhook create https://api.estudatta.com.br voce@exemplo.com
+bash infra/scripts/dc.sh exec api python -m app.cli asaas-webhook list
+```
+
+**O que não foi validado contra o Asaas real:** os testes usam um servidor Asaas simulado com o
+formato da API v3. Antes de abrir a cobrança, faça uma assinatura de ponta a ponta no sandbox
+(cartão de teste do Asaas) e confira o webhook com `asaas-webhook list` (sem falhas e com token).
+
+---
+
+# Mercado Pago (assinaturas / `preapproval`)
 
 Este documento descreve **como a cobrança foi implementada no backend**, como ligá-la com
 credenciais de teste e de produção, como o webhook é configurado e validado, o que a

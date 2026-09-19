@@ -81,13 +81,21 @@ class Settings(BaseSettings):
     PDF_EXTRACTION_TIMEOUT_SECONDS: int = 120
     OCR_ENABLED: bool = False
 
-    # --- Cobrança (Mercado Pago) --------------------------------------------
-    BILLING_PROVIDER: Literal["mercadopago", "none"] = "mercadopago"
+    # --- Cobrança (Asaas ou Mercado Pago) ------------------------------------
+    BILLING_PROVIDER: Literal["asaas", "mercadopago", "none"] = "mercadopago"
     BILLING_MODE: Literal["disabled", "test", "production"] = "disabled"
     MERCADOPAGO_ACCESS_TOKEN: str | None = None
     MERCADOPAGO_PUBLIC_KEY: str | None = None
     MERCADOPAGO_WEBHOOK_SECRET: str | None = None
     MERCADOPAGO_API_BASE: str = "https://api.mercadopago.com"
+    # Asaas (checkout hospedado + assinatura recorrente no cartão; mesmo formato do ai-runner)
+    ASAAS_API_KEY: str | None = None
+    # token que o Asaas devolve no cabeçalho `asaas-access-token` de cada webhook (32+ caracteres)
+    ASAAS_WEBHOOK_TOKEN: str | None = None
+    # "auto" decide pelo prefixo da chave ($aact_hmlg_ = sandbox)
+    ASAAS_ENVIRONMENT: Literal["auto", "sandbox", "production"] = "auto"
+    ASAAS_CHECKOUT_MINUTES: int = 60
+    ASAAS_ITEM_IMAGE_PATH: str | None = None  # imagem do item no checkout (vazio = logo embutida)
 
     # --- IA opcional ---------------------------------------------------------
     AI_ENABLED: bool = False
@@ -141,7 +149,13 @@ class Settings(BaseSettings):
 
     @property
     def billing_enabled(self) -> bool:
-        return self.BILLING_MODE != "disabled" and bool(self.MERCADOPAGO_ACCESS_TOKEN)
+        if self.BILLING_MODE == "disabled":
+            return False
+        if self.BILLING_PROVIDER == "asaas":
+            return bool(self.ASAAS_API_KEY)
+        if self.BILLING_PROVIDER == "mercadopago":
+            return bool(self.MERCADOPAGO_ACCESS_TOKEN)
+        return False
 
     @property
     def ai_available(self) -> bool:
