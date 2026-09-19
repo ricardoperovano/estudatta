@@ -9,6 +9,6 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 [ -f .env ] || { echo "Falta o .env de produção na raiz do repositório." >&2; exit 1; }
-set -a; . ./.env; set +a
+. infra/scripts/load-env.sh; load_env .env   # sem expandir "$" (chaves do Asaas)
 if docker compose version >/dev/null 2>&1; then DC=(docker compose); else DC=(docker-compose); fi
 exec "${DC[@]}" -p estudatta -f infra/docker-compose.server.yml "$@"

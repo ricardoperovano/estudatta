@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PORT="${1:-8022}"
-set -a; [ -f ../.env ] && source ../.env; set +a
+. ../infra/scripts/load-env.sh; load_env ../.env
 export APP_ENV=test
 export RATE_LIMIT_ENABLED=false
 export EMAIL_BACKEND=console

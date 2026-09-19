@@ -1,3 +1,4 @@
+SHELL := /bin/bash
 # Estudatta — comandos de desenvolvimento e operação (portáveis; funcionam a partir de qualquer shell)
 COMPOSE ?= docker compose -f infra/docker-compose.yml --env-file .env
 PY := backend/.venv/bin/python
@@ -34,13 +35,13 @@ logs:
 	$(COMPOSE) logs -f --tail=100
 
 migrate:
-	cd backend && set -a && . ../.env && set +a && .venv/bin/alembic upgrade head
+	cd backend && . ../infra/scripts/load-env.sh && load_env ../.env && .venv/bin/alembic upgrade head
 
 seed: migrate
-	cd backend && set -a && . ../.env && set +a && .venv/bin/python -m app.cli ensure-plans && DEMO_MODE=true .venv/bin/python -m app.cli seed-demo
+	cd backend && . ../infra/scripts/load-env.sh && load_env ../.env && .venv/bin/python -m app.cli ensure-plans && DEMO_MODE=true .venv/bin/python -m app.cli seed-demo
 
 admin:
-	cd backend && set -a && . ../.env && set +a && .venv/bin/python -m app.cli create-admin
+	cd backend && . ../infra/scripts/load-env.sh && load_env ../.env && .venv/bin/python -m app.cli create-admin
 
 dev-api:
 	bash backend/scripts/dev.sh

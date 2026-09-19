@@ -6,7 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 [ -f .env ] || { echo "Falta o .env de produção na raiz do repositório." >&2; exit 1; }
-set -a; . ./.env; set +a
+. infra/scripts/load-env.sh; load_env .env   # sem expandir "$" (chaves do Asaas)
 API_PORT="${API_PORT:-18120}"
 
 DC=(bash infra/scripts/dc.sh)   # carrega o .env e escolhe docker compose v2 ou docker-compose 1.x
