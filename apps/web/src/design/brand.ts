@@ -1,12 +1,4 @@
 /** Configuração de marca centralizada (nome, logos, cores, URLs). Já preenchida com Estudatta. */
-import simbolo from "@/assets/marca/simbolo.svg";
-import simboloFundoClaro from "@/assets/marca/simbolo-fundo-claro.svg";
-import simboloMonoClaro from "@/assets/marca/simbolo-mono-claro.svg";
-import simboloMonoEscuro from "@/assets/marca/simbolo-mono-escuro.svg";
-import logoHorizontalEscuro from "@/assets/marca/logo-horizontal-fundo-escuro.svg";
-import logoHorizontalClaro from "@/assets/marca/logo-horizontal-fundo-claro.svg";
-import logoVerticalEscuro from "@/assets/marca/logo-vertical-fundo-escuro.svg";
-import logoVerticalClaro from "@/assets/marca/logo-vertical-fundo-claro.svg";
 
 export const brand = {
   name: "Estudatta",
@@ -26,15 +18,10 @@ export const brand = {
     canvasLight: "#f3f5fe",
     pending: "#d9a86a",
   },
+  /** Logo nova (arquivos gerados por estudatta-site/scripts/gerar-logos.sh). */
   logos: {
-    simbolo,
-    simboloFundoClaro,
-    simboloMonoClaro,
-    simboloMonoEscuro,
-    horizontalEscuro: logoHorizontalEscuro,
-    horizontalClaro: logoHorizontalClaro,
-    verticalEscuro: logoVerticalEscuro,
-    verticalClaro: logoVerticalClaro,
+    escuro: "/marca/logo-escuro-128.png",
+    claro: "/marca/logo-claro-128.png",
   },
   campaigns: {
     ingles: "60 minutos por dia. Mesmo depois de ontem.",
@@ -42,7 +29,6 @@ export const brand = {
     rotina: "Atrasou ontem? Hoje dá para retomar.",
   },
   signatures: ["Saiba o que fazer hoje.", "Retome de onde parou.", "Um plano que aguenta a vida real."],
-  ogImage: "/divulgacao/capa-compartilhamento-1200x630.png",
 } as const;
 
 /** Link absoluto para uma página do site público (termos, privacidade, planos…). */

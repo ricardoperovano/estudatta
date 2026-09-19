@@ -284,6 +284,17 @@ def week_print(
 # --- Auto-plano ------------------------------------------------------------
 
 
+def _require_auto_planning(db: Session, user: User) -> None:
+    from app.services.plans import require_feature
+
+    require_feature(
+        db,
+        user.id,
+        "auto_planning",
+        "A distribuição automática das tarefas está nos planos Essencial e Completo. Você pode planejar a semana manualmente.",
+    )
+
+
 @router.post("/activities/{activity_id}/auto-plan/preview", response_model=AutoPlanOut)
 def auto_plan_preview(
     activity_id: UUID,
@@ -292,6 +303,7 @@ def auto_plan_preview(
     user: User = Depends(get_current_user),
 ) -> AutoPlanOut:
     act = activity_service.get_activity(db, user, activity_id)
+    _require_auto_planning(db, user)
     return AutoPlanOut(
         **svc.auto_plan(
             db, user, act, start=payload.start, end=payload.end, task_ids=payload.task_ids
@@ -307,6 +319,7 @@ def auto_plan_apply(
     user: User = Depends(get_current_user),
 ) -> AutoPlanOut:
     act = activity_service.get_activity(db, user, activity_id)
+    _require_auto_planning(db, user)
     res = svc.auto_plan(
         db,
         user,

@@ -141,6 +141,15 @@
   .recovery-stripes-v {
     background: repeating-linear-gradient(0deg, var(--color-status-warning-tint) 0 3px, transparent 3px 6px);
   }
+  /* logo: versão escura no tema escuro, clara no tema claro */
+  .brand-logo { position: relative; }
+  .brand-logo-light { display: none; }
+  :root[data-theme="light"] .brand-logo-dark { display: none; }
+  :root[data-theme="light"] .brand-logo-light { display: block; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .brand-logo-dark { display: none; }
+    :root:not([data-theme="dark"]) .brand-logo-light { display: block; }
+  }
   .spinner {
     width: 14px;
     height: 14px;

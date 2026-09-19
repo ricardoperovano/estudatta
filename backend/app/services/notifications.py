@@ -44,6 +44,7 @@ from app.models.user import NotificationPreferences, PushSubscription, User, Use
 from app.services import balance as balance_service
 from app.services import outbox
 from app.services import sessions as session_service
+from app.services.plans import has_full
 
 log = get_logger("notifications")
 
@@ -315,8 +316,15 @@ def _in_window(when: datetime, now: datetime) -> bool:
 
 
 def _schedule_activity(
-    db: Session, user: User, prefs: NotificationPreferences, act: Activity, now: datetime
+    db: Session,
+    user: User,
+    prefs: NotificationPreferences,
+    act: Activity,
+    now: datetime,
+    *,
+    full: bool = True,
 ) -> int:
+    """`full=False` (plano com lembretes básicos): só o lembrete do horário planejado."""
     n = 0
     today = today_in(act.timezone)
     tomorrow = today + timedelta(days=1)
@@ -344,17 +352,21 @@ def _schedule_activity(
             ):
                 n += 1
             follow = when + timedelta(minutes=prefs.follow_up_minutes)
-            if _in_window(follow, now) and outbox.enqueue(
-                db,
-                user_id=user.id,
-                kind="follow_up",
-                dedupe_key=f"follow_up:{user.id}:{act.id}:{d.isoformat()}:{slot_str}",
-                scheduled_for=follow,
-                payload={**base, "time_str": slot_str, "slot": slot_str},
-                activity_id=act.id,
+            if (
+                full
+                and _in_window(follow, now)
+                and outbox.enqueue(
+                    db,
+                    user_id=user.id,
+                    kind="follow_up",
+                    dedupe_key=f"follow_up:{user.id}:{act.id}:{d.isoformat()}:{slot_str}",
+                    scheduled_for=follow,
+                    payload={**base, "time_str": slot_str, "slot": slot_str},
+                    activity_id=act.id,
+                )
             ):
                 n += 1
-        if prefs.end_of_window_alert:
+        if full and prefs.end_of_window_alert:
             end_t = _window_end_for(act, d)
             when = local_datetime_to_utc(d, end_t, act.timezone) - END_OF_WINDOW_LEAD
             if _in_window(when, now) and outbox.enqueue(
@@ -479,9 +491,11 @@ def schedule_reminders(db: Session, *, now: datetime | None = None) -> dict:
                 ).scalars()
             )
             n = 0
+            full = has_full(db, user.id, "reminders")
             for act in acts:
-                n += _schedule_activity(db, user, prefs, act, now)
-                n += _schedule_resume(db, user, prefs, act, now)
+                n += _schedule_activity(db, user, prefs, act, now, full=full)
+                if full:
+                    n += _schedule_resume(db, user, prefs, act, now)
                 if notify_goal_completed(db, user, act, prefs=prefs) is not None:
                     n += 1
             db.commit()
@@ -588,7 +602,9 @@ def weekly_summaries(db: Session, *, now: datetime | None = None) -> dict:
                     "week_end": week_end.isoformat(),
                     "url": DEFAULT_URLS["weekly_summary"],
                 },
-                channels=["inapp", "push", "email"],
+                channels=["inapp", "push", "email"]
+                if has_full(db, user.id, "reminders")
+                else ["inapp", "push"],
                 proactive=False,
                 ttl=ttl,
             )

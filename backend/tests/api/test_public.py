@@ -8,19 +8,45 @@ from app.core.db import SessionLocal
 from app.models.system import ContactMessage, WaitlistEntry
 
 
-def test_public_plans_without_price_show_null(client):
+def test_public_catalog_has_suggested_plans_and_prices(client):
     r = client.get("/api/v1/public/plans")
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["billing_mode"] == "disabled"
+    assert [p["code"] for p in body["plans"]] == ["free", "essencial", "pro"]
     plans = {p["code"]: p for p in body["plans"]}
-    assert set(plans) == {"free", "pro"}
     assert plans["free"]["prices"] == []
     assert plans["free"]["limits"]["max_active_activities"] == 1
-    assert plans["pro"]["recommended"] is True
-    assert [p["interval"] for p in plans["pro"]["prices"]] == ["month", "year"]
+    assert plans["free"]["limits"]["ai_monthly_actions"] == 0  # IA só nos planos pagos
+    assert plans["essencial"]["recommended"] is True and plans["pro"]["recommended"] is False
+    price = lambda code: {p["interval"]: p["amount_cents"] for p in plans[code]["prices"]}  # noqa: E731
+    assert price("essencial") == {"month": 990, "year": 9480}
+    assert price("pro") == {"month": 1990, "year": 19080}
+    for code in ("essencial", "pro"):
+        lim = plans[code]["limits"]
+        assert lim["ai_monthly_actions"] > 0 and lim["ai_daily_actions"] > 0
+        assert (
+            lim["auto_planning"] is True and lim["reports"] == "full" and lim["reminders"] == "full"
+        )
+    # histórico/exportação e recuperação nunca dependem de assinatura
+    assert all(
+        p["limits"]["csv_export"] and p["limits"]["recovery_distribution"] for p in body["plans"]
+    )
+
+
+def test_public_plans_without_price_show_null(client):
+    from sqlalchemy import select
+
+    from app.core.db import SessionLocal
+    from app.models.billing import Plan, PlanPrice
+
+    with SessionLocal() as db:
+        pro = db.execute(select(Plan).where(Plan.code == "pro")).scalar_one()
+        for p in db.execute(select(PlanPrice).where(PlanPrice.plan_id == pro.id)).scalars():
+            p.amount_cents = None
+        db.commit()
+    plans = {p["code"]: p for p in client.get("/api/v1/public/plans").json()["plans"]}
     assert all(p["amount_cents"] is None for p in plans["pro"]["prices"])  # "Valor a definir"
-    assert plans["pro"]["features"]
 
 
 def test_waitlist_is_idempotent_by_email(client):

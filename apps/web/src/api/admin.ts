@@ -45,6 +45,8 @@ export const KNOWN_LIMIT_KEYS = [
   "materials_storage_mb",
   "max_materials",
   "ai_daily_actions",
+  "ai_monthly_actions",
+  "auto_planning",
   "reports",
   "recovery_distribution",
   "csv_export",

@@ -6,6 +6,7 @@ import io
 from freezegun import freeze_time
 
 from tests.conftest import make_activity, signup
+from tests.fixtures.plans import set_free_plan_limits
 
 MON = "2026-09-14"
 API = "/api/v1"
@@ -82,7 +83,10 @@ def test_weekly_summary_reads_recovered_day_honestly(user_client):
     ).json()
     assert d["start"] == d["end"] == "2026-09-16" and d["logged_seconds"] == 0
     assert d["goal_days_planned"] == 1 and d["goal_days_met"] == 0
-    # mês
+    # mês: exige relatórios completos (planos pagos); no gratuito responde 402
+    r = user_client.get(f"{API}/reports/summary", params={"period": "month", "date": "2026-09-16"})
+    assert r.status_code == 402 and r.json()["error"]["code"] == "plan_reports"
+    set_free_plan_limits(reports="full")
     m = user_client.get(
         f"{API}/reports/summary", params={"period": "month", "date": "2026-09-16"}
     ).json()

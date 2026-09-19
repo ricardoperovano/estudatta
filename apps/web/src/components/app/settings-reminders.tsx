@@ -22,6 +22,7 @@ import { pushState, subscribeToPush, unsubscribeFromPush, type PushState } from 
 import { Symbol } from "@/components/app/brand";
 import { Banner, Button, Card, DayPicker, Field, Input, Seg, Spinner, Switch, Tag, toast } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { PlanUpsell, useHasFeature } from "@/components/app/plan-upsell";
 
 export function SettingsSection({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
   return (
@@ -67,6 +68,7 @@ const TONE_LABEL: Record<Tone, string> = { acolhedor: "acolhedor", direto: "dire
 
 /** Seção Lembretes (tela 11): interruptores, horário, dias, tom com prévia, silêncio, limite diário e notificações do navegador. */
 export function RemindersSection({ online }: { online: boolean }) {
+  const fullRemindersFlag = useHasFeature("reminders");
   const qc = useQueryClient();
   const prefs = useNotificationPrefs();
   const update = useUpdateNotificationPrefs();
@@ -115,6 +117,7 @@ export function RemindersSection({ online }: { online: boolean }) {
 
   const p = prefs.data;
   const off = !p.enabled || !online;
+  const fullReminders = fullRemindersFlag;
   const maxReached = ceiling != null && p.max_per_day >= ceiling;
 
   return (
@@ -127,7 +130,7 @@ export function RemindersSection({ online }: { online: boolean }) {
           <TimeField id="reminder-time" label="Horário do lembrete" value={p.reminder_time} disabled={off} onCommit={(v) => patch({ reminder_time: v })} />
         </SettingsRow>
         <SettingsRow label="Avisar se o dia terminar sem registro">
-          <Switch label="Avisar se o dia terminar sem registro" checked={p.end_of_window_alert} disabled={off} onCheckedChange={(v) => patch({ end_of_window_alert: v })} />
+          <Switch label="Avisar se o dia terminar sem registro" checked={fullReminders && p.end_of_window_alert} disabled={off || !fullReminders} onCheckedChange={(v) => patch({ end_of_window_alert: v })} />
         </SettingsRow>
         <SettingsRow label="Avisar quando a meta de hoje for concluída">
           <Switch label="Avisar quando a meta de hoje for concluída" checked={p.goal_completed_alert} disabled={off} onCheckedChange={(v) => patch({ goal_completed_alert: v })} />
@@ -135,6 +138,12 @@ export function RemindersSection({ online }: { online: boolean }) {
         <SettingsRow label="Resumo da semana">
           <Switch label="Resumo da semana" checked={p.weekly_summary} disabled={off} onCheckedChange={(v) => patch({ weekly_summary: v })} />
         </SettingsRow>
+        {!fullReminders ? (
+          <PlanUpsell
+            compact
+            text="No Gratuito você recebe o lembrete no horário planejado e o resumo da semana no app. O segundo aviso, o aviso de fim do dia, o de retomada e o resumo por e-mail estão nos planos Essencial e Completo."
+          />
+        ) : null}
         <SettingsRow label="Mostrar o nome do objetivo" hint="Desligado, o aviso não revela o que você estuda.">
           <Switch label="Mostrar o nome do objetivo no aviso" checked={p.show_activity_name} disabled={off} onCheckedChange={(v) => patch({ show_activity_name: v })} />
         </SettingsRow>

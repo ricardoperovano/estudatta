@@ -14,6 +14,9 @@ class AiStatusOut(BaseModel):
     enabled: bool
     remaining_today: int
     plan_limit: int
+    monthly_limit: int | None = None
+    used_this_month: int = 0
+    remaining_this_month: int | None = None
     global_budget_left: int | None = None
     reason: str | None = None
 

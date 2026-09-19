@@ -2517,6 +2517,15 @@ export interface components {
             remaining_today: number;
             /** Plan Limit */
             plan_limit: number;
+            /** Monthly Limit */
+            monthly_limit?: number | null;
+            /**
+             * Used This Month
+             * @default 0
+             */
+            used_this_month: number;
+            /** Remaining This Month */
+            remaining_this_month?: number | null;
             /** Global Budget Left */
             global_budget_left?: number | null;
             /** Reason */
@@ -5133,11 +5142,8 @@ export interface components {
              * Format: uuid
              */
             op_id: string;
-            /**
-             * Kind
-             * @enum {string}
-             */
-            kind: "session.manual" | "session.start" | "session.pause" | "session.resume" | "session.finish" | "session.discard" | "task.complete" | "task.uncomplete";
+            /** Kind */
+            kind: string;
             /** Payload */
             payload?: {
                 [key: string]: unknown;

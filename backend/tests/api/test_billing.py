@@ -245,6 +245,7 @@ def test_checkout_disabled_even_with_fake_provider(user_client, fake):
 
 
 def test_checkout_price_not_set_409(user_client, billing_on):
+    set_price(None, "month")
     r = user_client.post("/api/v1/billing/checkout", json={"plan_code": "pro", "interval": "month"})
     assert r.status_code == 409, r.text
     assert r.json()["error"]["code"] == "price_not_set"

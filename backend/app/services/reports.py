@@ -27,6 +27,7 @@ from app.models.user import User
 from app.services import balance as balance_service
 from app.services import content as content_service
 from app.services.activities import get_activity, list_activities
+from app.services.plans import require_feature
 
 WEEKDAY_NAMES = ["segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"]
 WEEKDAY_IN = ["na", "na", "na", "na", "na", "no", "no"]
@@ -231,6 +232,14 @@ def _sessions_stats(
 def summary(
     db: Session, user: User, *, period: str, on: date, activity_id: uuid.UUID | None = None
 ) -> dict:
+    if period == "month":
+        require_feature(
+            db,
+            user.id,
+            "reports",
+            "Os relatórios do mês e do trimestre estão nos planos Essencial e Completo. O relatório da semana continua disponível.",
+            value="full",
+        )
     wso = week_starts_on(user)
     start, end = period_bounds(period, on, wso)
     acts = _activities(db, user, activity_id)

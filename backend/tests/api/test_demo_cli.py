@@ -184,7 +184,7 @@ def test_cli_commands(client, capsys):
     from app.cli import main
 
     assert main(["ensure-plans"]) == 0
-    assert "free, pro" in capsys.readouterr().out
+    assert "free, essencial, pro" in capsys.readouterr().out
     # seed-demo é recusado sem DEMO_MODE (ou --force)
     assert main(["seed-demo"]) == 2
     assert "DEMO_MODE" in capsys.readouterr().err

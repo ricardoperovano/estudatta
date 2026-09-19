@@ -6,6 +6,7 @@ from freezegun import freeze_time
 from sqlalchemy import func, select
 
 from tests.conftest import make_activity, signup
+from tests.fixtures.plans import set_free_plan_limits
 
 MON = "2026-09-14"
 API = "/api/v1"
@@ -198,6 +199,7 @@ def test_reschedule_keeps_same_id_and_original_date(user_client):
 
 @freeze_time("2026-09-14 12:00:00")  # segunda, 09:00 em São Paulo
 def test_auto_plan_is_deterministic_keeps_pinned_and_avoids_time_overlap(user_client):
+    set_free_plan_limits(auto_planning=True)  # recurso dos planos pagos
     act = make_activity(user_client, start_date=MON)  # 60 min/dia seg–sex, limite 120
     a = _task(
         user_client,

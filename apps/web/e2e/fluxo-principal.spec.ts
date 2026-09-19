@@ -53,7 +53,7 @@ test("cadastro → objetivo → sessão → saldo → recuperação → material
   await expect(sheet).toBeVisible();
   await sheet.getByRole("radio", { name: "30" }).click();
   await sheet.getByRole("button", { name: /Salvar 30 min/ }).click();
-  await expect(page.getByText("30 min registrados")).toBeVisible();
+  await expect(page.getByText("30 min registrados", { exact: true })).toBeVisible();
   // 30 da meta + recuperação sugerida (180 pendentes distribuídos em 3 dias = 60/dia); dívida não aumenta
   await expect(page.getByText(/Mais 90 min hoje: 30 min da meta \+ 60 min de recuperação/).filter({ visible: true }).first()).toBeVisible();
 

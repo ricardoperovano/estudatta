@@ -28,6 +28,14 @@ ENDPOINT = "https://push.example.com/send/abc123"
 
 
 @pytest.fixture(autouse=True)
+def _full_reminders():
+    """Estes testes cobrem o motor completo (planos pagos); o plano básico tem teste próprio."""
+    from tests.fixtures.plans import set_free_plan_limits
+
+    set_free_plan_limits(reminders="full")
+
+
+@pytest.fixture(autouse=True)
 def _no_vapid(monkeypatch):
     """Padrão dos testes: servidor sem chaves (nunca depende de um `.env` local)."""
     monkeypatch.setattr(settings, "VAPID_PUBLIC_KEY", None)

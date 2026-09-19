@@ -1,4 +1,5 @@
 import * as React from "react";
+import { PlanUpsell, useHasFeature } from "@/components/app/plan-upsell";
 import { Link } from "react-router";
 import { CaretLeft, CaretRight, DownloadSimple, PencilSimple, Trash } from "@phosphor-icons/react";
 import { useActivities } from "@/api/queries";
@@ -32,7 +33,9 @@ export default function ReportsPage() {
   const [date, setDate] = React.useState(todayIso());
   const [activityId, setActivityId] = React.useState<string | null>(null);
   const activities = useActivities();
-  const summary = useReportSummary(period, date, activityId);
+  const fullReports = useHasFeature("reports");
+  const locked = period !== "week" && !fullReports;
+  const summary = useReportSummary(locked ? "week" : period, date, activityId);
 
   const acts = activities.data ?? [];
   const isCurrent = React.useMemo(() => {
@@ -127,7 +130,12 @@ export default function ReportsPage() {
         ) : null}
       </div>
 
-      {summary.isPending ? (
+      {locked ? (
+        <PlanUpsell
+          title="Relatórios do mês e do trimestre"
+          text="Estão nos planos Essencial e Completo. O relatório da semana continua disponível no Gratuito, com o mesmo histórico completo e a exportação dos seus dados."
+        />
+      ) : summary.isPending ? (
         <div className="flex justify-center py-20" role="status">
           <Spinner className="h-6 w-6" />
         </div>

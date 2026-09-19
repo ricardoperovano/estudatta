@@ -302,9 +302,11 @@ export function aiReasonLabel(reason: string | null | undefined): string | null 
     case "ai_disabled":
       return null;
     case "ai_plan":
-      return "Seu plano atual não inclui sugestões automáticas.";
+      return "A IA para organizar o conteúdo está nos planos Essencial e Completo. Você pode revisar e organizar manualmente.";
     case "ai_quota":
-      return "Você usou todas as sugestões de hoje.";
+      return "Você usou todas as sugestões de hoje. Amanhã a cota renova.";
+    case "ai_monthly_quota":
+      return "Você usou todas as sugestões deste mês. A cota renova no dia 1º.";
     case "ai_budget":
       return "O limite geral de uso foi atingido por hoje.";
     default:

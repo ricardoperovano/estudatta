@@ -91,6 +91,39 @@ def plan_limit(db: Session, user: User) -> int:
         return 0
 
 
+def _month_bounds():
+    now = utcnow()
+    start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    end = (start + timedelta(days=32)).replace(day=1)
+    return start, end
+
+
+def plan_monthly_limit(db: Session, user: User) -> int | None:
+    """Ações de IA por mês civil; None = sem limite mensal (só o diário)."""
+    v = get_entitlements(db, user.id).limit("ai_monthly_actions")
+    if v is None:
+        return None
+    try:
+        return max(0, int(v))
+    except (TypeError, ValueError):
+        return 0
+
+
+def used_this_month(db: Session, user_id: uuid.UUID) -> int:
+    start, end = _month_bounds()
+    q = (
+        select(func.count())
+        .select_from(AiUsage)
+        .where(
+            AiUsage.user_id == user_id,
+            AiUsage.created_at >= start,
+            AiUsage.created_at < end,
+            AiUsage.status.in_(COUNTED_STATUSES),
+        )
+    )
+    return int(db.execute(q).scalar_one())
+
+
 def used_today(db: Session, user_id: uuid.UUID | None) -> int:
     start, end = _day_bounds()
     q = (
@@ -110,21 +143,31 @@ def used_today(db: Session, user_id: uuid.UUID | None) -> int:
 def status(db: Session, user: User) -> dict:
     limit = plan_limit(db, user)
     used = used_today(db, user.id)
+    monthly = plan_monthly_limit(db, user)
+    used_month = used_this_month(db, user.id)
     global_left = max(0, settings.AI_GLOBAL_DAILY_BUDGET_ACTIONS - used_today(db, None))
     enabled = settings.ai_available
     reason = None
     if not enabled:
         reason = "ai_disabled"
-    elif limit <= 0:
+    elif limit <= 0 or monthly == 0:
         reason = "ai_plan"
+    elif monthly is not None and used_month >= monthly:
+        reason = "ai_monthly_quota"
     elif used >= limit:
         reason = "ai_quota"
     elif global_left <= 0:
         reason = "ai_budget"
+    remaining = max(0, limit - used)
+    if monthly is not None:
+        remaining = min(remaining, max(0, monthly - used_month))
     return {
         "enabled": enabled,
-        "remaining_today": max(0, limit - used) if enabled else 0,
+        "remaining_today": remaining if enabled else 0,
         "plan_limit": limit,
+        "monthly_limit": monthly,
+        "used_this_month": used_month,
+        "remaining_this_month": (max(0, monthly - used_month) if monthly is not None else None),
         "global_budget_left": global_left,
         "reason": reason,
     }
@@ -175,12 +218,24 @@ def _check_available(db: Session, user: User, action: str, input_chars: int) -> 
             code="ai_input_too_long",
         )
     limit = plan_limit(db, user)
-    if limit <= 0:
+    monthly = plan_monthly_limit(db, user)
+    if limit <= 0 or monthly == 0:
         _record(db, user, action, "quota", input_chars=input_chars, error_code="ai_plan")
         raise PlanLimit(
-            "Seu plano não inclui ações de IA. Você pode importar e organizar o conteúdo manualmente.",
+            "A IA para organizar está nos planos Essencial e Completo. Você pode importar e organizar o conteúdo manualmente.",
             code="ai_plan",
         )
+    if monthly is not None:
+        used_month = used_this_month(db, user.id)
+        if used_month >= monthly:
+            _record(
+                db, user, action, "quota", input_chars=input_chars, error_code="ai_monthly_quota"
+            )
+            raise RateLimited(
+                f"Você usou as {monthly} ações de IA deste mês. A cota renova no dia 1º.",
+                code="ai_monthly_quota",
+                details={"monthly_limit": monthly, "used": used_month},
+            )
     used = used_today(db, user.id)
     if used >= limit:
         _record(db, user, action, "quota", input_chars=input_chars, error_code="ai_quota")

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { PlanUpsell } from "@/components/app/plan-upsell";
 import { ArrowDown, ArrowUp, CaretDown, CaretRight, Plus, Sparkle, Trash } from "@phosphor-icons/react";
 import { errorMessage } from "@/api/client";
 import {
@@ -216,9 +217,13 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
               Sugerir estrutura
             </Button>
             <span className="tnum text-[12px] text-neutral-400">
-              {remaining > 0 ? `${plural(remaining, "sugestão restante", "sugestões restantes")} hoje. Só preenche esta revisão.` : "Você usou todas as sugestões de hoje."}
+              {remaining > 0
+                ? `${plural(remaining, "sugestão restante", "sugestões restantes")} hoje${ai.data?.remaining_this_month != null ? ` · ${ai.data.remaining_this_month} no mês` : ""}. Só preenche esta revisão.`
+                : aiReasonLabel(ai.data?.reason) ?? "Você usou todas as sugestões de hoje."}
             </span>
           </div>
+        ) : ai.data?.reason === "ai_plan" && !aiOff ? (
+          <PlanUpsell compact text="A IA para organizar o conteúdo está nos planos Essencial e Completo." />
         ) : aiDisabledNote ? (
           <span className="text-[12px] text-neutral-500">{aiDisabledNote}</span>
         ) : null}

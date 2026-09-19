@@ -4,6 +4,7 @@ create-admin --email E [--password P]   cria administrador (senha pedida com seg
 promote --email E                       promove usuário existente a administrador
 seed-demo [--force] [--password P]      cenário de demonstração (só com DEMO_MODE=true ou --force)
 ensure-plans                            garante o catálogo inicial de planos
+apply-catalog [--overwrite]             aplica o catálogo sugerido (preços e limites) a um banco existente
 vapid                                   gera par de chaves VAPID e imprime as variáveis para .env
 """
 
@@ -108,7 +109,28 @@ def cmd_ensure_plans(_: argparse.Namespace) -> int:
     with SessionLocal() as db:
         ensure_default_plans(db)
         db.commit()
-    print("Catálogo de planos garantido (free, pro).")
+    print("Catálogo de planos garantido (free, essencial, pro).")
+    return 0
+
+
+def cmd_apply_catalog(args: argparse.Namespace) -> int:
+    """Aplica o catálogo sugerido. Sem --overwrite: só cria o que falta, acrescenta limites
+    ausentes e preenche preços vazios ("Valor a definir"). Com --overwrite: substitui nome,
+    recursos, limites e preços pelos sugeridos (desfaz edições do painel)."""
+    from app.core.audit import audit
+    from app.services.plans import SUGGESTED_CATALOG, apply_catalog
+
+    with SessionLocal() as db:
+        changes = apply_catalog(db, SUGGESTED_CATALOG, overwrite=args.overwrite)
+        if changes:
+            audit(
+                db,
+                actor_id=None,
+                action="plans.apply_catalog",
+                metadata={"overwrite": args.overwrite, "changes": changes},
+            )
+        db.commit()
+    print("\n".join(changes) if changes else "Nada a mudar: o catálogo já está aplicado.")
     return 0
 
 
@@ -157,6 +179,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("ensure-plans", help="garante o catálogo inicial de planos")
     p.set_defaults(func=cmd_ensure_plans)
+
+    p = sub.add_parser(
+        "apply-catalog", help="aplica o catálogo sugerido (preços e limites) a um banco existente"
+    )
+    p.add_argument(
+        "--overwrite", action="store_true", help="substitui também o que foi editado no painel"
+    )
+    p.set_defaults(func=cmd_apply_catalog)
 
     p = sub.add_parser("vapid", help="gera chaves VAPID para Web Push")
     p.set_defaults(func=cmd_vapid)

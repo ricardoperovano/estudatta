@@ -9,6 +9,7 @@ import { useRangeSessions } from "@/api/plan-week";
 import type { Activity, StudySession, TodayCard } from "@/api/types";
 import { ManualEntrySheet } from "@/app/today/manual-entry";
 import { AutoPlanDialog } from "@/components/app/auto-plan-dialog";
+import { PlanUpsell, useHasFeature } from "@/components/app/plan-upsell";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { RecoveryPlanner } from "@/components/app/recovery-planner";
 import { TaskCheckRow } from "@/components/app/task-check-row";
@@ -62,6 +63,7 @@ export default function PlanPage() {
   const [editor, setEditor] = React.useState<{ task?: Task; defaults?: TaskDefaults } | null>(null);
   const [manual, setManual] = React.useState<{ card: TodayCard; date: string } | null>(null);
   const [autoPlan, setAutoPlan] = React.useState(false);
+  const canAutoPlan = useHasFeature("auto_planning");
   const [recoveryFor, setRecoveryFor] = React.useState<string | null>(null);
 
   const setView = (v: View) => {
@@ -270,7 +272,18 @@ export default function PlanPage() {
 
       {editor ? <TaskEditorSheet key={editor.task ? taskKey(editor.task) : `new-${editor.defaults?.date}-${editor.defaults?.time ?? ""}`} open onOpenChange={(o) => !o && setEditor(null)} activities={acts} task={editor.task} defaults={editor.defaults} /> : null}
       {manual ? <ManualEntrySheet key={manual.date} card={manual.card} cards={cards} open onOpenChange={(o) => !o && setManual(null)} defaultDate={manual.date} /> : null}
-      {autoPlan ? <AutoPlanDialog open onOpenChange={setAutoPlan} activities={acts} defaultActivityId={filter} start={start} end={end} /> : null}
+      {autoPlan && canAutoPlan ? <AutoPlanDialog open onOpenChange={setAutoPlan} activities={acts} defaultActivityId={filter} start={start} end={end} /> : null}
+      {autoPlan && !canAutoPlan ? (
+        <Dialog open onOpenChange={setAutoPlan}>
+          <DialogContent title="Distribuir tarefas automaticamente">
+            <PlanUpsell
+              className="bg-canvas"
+              title="Recurso dos planos pagos"
+              text="A distribuição automática das tarefas na semana está nos planos Essencial e Completo. No Gratuito, você planeja cada tarefa manualmente, com a mesma agenda e os mesmos lembretes."
+            />
+          </DialogContent>
+        </Dialog>
+      ) : null}
       <Dialog open={!!recoveryFor} onOpenChange={(o) => !o && setRecoveryFor(null)}>
         <DialogContent title={`Há ${fmtLongDuration(pending)} a recuperar. Distribuir nos próximos dias?`} width="min(560px, calc(100% - 32px))">
           {recoveryFor ? <RecoveryPlanner activityId={recoveryFor} inDialog onDone={() => setRecoveryFor(null)} /> : null}

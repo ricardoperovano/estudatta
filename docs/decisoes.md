@@ -57,10 +57,18 @@ Registro vivo das decisões tomadas durante a implementação. Cada item indica 
 - **App:** removidos a pré-renderização, as páginas públicas e a imagem de compartilhamento; `/` redireciona para Hoje (ou para a entrada); o app inteiro é `noindex`; termos e privacidade apontam para o site (`VITE_SITE_URL`, padrão `https://estudatta.com.br`; em dev `http://localhost:5190`).
 - **CSP do site:** estilos inline foram trocados por classes para a política `style-src 'self'` do Nginx do site.
 
+## 2026-09-18 — Planos, preços e nova logo
+
+- **Catálogo sugerido e aplicado:** Gratuito (R$ 0), Essencial (R$ 9,90/mês ou R$ 94,80/ano, recomendado) e Completo (R$ 19,90/mês ou R$ 190,80/ano). A IA para organizar está em todos os planos pagos, com teto mensal e diário (60/10 e 200/30 ações). Racional, custos e onde cada limite é aplicado: `docs/planos-e-precos.md`.
+- **Limites que antes eram só texto agora são aplicados no servidor:** relatório do mês e do trimestre (`reports`), distribuição automática das tarefas (`auto_planning`), lembretes completos (`reminders`) e cota mensal de IA (`ai_monthly_actions`).
+- **Recuperação da pendência, histórico e exportação ficam em todos os planos:** fazem parte da promessa central do produto e não viram recurso pago.
+- **Código interno:** o Completo manteve o código `pro`, para não afetar assinaturas nem integrações; o novo plano é `essencial`.
+- **Nova logo do responsável:** ícone de cronômetro com livro e barras, em versão escura e clara, com fundo sólido. Ela substitui o símbolo "Trilho" do material de design original no site, no app e nos ícones de instalação. Os tamanhos web são gerados por `estudatta-site/scripts/gerar-logos.sh` a partir dos PNGs originais. O glifo tracejado dos estados vazios do app ainda usa as formas do símbolo antigo.
+
 ## Pendências que dependem exclusivamente do responsável
 
-- **[pendente do responsável]** Preço dos planos (catálogo mostra "Valor a definir" até ser editado no painel).
+- **[pendente do responsável]** Validar os preços sugeridos (R$ 9,90 e R$ 19,90) e os tetos de IA após o primeiro mês com dados reais de uso.
 - **[pendente do responsável]** Credenciais do Mercado Pago (teste e produção), Google OAuth, chaves VAPID de produção, SMTP, bucket S3, chave de IA.
 - **[pendente do responsável]** Domínio, TLS e publicação; razão social/CNPJ, endereço, encarregado (DPO) e foro, marcados nas páginas de termos e privacidade; revisão jurídica dos textos.
-- **[pendente do responsável]** Reexportar os PNGs de divulgação com a Inter instalada (limitação declarada no material de marca).
+- **[pendente do responsável]** Versão vetorial (SVG) da nova logo, se houver, para substituir os PNGs e ter nitidez em qualquer tamanho.
 - **[pendente do responsável]** Teste manual de push e instalação em iPhone/Android com o domínio HTTPS.
