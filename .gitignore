@@ -36,3 +36,7 @@ infra/data/
 .idea/
 .vscode/
 *.swp
+
+# backups gerados pelo deploy do servidor
+infra/backups/*
+!infra/backups/.gitkeep

@@ -35,3 +35,28 @@ Nada aqui foi executado em servidor público nesta entrega; é o procedimento pr
 ## Push em aparelho físico
 - Precisa de contexto seguro (HTTPS com certificado válido). `localhost` no computador não equivale a acesso por IP no celular; para testar no celular use o domínio HTTPS (ou um túnel HTTPS) e, no iPhone/iPad, adicione o app à tela inicial antes de permitir notificações.
 - Testes automatizados de navegador não comprovam entrega push em iOS; registre o teste manual (aparelho, versão do iOS, resultado).
+
+## Servidor compartilhado + app na Vercel (produção atual)
+
+O backend roda no servidor `api-v2` (Ubuntu 20.04, Docker 24, docker-compose 1.28, Nginx do sistema com vários outros sites). O app (PWA) é publicado na Vercel.
+
+**Endereços**
+
+| Parte | Onde |
+|---|---|
+| App (PWA) | Vercel, `https://app.estudatta.com.br` |
+| API | `https://api.estudatta.com.br` (Cloudflare → Nginx do servidor → `127.0.0.1:18120`) |
+| Código no servidor | `/opt/estudatta` (clone de `git@github.com:ricardoperovano/estudatta.git`) |
+
+**Como o app fala com a API:** o `apps/web/vercel.json` repassa `/api/*` para `https://api.estudatta.com.br/api/*`. O navegador só vê a origem do app, então os cookies de sessão continuam na mesma origem (`SameSite=Lax`), sem CORS para o app. `VITE_API_URL` fica vazio na Vercel.
+
+**Isolamento no servidor**
+- Projeto Compose `estudatta` (`-p estudatta`): o nome `infra` já é usado por outro projeto do servidor.
+- Postgres e Redis sem porta no host; só a API publica, e só em `127.0.0.1:18120`.
+- Arquivo: `infra/docker-compose.server.yml`. Nginx: `infra/nginx/api.estudatta.com.br.conf.example`.
+
+**Deploy e atualização:** `cd /opt/estudatta && bash infra/scripts/deploy-server.sh`. O script faz `git pull`, build, backup do banco (guarda os 14 últimos em `infra/backups/`), migrações, catálogo de planos, sobe os serviços e confere `/api/v1/health/ready`.
+
+**Certificado:** Certificado de Origem da Cloudflare para `api.estudatta.com.br` em `/etc/ssl/cloudflare/estudatta.com.br.pem` e `.key`, com SSL "Full (strict)" e proxy ligado no DNS. O site do Nginx só é ativado depois que os arquivos existem, porque um certificado ausente quebraria o `nginx -t` dos outros sites.
+
+**Rollback:** `git checkout <commit>` e `bash infra/scripts/deploy-server.sh --no-pull`. Banco: `alembic downgrade <revisão>` ou restaurar o backup de `infra/backups/`.

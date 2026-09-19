@@ -1,0 +1,93 @@
+# Estudatta — só o backend, para um servidor compartilhado (o app fica na Vercel).
+#
+# Diferenças para docker-compose.yml:
+#   - sem o serviço web (o app é publicado na Vercel) e sem Mailpit;
+#   - Postgres e Redis NÃO publicam porta no host (ficam só na rede interna do projeto);
+#   - a API escuta só em 127.0.0.1:${API_PORT} (padrão 18120), atrás do Nginx do servidor.
+#
+# Uso (na raiz do repositório, com o .env de produção ao lado):
+#   docker-compose -p estudatta -f infra/docker-compose.server.yml --env-file .env up -d --build
+# O "-p estudatta" é obrigatório: isola containers, rede e volumes de outros projetos do servidor.
+# Compatível com docker-compose 1.28+ e com "docker compose" v2. Script: infra/scripts/deploy-server.sh
+
+x-backend: &backend
+  build:
+    context: ../backend
+    dockerfile: Dockerfile
+  image: estudatta-backend:latest
+  restart: unless-stopped
+  env_file: ../.env
+  environment:
+    DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-estudatta}:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@db:5432/${POSTGRES_DB:-estudatta}
+    REDIS_URL: redis://redis:6379/0
+    STORAGE_LOCAL_PATH: /data/storage
+  volumes:
+    - storage:/data/storage
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-estudatta}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: ${POSTGRES_DB:-estudatta}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-estudatta} -d ${POSTGRES_DB:-estudatta}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    <<: *backend
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--proxy-headers", "--forwarded-allow-ips", "*"]
+    ports:
+      - "127.0.0.1:${API_PORT:-18120}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/live')"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  worker:
+    <<: *backend
+    command: ["celery", "-A", "app.jobs.celery_app:celery_app", "worker", "-Q", "default,imports,notifications", "-l", "INFO", "--concurrency", "2"]
+
+  scheduler:
+    <<: *backend
+    command: ["celery", "-A", "app.jobs.celery_app:celery_app", "beat", "-l", "INFO", "-s", "/tmp/celerybeat-schedule"]
+    volumes: []
+
+volumes:
+  pgdata:
+  redisdata:
+  storage:
