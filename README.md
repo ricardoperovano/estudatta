@@ -20,7 +20,7 @@ docs/          decisões, regras, mapeamento do design, verificação visual, op
 
 ## Desenvolvimento (CachyOS/Fish ou qualquer shell)
 
-Requisitos: Docker + Compose v2, Node ≥ 20, [uv](https://docs.astral.sh/uv/) (baixa o Python 3.12 sozinho).
+Requisitos na sua máquina: Docker + Compose v2, Node ≥ 20, [uv](https://docs.astral.sh/uv/) (baixa o Python 3.12 sozinho).
 
 ```
 make setup      # cria .env a partir de .env.example, instala backend (uv) e frontend (npm)
@@ -38,12 +38,35 @@ Os scripts que dependem de Bash estão em arquivos com shebang (`backend/scripts
 
 ## Produção
 
-`make prod-build && make prod-up` sobe `db`, `redis`, `api`, `worker`, `scheduler` e `web` (Nginx com o app + proxy `/api`). O site público é publicado à parte (container próprio). TLS, os dois domínios, backup e rollback: `docs/deploy.md`.
+| Parte | Onde | Como publicar |
+|---|---|---|
+| App (PWA) | Vercel, `https://app.estudatta.com.br` | Push na `main` (projeto da Vercel com pasta `apps/web`). Variável na Vercel: `VITE_API_URL=https://api.estudatta.com.br` (depois de mudar, faça um novo deploy). |
+| API, worker, agendador, Postgres, Redis | Servidor `api-v2`, em `/opt/estudatta` | `bash infra/scripts/deploy-server.sh` |
+| Site público | Repositório `estudatta-site` | À parte |
+
+**Deploy e atualização do backend** (no servidor):
+
+```
+cd /opt/estudatta && bash infra/scripts/deploy-server.sh
+```
+
+Faz `git pull`, build, backup do banco (guarda os 14 últimos em `infra/backups/`), migrações, catálogo de planos, sobe API/worker/agendador e confere `/api/v1/health/ready`. Rollback: `git checkout <commit>` e `bash infra/scripts/deploy-server.sh --no-pull`.
+
+Outros comandos passam pelo atalho `infra/scripts/dc.sh`, que carrega o `.env` e isola o projeto (`-p estudatta`); funciona com o `docker-compose` antigo do servidor e com o Compose v2:
+
+```
+bash infra/scripts/dc.sh ps
+bash infra/scripts/dc.sh logs --tail 100 api
+bash infra/scripts/dc.sh up -d api worker scheduler      # depois de mudar só o .env
+bash infra/scripts/dc.sh exec api python -m app.cli create-admin --email voce@exemplo.com
+```
+
+O servidor usa `infra/docker-compose.server.yml`: só o backend, Postgres e Redis **sem porta no host** e a API só em `127.0.0.1:18120`, atrás do Nginx do servidor (Cloudflare → `api.estudatta.com.br`). **Não use `make prod-build`/`make prod-up` no servidor**: eles usam o compose completo, que sobe o front e publica as portas do banco e do Redis, em conflito com os outros serviços da máquina. Detalhes, certificado e Nginx: `docs/deploy.md`.
 
 ## Ambientes de teste × produção
 
-- E-mail: `EMAIL_BACKEND=console|smtp`; em dev o Mailpit captura tudo.
-- Cobrança: `BILLING_MODE=disabled|test|production` + credenciais do Mercado Pago (`docs/billing.md`). Sem credenciais, a cobrança fica desabilitada e o plano gratuito segue disponível.
-- Push: exige `VAPID_*`; sem elas o app informa que lembretes só aparecem com ele aberto.
-- IA: `AI_ENABLED=true` + `AI_API_KEY`; sem isso, os recursos ficam ocultos/honestos.
-- Demonstração: `DEMO_MODE=true` habilita `seed-demo` (dados fictícios só em demonstração explícita).
+- **E-mail:** `EMAIL_BACKEND=cloudflare|smtp|console`. Produção usa `cloudflare` (API REST do Cloudflare Email Sending: `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_EMAIL_API_TOKEN`, domínio do remetente cadastrado em Email Sending). Em desenvolvimento, `smtp` com o Mailpit captura tudo.
+- **Cobrança:** `BILLING_PROVIDER=asaas|mercadopago` e `BILLING_MODE=disabled|test|production`. Com o Asaas: `ASAAS_API_KEY` (chave com `hmlg` = sandbox) e `ASAAS_WEBHOOK_TOKEN` (32+ caracteres); depois cadastre o webhook com `bash infra/scripts/dc.sh exec api python -m app.cli asaas-webhook create https://api.estudatta.com.br voce@exemplo.com` e confira com `asaas-webhook list`. Chaves que começam com `$` (as do Asaas) podem ficar sem aspas no `.env`: os scripts leem o arquivo sem interpretar `$`. Sem credenciais, a cobrança fica desabilitada e o plano gratuito segue disponível. Detalhes: `docs/billing.md`.
+- **Push:** exige `VAPID_*` (`make vapid` gera o par); sem elas o app informa que lembretes só aparecem com ele aberto.
+- **IA:** `AI_ENABLED=true` + `AI_API_KEY`; sem isso, os recursos ficam ocultos/honestos.
+- **Demonstração:** `DEMO_MODE=true` habilita `seed-demo` (dados fictícios só em demonstração explícita).
