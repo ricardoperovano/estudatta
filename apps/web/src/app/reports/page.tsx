@@ -25,6 +25,7 @@ import { useOnline } from "@/lib/online";
 import { cn } from "@/lib/utils";
 import { studyTypeLabel, useInsights } from "@/api/study";
 import { usePageTour } from "@/components/tour/use-tours";
+import { ReportWelcome } from "@/components/empty/report-welcome";
 import { relatorioTour } from "@/tours/relatorio";
 import { fmtQuestions, StudyFields, studyFieldsFrom, studyFieldsPayload, validateStudyFields, type StudyFieldsValue } from "@/components/app/study-fields";
 
@@ -179,8 +180,12 @@ function ReportBody({ data, period, activityId, activities, online }: { data: Su
     }
   };
 
+  const today = todayIso();
+  const isCurrent = data.start <= today && today <= data.end;
+
   return (
     <>
+      {!hasAny ? <ReportWelcome hasObjective={activities.length > 0} current={isCurrent} inPeriod={period === "week" ? "nesta semana" : period === "month" ? "neste mês" : "neste trimestre"} /> : null}
       <div className="tnum grid grid-cols-3 gap-2 desktop:grid-cols-4 desktop:gap-4" data-tour="relatorio-numeros">
         <StatCard value={fmtMinutes(data.logged_seconds)} label={`realizado de ${fmtMinutes(data.planned_seconds)}`} desktopLabel={`realizado de ${fmtMinutes(data.planned_seconds)} planejadas`} />
         <StatCard value={`${data.days_with_log} / ${data.goal_days_planned}`} label="dias com registro" desktopLabel="dias ativos com registro" />
@@ -273,7 +278,7 @@ function ReportBody({ data, period, activityId, activities, online }: { data: Su
 
       <ContentProgress activities={activityId ? activities.filter((a) => a.id === activityId) : activities} />
 
-      <SessionHistory start={data.start} end={data.end} activityId={activityId} online={online} />
+      <SessionHistory start={data.start} end={data.end} activityId={activityId} online={online} quiet={!hasAny} />
     </>
   );
 }
@@ -604,7 +609,8 @@ function ContentProgress({ activities }: { activities: { id: string; title: stri
   );
 }
 
-function SessionHistory({ start, end, activityId, online }: { start: string; end: string; activityId: string | null; online: boolean }) {
+/** `quiet`: o convite do topo já chama para a primeira sessão; aqui basta uma linha. */
+function SessionHistory({ start, end, activityId, online, quiet }: { start: string; end: string; activityId: string | null; online: boolean; quiet?: boolean }) {
   const [limit, setLimit] = React.useState(50);
   const sessions = useReportSessions({ start, end, activity_id: activityId, limit });
   const [editing, setEditing] = React.useState<ReportSessionOut | null>(null);
@@ -634,6 +640,8 @@ function SessionHistory({ start, end, activityId, online }: { start: string; end
         >
           {errorMessage(sessions.error, "Não foi possível carregar as sessões.")}
         </Banner>
+      ) : rows.length === 0 && quiet ? (
+        <p className="m-0 rounded-md border border-dashed border-divider px-4 py-3 text-[13px] text-neutral-400">As sessões deste período aparecem aqui, com data, objetivo, tipo e duração.</p>
       ) : rows.length === 0 ? (
         <EmptyState
           title="Nenhuma sessão neste período."

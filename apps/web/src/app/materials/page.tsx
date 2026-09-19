@@ -19,9 +19,10 @@ import { usePublicConfig } from "@/api/session";
 import type { Activity } from "@/api/types";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { ImportErrorCard } from "@/components/app/import-error-card";
-import { Banner, Button, Card, Dialog, DialogActions, DialogContent, EmptyState, Field, Input, Seg, Select, Spinner, Tag, Textarea, toast } from "@/components/ui";
+import { Banner, Button, Card, Dialog, DialogActions, DialogContent, Field, Input, Seg, Select, Spinner, Tag, Textarea, toast } from "@/components/ui";
 import { useOnline } from "@/lib/online";
 import { usePageTour } from "@/components/tour/use-tours";
+import { NoMaterials } from "@/components/empty/no-materials";
 import { materiaisTour } from "@/tours/materiais";
 
 type AddKind = "pdf" | "link" | "physical";
@@ -176,15 +177,7 @@ export default function MaterialsPage() {
           Não foi possível carregar os materiais. {errorMessage(materials.error, "")}
         </Banner>
       ) : materials.data.length === 0 && !uploadingName ? (
-        <EmptyState
-          title={activityFilter ? "Nenhum material neste objetivo." : "Nenhum material ainda."}
-          description="Guarde o PDF, o link ou o livro que você usa e vincule aos tópicos, com o intervalo de páginas."
-          action={
-            <Button variant="primary" size="lg" onClick={() => setAdd({ kind: "pdf" })}>
-              Adicionar material
-            </Button>
-          }
-        />
+        <NoMaterials filtered={!!activityFilter} onAdd={(kind) => setAdd({ kind })} />
       ) : (
         <ul className="grid gap-[14px] tablet:grid-cols-2 desktop:grid-cols-3" data-tour="materiais-lista">
           {materials.data.map((m) => (

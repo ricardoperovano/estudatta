@@ -14,6 +14,7 @@ import { fmtMinutes } from "@/lib/format";
 import { useOnline } from "@/lib/online";
 import { usePageTour } from "@/components/tour/use-tours";
 import { objetivosTour } from "@/tours/objetivos";
+import { NoObjectives } from "@/components/empty/no-objectives";
 
 type Status = "active" | "paused" | "archived";
 type Pending = { activity: Activity; action: "archive" | "delete" };
@@ -85,7 +86,8 @@ export default function ActivitiesListPage() {
           </span>
           <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">Objetivos</h1>
         </div>
-        <Button asChild variant="primary" size="lg" className="hidden desktop:inline-flex" data-tour="objetivos-novo">
+        {/* sem objetivos, o convite logo abaixo já traz o botão */}
+        <Button asChild variant="primary" size="lg" className={all.length > 0 ? "hidden desktop:inline-flex" : "hidden"} data-tour="objetivos-novo">
           <Link to="/app/objetivos/novo">+ Criar objetivo</Link>
         </Button>
       </header>
@@ -106,15 +108,7 @@ export default function ActivitiesListPage() {
       {today.data?.offline ? <Banner kind="offline">Saldo provisório: mostrando a última semana sincronizada.</Banner> : null}
 
       {all.length === 0 ? (
-        <EmptyState
-          title="Nenhum objetivo ainda."
-          description="Defina o que quer acompanhar, os dias e a meta diária. O plano mostra o que fazer hoje."
-          action={
-            <Button asChild variant="primary" size="lg" data-tour="objetivos-novo">
-              <Link to="/app/objetivos/novo">+ Criar objetivo</Link>
-            </Button>
-          }
-        />
+        <NoObjectives />
       ) : (
         <div className="grid gap-[14px] tablet:grid-cols-2 desktop:grid-cols-3 desktop:gap-4">
           {active.map((a, i) => {

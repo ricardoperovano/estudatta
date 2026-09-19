@@ -10,6 +10,7 @@ import { useOnline } from "@/lib/online";
 import { cn } from "@/lib/utils";
 import { usePageTour } from "@/components/tour/use-tours";
 import { revisoesTour } from "@/tours/revisoes";
+import { NoRevisions } from "@/components/empty/no-revisions";
 
 type TabKey = "pendentes" | "concluidas";
 
@@ -93,7 +94,7 @@ function PendingList({ activityId, today, titleOf }: { activityId?: string; toda
       </div>
 
       {items.length === 0 ? (
-        <HowItWorks />
+        <NoRevisions />
       ) : (
         <>
           <Group title="Atrasadas" kicker="kicker-pending" items={groups.overdue} today={today} titleOf={titleOf} />
@@ -157,25 +158,6 @@ function Group({ title, kicker = "kicker", items, today, titleOf, empty }: { tit
         </ul>
       )}
     </section>
-  );
-}
-
-function HowItWorks() {
-  return (
-    <EmptyState
-      title="Nenhuma revisão pendente."
-      description="As revisões são criadas sozinhas: ao registrar uma sessão de teoria, aula, leitura ou prática com a matéria escolhida, a primeira revisão fica, por padrão, para o dia seguinte e as próximas vêm 7 e 30 dias depois (os intervalos podem ser mudados em Preferências). Uma sessão do tipo Revisão na mesma matéria conclui a revisão do dia."
-      action={
-        <div className="flex flex-wrap justify-center gap-2">
-          <Button asChild variant="primary">
-            <Link to="/app/sessao">Começar sessão</Link>
-          </Button>
-          <Button asChild variant="secondary" data-tour="revisoes-intervalos">
-            <Link to="/app/preferencias">Mudar intervalos</Link>
-          </Button>
-        </div>
-      }
-    />
   );
 }
 

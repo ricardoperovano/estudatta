@@ -25,6 +25,7 @@ import { Banner, Button, Card, Checkbox, EmptyState, Field, Seg, Select, Spinner
 import { fmtDateTimeShort } from "@/lib/format";
 import { useOnline } from "@/lib/online";
 import { usePageTour } from "@/components/tour/use-tours";
+import { NoImportsObjective } from "@/components/empty/no-imports-objective";
 import { importarTour } from "@/tours/importar";
 import { cn } from "@/lib/utils";
 
@@ -127,17 +128,7 @@ export default function ImportsPage() {
     return (
       <div className="flex flex-col gap-[14px] desktop:gap-6">
         {header}
-        <Card className="p-4">
-          <EmptyState
-            title="Você ainda não tem um objetivo"
-            description="O conteúdo importado vira matérias e tópicos dentro de um objetivo. Crie o primeiro para começar."
-            action={
-              <Button asChild size="lg">
-                <Link to="/app/objetivos/novo">Criar objetivo</Link>
-              </Button>
-            }
-          />
-        </Card>
+        <NoImportsObjective />
       </div>
     );
   }

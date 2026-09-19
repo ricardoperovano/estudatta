@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, useNavigate } from "react-router";
-import { BellSimple, BellSimpleSlash, CaretRight, Checks } from "@phosphor-icons/react";
+import { BellSimpleSlash, CaretRight, Checks } from "@phosphor-icons/react";
 import { errorMessage } from "@/api/client";
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotificationList, useSnoozeReminders, type NotificationItem } from "@/api/inbox";
 import { useNotificationPrefs } from "@/api/settings";
@@ -9,6 +9,8 @@ import { fmtDateTimeShort, fmtTime, parseDate, todayIso, isoDate } from "@/lib/f
 import { useOnline } from "@/lib/online";
 import { cn } from "@/lib/utils";
 import { usePageTour } from "@/components/tour/use-tours";
+import { useTataPrefs } from "@/components/mascot/use-tata";
+import { NoNotifications } from "@/components/empty/no-notifications";
 import { notificacoesTour } from "@/tours/notificacoes";
 
 const PAGE = 30;
@@ -73,6 +75,7 @@ export default function NotificationsPage() {
   const readAll = useMarkAllNotificationsRead();
   const snooze = useSnoozeReminders();
   usePageTour(notificacoesTour, list.isSuccess);
+  const { enabled: mascot } = useTataPrefs();
 
   const now = useClock();
   const snoozedUntil = prefs.data?.snoozed_until && parseDate(prefs.data.snoozed_until).getTime() > now ? prefs.data.snoozed_until : null;
@@ -153,22 +156,22 @@ export default function NotificationsPage() {
           Não foi possível carregar as notificações. {errorMessage(list.error, "")}
         </Banner>
       ) : list.data.items.length === 0 ? (
-        <EmptyState
-          glyph={<BellSimple size={40} className="text-neutral-600" aria-hidden />}
-          title={filter === "unread" ? "Nenhuma notificação por ler." : "Nenhuma notificação ainda."}
-          description={filter === "unread" ? "Quando chegar algo novo, aparece aqui." : "Lembretes de estudo e avisos da sua conta aparecem aqui."}
-          action={
-            filter === "unread" ? (
+        filter === "unread" ? (
+          <EmptyState
+            variant="card"
+            mascot={mascot ? "cheer" : undefined}
+            glyph={<Checks size={40} className="text-accent-500" aria-hidden />}
+            title="Tudo lido por aqui."
+            description="Quando chegar algo novo, aparece aqui."
+            action={
               <Button variant="secondary" onClick={() => setFilter("all")}>
                 Ver todas
               </Button>
-            ) : (
-              <Button asChild variant="secondary">
-                <Link to="/app/preferencias">Ajustar lembretes</Link>
-              </Button>
-            )
-          }
-        />
+            }
+          />
+        ) : (
+          <NoNotifications />
+        )
       ) : (
         <>
           <ul className="flex flex-col gap-2">

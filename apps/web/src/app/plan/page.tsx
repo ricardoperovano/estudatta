@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
 import { CaretLeft, CaretRight, Check, Printer, Warning } from "@phosphor-icons/react";
-import { Banner, Button, Card, Dialog, DialogContent, EmptyState, Seg, Select, Spinner, Tag, toast } from "@/components/ui";
+import { Banner, Button, Card, Dialog, DialogContent, Seg, Select, Spinner, Tag, toast } from "@/components/ui";
 import { errorMessage } from "@/api/client";
 import { useActivities, useToday } from "@/api/queries";
 import { useCalendar, useDeleteSeries, usePreferences, useSeries, type CalendarDay, type Series, type Task } from "@/api/planning";
@@ -20,6 +20,8 @@ import { fmtDayShort, fmtMinutes, fmtRange, fmtTime, minutesOf, parseDate, today
 import { useOnline } from "@/lib/online";
 import { usePageTour } from "@/components/tour/use-tours";
 import { planoTour } from "@/tours/plano";
+import { NoPlan } from "@/components/empty/no-plan";
+import { PlanWeekTip } from "@/components/empty/plan-week-tip";
 import { cn } from "@/lib/utils";
 
 type View = "agenda" | "lista";
@@ -212,15 +214,7 @@ export default function PlanPage() {
           {online ? `Não foi possível carregar o plano. ${errorMessage(calendar.error, "")}`.trim() : "Sem conexão: o plano da semana aparece quando você voltar à internet."}
         </Banner>
       ) : acts.length === 0 && activities.isSuccess ? (
-        <EmptyState
-          title="Nenhum objetivo ativo."
-          description="O plano da semana nasce da meta e dos dias de cada objetivo."
-          action={
-            <Button asChild variant="primary" size="lg">
-              <Link to="/app/objetivos/novo">+ Criar objetivo</Link>
-            </Button>
-          }
-        />
+        <NoPlan hasPaused={(activities.data ?? []).some((a) => a.status === "paused")} />
       ) : view === "agenda" ? (
         <>
           <div className="desktop:hidden" data-tour="plano-semana">
@@ -237,6 +231,7 @@ export default function PlanPage() {
 
       {calendar.data && acts.length > 0 ? (
         <>
+          {days.every((d) => d.tasks.length === 0) && logged === 0 ? <PlanWeekTip /> : null}
           <p className="m-0 text-[13px] text-neutral-400">
             Total planejado: {fmtMinutes(target)}
             {recovery > 0 ? ` + ${fmtMinutes(recovery)} de recuperação` : ""}.

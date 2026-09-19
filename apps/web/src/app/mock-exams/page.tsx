@@ -11,6 +11,7 @@ import { fmtPct } from "@/components/app/revisions-utils";
 import { fmtDayShort, todayIso } from "@/lib/format";
 import { useOnline } from "@/lib/online";
 import { usePageTour } from "@/components/tour/use-tours";
+import { NoMockExams } from "@/components/empty/no-mock-exams";
 import { simuladosTour } from "@/tours/simulados";
 import { cn } from "@/lib/utils";
 
@@ -77,15 +78,7 @@ export default function MockExamsPage() {
           action={<Button onClick={() => void mocks.refetch()}>Tentar de novo</Button>}
         />
       ) : mocks.data.count === 0 ? (
-        <EmptyState
-          title="Nenhum simulado registrado."
-          description="Anote o resultado de cada simulado, no total ou por matéria, para acompanhar a evolução e descobrir as matérias mais fracas."
-          action={
-            <Button variant="primary" size="lg" onClick={() => setEditing("new")} data-tour="simulados-novo">
-              Registrar simulado
-            </Button>
-          }
-        />
+        <NoMockExams onNew={() => setEditing("new")} />
       ) : (
         <Overview data={mocks.data} onEdit={setEditing} onDelete={setDeleting} />
       )}

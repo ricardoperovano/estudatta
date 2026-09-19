@@ -1,4 +1,5 @@
 import * as React from "react";
+import { cn } from "@/lib/utils";
 import { Outlet, useLocation } from "react-router";
 import { BottomNav, Sidebar } from "./nav";
 import { useUser } from "@/api/session";
@@ -11,7 +12,7 @@ import { refreshPushSubscription } from "@/app/push";
 import { AchievementCelebration } from "./achievement-celebration";
 import { TourHelpButton } from "@/components/tour/TourHelpButton";
 import { TourOverlay } from "@/components/tour/TourOverlay";
-import { ThemeToggle } from "./theme-toggle";
+import { MobileHeader } from "./mobile-header";
 import { usePreferences } from "@/api/settings";
 import { hasStoredTheme, setTheme } from "@/lib/theme";
 
@@ -44,6 +45,7 @@ export function AppShell() {
     <div className="app-backdrop flex min-h-dvh">
       <Sidebar />
       <div className={"flex min-w-0 flex-1 flex-col tablet:pb-0 " + (fullScreen ? "pb-[env(safe-area-inset-bottom,0px)]" : "pb-[calc(var(--layout-bottom-nav-height)+env(safe-area-inset-bottom,0px))]")}>
+        <MobileHeader />
         {!online ? (
           <div className="px-gutter pt-3">
             <Banner kind="offline">
@@ -78,15 +80,19 @@ export function AppShell() {
             </Banner>
           </div>
         ) : null}
-        <main className="mx-auto w-full max-w-content flex-1 px-gutter pt-[max(56px,calc(24px+env(safe-area-inset-top,0px)))] pb-6 max-xs:px-3 desktop:px-12 desktop:pt-10">
+        <main
+          className={cn(
+            "mx-auto w-full max-w-content flex-1 px-gutter pb-6 max-xs:px-3 desktop:px-12 desktop:pt-10",
+            // no celular o cabeçalho ocupa o topo; o cronômetro em tela cheia compensa este respiro
+            fullScreen ? "pt-[max(56px,calc(24px+env(safe-area-inset-top,0px)))]" : "pt-4 tablet:pt-[max(56px,calc(24px+env(safe-area-inset-top,0px)))] desktop:pt-10",
+          )}
+        >
           <Outlet />
         </main>
       </div>
       <BottomNav />
       <AchievementCelebration />
       <TourHelpButton />
-      {/* troca rápida de tema no celular (no tablet/desktop fica na barra lateral) */}
-      <ThemeToggle className="fixed right-[52px] top-[calc(env(safe-area-inset-top,0px)+10px)] z-30 flex h-9 w-9 items-center justify-center rounded-full border border-divider bg-surface text-neutral-300 shadow-sm hover:text-primary focus-visible:ring-2 focus-visible:ring-accent tablet:hidden" />
       <TourOverlay />
     </div>
   );
