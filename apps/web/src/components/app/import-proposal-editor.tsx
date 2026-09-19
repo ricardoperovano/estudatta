@@ -249,7 +249,7 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
         </Banner>
       ) : null}
 
-      <Card elev="md" className="sticky bottom-[calc(var(--layout-bottom-nav-height)+8px)] z-10 gap-[10px] p-[14px] desktop:bottom-4">
+      <Card elev="md" className="sticky bottom-[calc(var(--layout-bottom-nav-height)+8px)] z-10 gap-[10px] p-[14px] tablet:bottom-4">
         {problem ? (
           <span role="alert" className="text-[13px] text-error">
             {problem}

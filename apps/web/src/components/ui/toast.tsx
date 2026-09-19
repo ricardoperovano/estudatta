@@ -70,7 +70,7 @@ export function Toaster() {
           </ToastPrimitive.Close>
         </ToastPrimitive.Root>
       ))}
-      <ToastPrimitive.Viewport className="fixed bottom-[calc(var(--layout-bottom-nav-height)+12px)] right-4 z-[60] flex w-[min(360px,calc(100%-32px))] flex-col gap-2 desktop:bottom-6" />
+      <ToastPrimitive.Viewport className="fixed bottom-[calc(var(--layout-bottom-nav-height)+12px)] right-4 z-[60] flex w-[min(360px,calc(100%-32px))] flex-col gap-2 tablet:bottom-6" />
     </ToastPrimitive.Provider>
   );
 }

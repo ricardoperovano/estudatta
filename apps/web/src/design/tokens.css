@@ -104,7 +104,7 @@
   --layout-gutter-mobile: 16px;
   --layout-gutter-desktop: clamp(20px, 5vw, 72px);
   --layout-bottom-nav-height: 64px;
-  --layout-sidebar-width: 240px;
+  --layout-sidebar-width: 256px;
   --layout-sidebar-collapsed: 72px;
   --layout-min-touch-target: 44px;
 }

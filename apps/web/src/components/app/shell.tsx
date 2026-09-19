@@ -43,7 +43,7 @@ export function AppShell() {
   return (
     <div className="flex min-h-dvh">
       <Sidebar />
-      <div className={"flex min-w-0 flex-1 flex-col desktop:pb-0 " + (fullScreen ? "pb-[env(safe-area-inset-bottom,0px)]" : "pb-[calc(var(--layout-bottom-nav-height)+env(safe-area-inset-bottom,0px))]")}>
+      <div className={"flex min-w-0 flex-1 flex-col tablet:pb-0 " + (fullScreen ? "pb-[env(safe-area-inset-bottom,0px)]" : "pb-[calc(var(--layout-bottom-nav-height)+env(safe-area-inset-bottom,0px))]")}>
         {!online ? (
           <div className="px-gutter pt-3">
             <Banner kind="offline">
