@@ -9,8 +9,7 @@ cd "$(dirname "$0")/../.."
 set -a; . ./.env; set +a
 API_PORT="${API_PORT:-18120}"
 
-if docker compose version >/dev/null 2>&1; then DC=(docker compose); else DC=(docker-compose); fi
-DC+=(-p estudatta -f infra/docker-compose.server.yml --env-file .env)
+DC=(bash infra/scripts/dc.sh)   # carrega o .env e escolhe docker compose v2 ou docker-compose 1.x
 
 if [ "${1:-}" != "--no-pull" ]; then git pull --ff-only; fi
 echo "Versão: $(git log --oneline -1)"

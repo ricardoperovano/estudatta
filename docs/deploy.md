@@ -48,14 +48,14 @@ O backend roda no servidor `api-v2` (Ubuntu 20.04, Docker 24, docker-compose 1.2
 | API | `https://api.estudatta.com.br` (Cloudflare → Nginx do servidor → `127.0.0.1:18120`) |
 | Código no servidor | `/opt/estudatta` (clone de `git@github.com:ricardoperovano/estudatta.git`) |
 
-**Como o app fala com a API:** o `apps/web/vercel.json` repassa `/api/*` para `https://api.estudatta.com.br/api/*`. O navegador só vê a origem do app, então os cookies de sessão continuam na mesma origem (`SameSite=Lax`), sem CORS para o app. `VITE_API_URL` fica vazio na Vercel.
+**Como o app fala com a API:** na Vercel, `VITE_API_URL=https://api.estudatta.com.br`. O app chama a API direto, com `credentials: "include"`. A API libera a origem do app em `CORS_ORIGINS`. Os cookies de sessão (`SameSite=Lax`, só do host da API) funcionam porque `app.` e `api.estudatta.com.br` são o mesmo site. Endereços de prévia da Vercel (`*.vercel.app`) são outro site: o login não funciona neles. O `apps/web/vercel.json` só faz o fallback do SPA e os cabeçalhos.
 
 **Isolamento no servidor**
 - Projeto Compose `estudatta` (`-p estudatta`): o nome `infra` já é usado por outro projeto do servidor.
 - Postgres e Redis sem porta no host; só a API publica, e só em `127.0.0.1:18120`.
 - Arquivo: `infra/docker-compose.server.yml`. Nginx: `infra/nginx/api.estudatta.com.br.conf.example`.
 
-**Deploy e atualização:** `cd /opt/estudatta && bash infra/scripts/deploy-server.sh`. O script faz `git pull`, build, backup do banco (guarda os 14 últimos em `infra/backups/`), migrações, catálogo de planos, sobe os serviços e confere `/api/v1/health/ready`.
+**Deploy e atualização:** `cd /opt/estudatta && bash infra/scripts/deploy-server.sh`. Outros comandos do Compose passam por `bash infra/scripts/dc.sh` (ex.: `dc.sh ps`, `dc.sh logs --tail 100 api`, `dc.sh up -d api worker` depois de mudar o `.env`, `dc.sh exec api python -m app.cli create-admin --email voce@exemplo.com`). O script faz `git pull`, build, backup do banco (guarda os 14 últimos em `infra/backups/`), migrações, catálogo de planos, sobe os serviços e confere `/api/v1/health/ready`.
 
 **Certificado:** Certificado de Origem da Cloudflare para `api.estudatta.com.br` em `/etc/ssl/cloudflare/estudatta.com.br.pem` e `.key`, com SSL "Full (strict)" e proxy ligado no DNS. O site do Nginx só é ativado depois que os arquivos existem, porque um certificado ausente quebraria o `nginx -t` dos outros sites.
 

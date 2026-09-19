@@ -5,10 +5,9 @@
 #   - Postgres e Redis NÃO publicam porta no host (ficam só na rede interna do projeto);
 #   - a API escuta só em 127.0.0.1:${API_PORT} (padrão 18120), atrás do Nginx do servidor.
 #
-# Uso (na raiz do repositório, com o .env de produção ao lado):
-#   docker-compose -p estudatta -f infra/docker-compose.server.yml --env-file .env up -d --build
-# O "-p estudatta" é obrigatório: isola containers, rede e volumes de outros projetos do servidor.
-# Compatível com docker-compose 1.28+ e com "docker compose" v2. Script: infra/scripts/deploy-server.sh
+# Uso (na raiz do repositório, com o .env de produção ao lado): bash infra/scripts/dc.sh <comando>
+# O atalho carrega o .env e passa "-p estudatta", que isola containers, rede e volumes de outros
+# projetos do servidor. Deploy completo: bash infra/scripts/deploy-server.sh
 
 x-backend: &backend
   build:
