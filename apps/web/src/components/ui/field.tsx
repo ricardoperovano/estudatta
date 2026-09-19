@@ -9,12 +9,14 @@ interface FieldProps {
   error?: React.ReactNode;
   className?: string;
   children: React.ReactNode;
+  /** âncora do tour guiado */
+  "data-tour"?: string;
 }
 
 /** Rótulo 12px acima do campo; erro com borda + mensagem 12/13px + ícone. */
-export function Field({ label, htmlFor, hint, error, className, children }: FieldProps) {
+export function Field({ label, htmlFor, hint, error, className, children, "data-tour": tour }: FieldProps) {
   return (
-    <div className={cn("field flex flex-col", className)}>
+    <div className={cn("field flex flex-col", className)} data-tour={tour}>
       {label ? (
         <label htmlFor={htmlFor} className="mb-[5px] block text-[12px] text-[color-mix(in_srgb,var(--color-text-primary)_70%,transparent)]">
           {label}

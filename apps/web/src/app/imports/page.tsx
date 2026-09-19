@@ -24,6 +24,8 @@ import { ImportProposalEditor } from "@/components/app/import-proposal-editor";
 import { Banner, Button, Card, Checkbox, EmptyState, Field, Seg, Select, Spinner, Tag, Textarea, toast, type TagProps } from "@/components/ui";
 import { fmtDateTimeShort } from "@/lib/format";
 import { useOnline } from "@/lib/online";
+import { usePageTour } from "@/components/tour/use-tours";
+import { importarTour } from "@/tours/importar";
 import { cn } from "@/lib/utils";
 
 const NEEDS_CONNECTION = "Importar precisa de conexão. Quando a internet voltar, envie de novo.";
@@ -66,6 +68,7 @@ export default function ImportsPage() {
   const job = useImport(importId);
   const [source, setSource] = React.useState<ImportSource>("text");
   const [confirmed, setConfirmed] = React.useState<ImportConfirmOut | null>(null);
+  usePageTour(importarTour, activities.isSuccess);
 
   const acts = activities.data ?? [];
   const wanted = params.get("objetivo") ?? job.data?.activity_id ?? null;
@@ -144,7 +147,7 @@ export default function ImportsPage() {
       {header}
       <div className="grid gap-[14px] desktop:grid-cols-[7fr_5fr] desktop:items-start desktop:gap-6">
         <div className="flex min-w-0 flex-col gap-[14px]">
-          <Card className="p-[14px] desktop:p-4">
+          <Card className="p-[14px] desktop:p-4" data-tour="importar-objetivo">
             <Field label="Objetivo que vai receber o conteúdo" htmlFor="import-activity" hint={importId ? "Trocar de objetivo fecha a importação aberta; ela continua em Importações recentes." : undefined}>
               <Select id="import-activity" value={activityId} onChange={(e) => patchParams({ objetivo: e.target.value, importacao: null })}>
                 {acts.map((a) => (
@@ -279,7 +282,7 @@ function NewImportForm({ activityId, source, onSourceChange, online, onCreated }
 
   return (
     <Card as="section" aria-label="Nova importação" className="gap-[14px] p-[14px] desktop:p-4">
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2" data-tour="importar-origem">
         <span className="kicker">De onde vem o conteúdo</span>
         <Seg<ImportSource>
           label="Origem do conteúdo"
@@ -627,7 +630,7 @@ function RecentImports({ activityId, openId, onOpen }: { activityId: string; ope
   const online = useOnline();
   const items = list.data ?? [];
   return (
-    <Card as="section" aria-labelledby="recent-imports" className="gap-[10px] p-[14px] desktop:p-4">
+    <Card as="section" aria-labelledby="recent-imports" className="gap-[10px] p-[14px] desktop:p-4" data-tour="importar-recentes">
       <div className="flex items-center justify-between gap-2">
         <h2 id="recent-imports" className="kicker m-0">
           Importações recentes

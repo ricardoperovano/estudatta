@@ -214,10 +214,10 @@ export function RecoveryPlanner({ activityId, onDone, inDialog }: Props) {
       {!online ? <Banner kind="offline">Sem conexão: a prévia pode estar desatualizada e o replanejamento só é aplicado quando você voltar à internet.</Banner> : null}
       {error ? <Banner kind="error">{error}</Banner> : null}
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2" data-tour="recuperacao-opcoes">
         {optionBtn("distribute", `Distribuir em ${distDays || horizon} dias`, distSub)}
         {option !== "today" && option !== "keep" ? (
-          <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1" data-tour="recuperacao-horizonte">
             <Seg
               size="sm"
               label="Horizonte"
@@ -303,7 +303,7 @@ export function RecoveryPlanner({ activityId, onDone, inDialog }: Props) {
         </Card>
       )}
 
-      <div className={cn("mt-auto flex flex-col gap-2", inDialog && "flex-row-reverse justify-start")}>
+      <div className={cn("mt-auto flex flex-col gap-2", inDialog && "flex-row-reverse justify-start")} data-tour="recuperacao-aplicar">
         <Button variant="primary" size="xl" block={!inDialog} loading={apply.isPending || cancel.isPending} disabled={option !== "keep" && (!preview || previewPending)} onClick={submit}>
           {option === "keep" ? "Manter como está" : "Aplicar replanejamento"}
         </Button>
@@ -401,7 +401,7 @@ function RecoveryTable({
   return (
     <>
       {/* celular: Dia · Antes · Depois */}
-      <Card className="tnum gap-[10px] p-[14px] text-[13px] desktop:hidden" aria-busy={loading || undefined}>
+      <Card className="tnum gap-[10px] p-[14px] text-[13px] desktop:hidden" aria-busy={loading || undefined} data-tour="recuperacao-previa">
         <div className="grid grid-cols-3 gap-1.5 text-[11px] uppercase tracking-[0.1em] text-neutral-500">
           <span>Dia</span>
           <span>Antes</span>
@@ -418,7 +418,7 @@ function RecoveryTable({
         {footer}
       </Card>
       {/* desktop: duas colunas Antes / Depois (D2) */}
-      <div className="tnum hidden grid-cols-2 gap-4 text-[14px] desktop:grid" aria-busy={loading || undefined}>
+      <div className="tnum hidden grid-cols-2 gap-4 text-[14px] desktop:grid" aria-busy={loading || undefined} data-tour="recuperacao-previa">
         <Card className="gap-1.5 bg-canvas p-[14px]">
           <span className="kicker">Antes</span>
           {rows.map((r) => (

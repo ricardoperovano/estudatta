@@ -83,6 +83,14 @@ Registro vivo das decisões tomadas durante a implementação. Cada item indica 
 - **Compatibilidade:** `ingles` continua aceito na API (clientes antigos, fila offline) e é gravado como idioma + inglês. A migração converteu os objetivos existentes de "Inglês" para idioma + inglês. Os antigos "Outro idioma" não diziam qual idioma e ficaram como "Outro idioma" até a pessoa escolher.
 - **Nome do objetivo:** ao escolher o idioma, o nome é preenchido com o nome do idioma se estiver vazio (ou ainda for o do idioma anterior). A pessoa pode trocar.
 
+## 2026-09-19 — Tours guiados e e-mail pela Cloudflare
+
+- **Pedido do responsável:** quem acabou de se cadastrar não pode ficar sem auxílio, e cada página precisa de um tour.
+- **Tour por página, com o Tatá como guia:** começa sozinho na primeira visita de cada página (depois do onboarding, com a página carregada e sem outro diálogo aberto). O botão "?" fixo revê o tour da página aberta, e Preferências tem "Mostrar os tours de novo".
+- **Vistos na conta:** a lista fica em `user_preferences.tours_seen` (`POST /me/tours/seen` e `/me/tours/reset`). Concluir ou pular marca como visto, então o tour não se repete em outro aparelho.
+- **Motor próprio, sem biblioteca:** foco no elemento com o resto escurecido, cartão com o Tatá, teclado (Enter/→, ←, Esc), movimento reduzido respeitado, cartão encaixado no topo ou na base no celular. Passos cujo alvo depende de dados são opcionais e pulam quando o elemento não existe. A comemoração de conquistas espera o tour terminar.
+- **E-mail pela API REST da Cloudflare** (`EMAIL_BACKEND=cloudflare`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_EMAIL_API_TOKEN`), no mesmo formato do ai-runner. O SMTP da Cloudflare continua possível pelo backend `smtp`.
+
 ## Pendências que dependem exclusivamente do responsável
 
 - **[pendente do responsável]** Validar os preços sugeridos (R$ 9,90 e R$ 19,90) e os tetos de IA após o primeiro mês com dados reais de uso.

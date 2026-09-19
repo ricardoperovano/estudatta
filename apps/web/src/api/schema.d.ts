@@ -386,6 +386,46 @@ export interface paths {
         patch: operations["update_preferences_api_v1_me_preferences_patch"];
         trace?: never;
     };
+    "/api/v1/me/tours/seen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tour Seen
+         * @description Marca o tour de uma página como visto (concluído ou pulado). Idempotente.
+         */
+        post: operations["tour_seen_api_v1_me_tours_seen_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/tours/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tour Reset
+         * @description Volta a mostrar os tours (todos ou só os informados).
+         */
+        post: operations["tour_reset_api_v1_me_tours_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/onboarding": {
         parameters: {
             query?: never;
@@ -4465,6 +4505,11 @@ export interface components {
              * @default true
              */
             mascot_enabled: boolean;
+            /**
+             * Tours Seen
+             * @default []
+             */
+            tours_seen: string[];
             /** Extra */
             extra: {
                 [key: string]: unknown;
@@ -6176,6 +6221,21 @@ export interface components {
              */
             clear_parent: boolean;
         };
+        /** TourResetIn */
+        TourResetIn: {
+            /** Keys */
+            keys?: string[] | null;
+        };
+        /** TourSeenIn */
+        TourSeenIn: {
+            /** Key */
+            key: string;
+        };
+        /** ToursOut */
+        ToursOut: {
+            /** Tours Seen */
+            tours_seen: string[];
+        };
         /** TypeSeconds */
         TypeSeconds: {
             /** Study Type */
@@ -7020,6 +7080,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PreferencesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tour_seen_api_v1_me_tours_seen_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TourSeenIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToursOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tour_reset_api_v1_me_tours_reset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TourResetIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToursOut"];
                 };
             };
             /** @description Validation Error */

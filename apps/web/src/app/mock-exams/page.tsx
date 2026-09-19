@@ -10,6 +10,8 @@ import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { fmtPct } from "@/components/app/revisions-utils";
 import { fmtDayShort, todayIso } from "@/lib/format";
 import { useOnline } from "@/lib/online";
+import { usePageTour } from "@/components/tour/use-tours";
+import { simuladosTour } from "@/tours/simulados";
 import { cn } from "@/lib/utils";
 
 /** Simulados do objetivo: último, melhor, variação, evolução, matérias mais fracas e histórico editável. */
@@ -21,6 +23,7 @@ export default function MockExamsPage() {
   const [editing, setEditing] = React.useState<MockExam | "new" | null>(null);
   const [deleting, setDeleting] = React.useState<MockExam | null>(null);
   const del = useDeleteMockExam();
+  usePageTour(simuladosTour, mocks.isSuccess && activity.isSuccess);
 
   const remove = async () => {
     if (!deleting) return;
@@ -47,7 +50,7 @@ export default function MockExamsPage() {
           <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">Simulados</h1>
         </div>
         {mocks.data && mocks.data.count > 0 ? (
-          <Button variant="primary" size="lg" onClick={() => setEditing("new")}>
+          <Button variant="primary" size="lg" onClick={() => setEditing("new")} data-tour="simulados-novo">
             <Plus size={16} aria-hidden /> Novo simulado
           </Button>
         ) : null}
@@ -78,7 +81,7 @@ export default function MockExamsPage() {
           title="Nenhum simulado registrado."
           description="Anote o resultado de cada simulado, no total ou por matéria, para acompanhar a evolução e descobrir as matérias mais fracas."
           action={
-            <Button variant="primary" size="lg" onClick={() => setEditing("new")}>
+            <Button variant="primary" size="lg" onClick={() => setEditing("new")} data-tour="simulados-novo">
               Registrar simulado
             </Button>
           }
@@ -112,7 +115,7 @@ function Overview({ data, onEdit, onDelete }: { data: MockOverview; onEdit: (e: 
 
   return (
     <>
-      <div className="tnum grid grid-cols-3 gap-[10px] desktop:gap-4">
+      <div className="tnum grid grid-cols-3 gap-[10px] desktop:gap-4" data-tour="simulados-numeros">
         <Stat label="Último" value={data.last_percent != null ? fmtPct(data.last_percent) : "—"} hint={last ? `${last.correct} de ${last.total_questions}` : undefined} />
         <Stat label="Melhor" value={data.best_percent != null ? fmtPct(data.best_percent) : "—"} hint={`${data.count} ${data.count === 1 ? "simulado" : "simulados"}`} />
         <Stat
@@ -123,7 +126,7 @@ function Overview({ data, onEdit, onDelete }: { data: MockOverview; onEdit: (e: 
         />
       </div>
 
-      <Card elev="sm" className="gap-3 p-4">
+      <Card elev="sm" className="gap-3 p-4" data-tour="simulados-evolucao">
         <span className="kicker">Evolução</span>
         {exams.length < 2 ? (
           <p className="text-[13px] text-neutral-400">A evolução aparece a partir do segundo simulado.</p>
@@ -133,7 +136,7 @@ function Overview({ data, onEdit, onDelete }: { data: MockOverview; onEdit: (e: 
       </Card>
 
       {data.subjects.length > 0 ? (
-        <Card elev="sm" className="gap-3 p-4">
+        <Card elev="sm" className="gap-3 p-4" data-tour="simulados-materias">
           <span className="kicker">Por matéria · mais fracas primeiro</span>
           <div className="overflow-x-auto">
             <table className="tnum w-full text-left text-[13px]">
@@ -176,10 +179,10 @@ function Overview({ data, onEdit, onDelete }: { data: MockOverview; onEdit: (e: 
           </div>
         </Card>
       ) : (
-        <p className="text-[13px] text-neutral-400">Registre os acertos por matéria para ver quais estão mais fracas.</p>
+        <p className="text-[13px] text-neutral-400" data-tour="simulados-materias">Registre os acertos por matéria para ver quais estão mais fracas.</p>
       )}
 
-      <section className="flex flex-col gap-2" aria-labelledby="mock-history">
+      <section className="flex flex-col gap-2" aria-labelledby="mock-history" data-tour="simulados-historico">
         <h2 id="mock-history" className="kicker font-normal">
           Histórico
         </h2>

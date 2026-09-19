@@ -13,6 +13,8 @@ import { SubjectTree } from "@/components/app/subject-tree";
 import { weekTargetSeconds } from "@/components/app/week-utils";
 import { fmtDayShort, fmtMinutes, todayIso } from "@/lib/format";
 import { useOnline } from "@/lib/online";
+import { usePageTour } from "@/components/tour/use-tours";
+import { objetivoTour } from "@/tours/objetivo";
 import { cn } from "@/lib/utils";
 
 const TABS = ["materias", "materiais", "tarefas", "config"] as const;
@@ -28,6 +30,7 @@ export default function ActivityDetailPage() {
   const balance = useBalance(id, 14);
   const week = useSummary("week", null, id ?? null, !!id);
   const month = useSummary("month", null, id ?? null, !!id);
+  usePageTour(objetivoTour, !!activity.data && !balance.isPending && !week.isPending && !month.isPending);
 
   const raw = params.get("aba");
   const tab: TabKey = TABS.includes(raw as TabKey) ? (raw as TabKey) : "materias";
@@ -122,12 +125,14 @@ export default function ActivityDetailPage() {
         </Banner>
       ) : null}
 
-      <div className="tnum flex gap-4 desktop:gap-8">
-        <Figure value={week.data ? fmtMinutes(weekLogged) : dash} label={hasTime ? `esta semana / ${fmtMinutes(weekTarget)}` : "esta semana"} />
-        <Figure value={month.data ? String(month.data.sessions_count) : dash} label={month.data?.sessions_count === 1 ? "sessão no mês" : "sessões no mês"} />
-        <Figure value={balance.data ? fmtMinutes(pending) : dash} label="a recuperar" pending={pending > 0} />
+      <div className="flex flex-col gap-[14px]" data-tour="objetivo-numeros">
+        <div className="tnum flex gap-4 desktop:gap-8">
+          <Figure value={week.data ? fmtMinutes(weekLogged) : dash} label={hasTime ? `esta semana / ${fmtMinutes(weekTarget)}` : "esta semana"} />
+          <Figure value={month.data ? String(month.data.sessions_count) : dash} label={month.data?.sessions_count === 1 ? "sessão no mês" : "sessões no mês"} />
+          <Figure value={balance.data ? fmtMinutes(pending) : dash} label="a recuperar" pending={pending > 0} />
+        </div>
+        <Bar value={weekTarget > 0 ? weekLogged / weekTarget : 0} height={6} label={`${fmtMinutes(weekLogged)} de ${fmtMinutes(weekTarget)} nesta semana`} />
       </div>
-      <Bar value={weekTarget > 0 ? weekLogged / weekTarget : 0} height={6} label={`${fmtMinutes(weekLogged)} de ${fmtMinutes(weekTarget)} nesta semana`} />
 
       {act.status === "active" ? (
         <div className="flex items-center justify-between gap-2 desktop:hidden">
@@ -145,7 +150,7 @@ export default function ActivityDetailPage() {
       {hasTime ? (
         <div className="flex max-w-[760px] flex-col gap-2">
           <StudyInsightsCard activityId={act.id} />
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 self-start" data-tour="objetivo-atalhos">
             <Button asChild variant="secondary" size="lg">
               <Link to={`/app/objetivos/${act.id}/simulados`}>
                 <ChartLineUp size={16} aria-hidden /> Simulados
@@ -161,7 +166,7 @@ export default function ActivityDetailPage() {
       ) : null}
 
       <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-[14px]">
-        <TabsList className="overflow-x-auto">
+        <TabsList className="overflow-x-auto" data-tour="objetivo-abas">
           <TabsTrigger value="materias">Matérias</TabsTrigger>
           <TabsTrigger value="materiais">Materiais</TabsTrigger>
           <TabsTrigger value="tarefas">Tarefas</TabsTrigger>

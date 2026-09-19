@@ -4,7 +4,7 @@ import csv
 import io
 import json
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel, Field
@@ -44,6 +44,7 @@ class PreferencesOut(ORMModel):
     revisions_enabled: bool = True
     revision_intervals: list[int] = [1, 7, 30]
     mascot_enabled: bool = True
+    tours_seen: list[str] = []
     extra: dict
 
 
@@ -60,6 +61,22 @@ class PreferencesUpdate(BaseModel):
     revision_intervals: list[int] | None = None
     mascot_enabled: bool | None = None
     extra: dict | None = None
+
+
+TOUR_KEY = r"^[a-z0-9][a-z0-9-]{0,39}$"
+MAX_TOURS = 60
+
+
+class TourSeenIn(BaseModel):
+    key: str = Field(pattern=TOUR_KEY)
+
+
+class TourResetIn(BaseModel):
+    keys: list[Annotated[str, Field(pattern=TOUR_KEY)]] | None = None  # None = todos
+
+
+class ToursOut(BaseModel):
+    tours_seen: list[str]
 
 
 class OnboardingComplete(BaseModel):
@@ -123,6 +140,42 @@ def update_preferences(
             setattr(prefs, k, v)
     db.commit()
     return PreferencesOut.model_validate(prefs)
+
+
+def _prefs(db: Session, user: User) -> UserPreferences:
+    prefs = db.get(UserPreferences, user.id)
+    if prefs is None:
+        prefs = UserPreferences(user_id=user.id, tours_seen=[])
+        db.add(prefs)
+    return prefs
+
+
+@router.post("/tours/seen", response_model=ToursOut)
+def tour_seen(
+    payload: TourSeenIn, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+) -> ToursOut:
+    """Marca o tour de uma página como visto (concluído ou pulado). Idempotente."""
+    prefs = _prefs(db, user)
+    seen = list(prefs.tours_seen or [])
+    if payload.key not in seen:
+        seen = [*seen, payload.key][-MAX_TOURS:]
+        prefs.tours_seen = seen
+    db.commit()
+    return ToursOut(tours_seen=seen)
+
+
+@router.post("/tours/reset", response_model=ToursOut)
+def tour_reset(
+    payload: TourResetIn, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+) -> ToursOut:
+    """Volta a mostrar os tours (todos ou só os informados)."""
+    prefs = _prefs(db, user)
+    keys = payload.keys
+    prefs.tours_seen = (
+        [] if keys is None else [k for k in (prefs.tours_seen or []) if k not in keys]
+    )
+    db.commit()
+    return ToursOut(tours_seen=list(prefs.tours_seen))
 
 
 @router.post("/onboarding", response_model=UserOut)

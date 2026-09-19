@@ -15,6 +15,8 @@ import type { StudySession } from "@/api/types";
 import { TataCompanion } from "@/components/mascot/TataCompanion";
 import { STUDY_TYPES, studyTypeLabel, type StudyType } from "@/api/study";
 import { cn } from "@/lib/utils";
+import { usePageTour } from "@/components/tour/use-tours";
+import { sessaoFocoTour, sessaoInicioTour } from "@/tours/sessao";
 import { StudyFields, studyFieldsPayload, validateStudyFields, type StudyFieldsValue } from "@/components/app/study-fields";
 
 /**
@@ -43,6 +45,9 @@ export default function TimerPage() {
   const [conflict, setConflict] = React.useState<{ session_id: string; activity_id: string; device_id: string | null } | null>(null);
   const [starting, setStarting] = React.useState(false);
   const objetivoParam = params.get("objetivo");
+  const tourReady = hydrated && !activities.isPending;
+  usePageTour(sessaoInicioTour, tourReady && !timer && !objetivoParam);
+  usePageTour(sessaoFocoTour, tourReady && !!timer);
   // vindo de revisões / próxima matéria: matéria, tópico e tipo de estudo pré-escolhidos
   const subjectParam = params.get("materia");
   const topicParam = params.get("topico");
@@ -286,7 +291,7 @@ export default function TimerPage() {
           </Banner>
         ) : (
           <>
-            <Field label="Objetivo" htmlFor="t-activity">
+            <Field label="Objetivo" htmlFor="t-activity" data-tour="sessao-objetivo">
               <Select id="t-activity" value={chosen} onChange={(e) => setActivityId(e.target.value)}>
                 {list.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -296,7 +301,7 @@ export default function TimerPage() {
               </Select>
             </Field>
             {card?.summary ? <p className="text-[14px] text-neutral-400">{cards.find((c) => c.activity.id === chosen)?.next_step}</p> : null}
-            <fieldset className="flex flex-col gap-2">
+            <fieldset className="flex flex-col gap-2" data-tour="sessao-tipo">
               <legend className="mb-2 text-[13px] text-neutral-300">Tipo de estudo</legend>
               <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Tipo de estudo">
                 {STUDY_TYPES.map((t) => (
@@ -316,7 +321,7 @@ export default function TimerPage() {
                 ))}
               </div>
             </fieldset>
-            <Button size="xl" block loading={starting} onClick={start} autoFocus>
+            <Button size="xl" block loading={starting} onClick={start} autoFocus data-tour="sessao-comecar">
               Começar sessão
             </Button>
             <Button variant="ghost" size="lg" onClick={() => nav("/app?registrar=1")}>
@@ -344,12 +349,13 @@ export default function TimerPage() {
       {error ? <Banner kind="error" className="w-full max-w-[560px] text-left">{error}</Banner> : null}
       {!timer.synced ? <Banner kind="offline" className="w-full max-w-[560px] text-left">Sessão salva neste aparelho. Vamos sincronizar quando você voltar à internet.</Banner> : null}
       <TataCompanion
+        data-tour="sessao-tata"
         className="mt-auto"
         layout="column"
         size={104}
         scene={{ kind: "timer", status: timer.status, elapsed, pausedFor, goalReached }}
       />
-      <div className="flex flex-col items-center gap-[10px]">
+      <div className="flex flex-col items-center gap-[10px]" data-tour="sessao-relogio">
         <span className="kicker text-neutral-400">{timer.status === "active" ? "Em sessão" : "Pausada"}</span>
         <span className="tnum text-[72px] font-semibold leading-none tracking-[-0.02em] desktop:text-[96px]" aria-live="off">
           {fmtClock(elapsed)}
@@ -363,7 +369,7 @@ export default function TimerPage() {
           <div className="h-full bg-accent transition-[width] duration-slow" style={{ width: `${progress * 100}%` }} />
         </div>
       </div>
-      <div className="mt-auto flex w-full max-w-[560px] flex-col gap-3">
+      <div className="mt-auto flex w-full max-w-[560px] flex-col gap-3" data-tour="sessao-controles">
         <div className="flex gap-[10px]">
           {timer.status === "active" ? (
             <Button variant="secondary" size="xl" className="flex-1" onClick={() => transition("pause")} loading={busy}>

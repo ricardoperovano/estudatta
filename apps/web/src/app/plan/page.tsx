@@ -18,6 +18,8 @@ import { TaskEditorSheet, type TaskDefaults } from "@/components/app/task-editor
 import { capitalize, fmtLongDuration, hhmmToMinutes, joinNames, shiftIso, startOfWeekIso, weekdayMon } from "@/components/app/week-utils";
 import { fmtDayShort, fmtMinutes, fmtRange, fmtTime, minutesOf, parseDate, todayIso, WEEKDAY_SHORT } from "@/lib/format";
 import { useOnline } from "@/lib/online";
+import { usePageTour } from "@/components/tour/use-tours";
+import { planoTour } from "@/tours/plano";
 import { cn } from "@/lib/utils";
 
 type View = "agenda" | "lista";
@@ -65,6 +67,7 @@ export default function PlanPage() {
   const [autoPlan, setAutoPlan] = React.useState(false);
   const canAutoPlan = useHasFeature("auto_planning");
   const [recoveryFor, setRecoveryFor] = React.useState<string | null>(null);
+  usePageTour(planoTour, calendar.isSuccess && activities.isSuccess);
 
   const setView = (v: View) => {
     setViewState(v);
@@ -162,7 +165,7 @@ export default function PlanPage() {
           <span className="hidden desktop:block">{subtitle}</span>
           <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">Plano da semana</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" data-tour="plano-visao">
           {viewSeg}
           <span className="hidden items-center gap-2 desktop:flex">{weekNav}</span>
         </div>
@@ -220,7 +223,7 @@ export default function PlanPage() {
         />
       ) : view === "agenda" ? (
         <>
-          <div className="desktop:hidden">
+          <div className="desktop:hidden" data-tour="plano-semana">
             <WeekBars days={days} today={today} selected={selectedDate} onSelect={setSelected} />
           </div>
           <div className="flex flex-col gap-[14px] desktop:hidden">
@@ -254,13 +257,13 @@ export default function PlanPage() {
             ) : null}
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button variant="primary" size="lg" onClick={() => addTask(selectedDate < today ? today : selectedDate)}>
+            <Button variant="primary" size="lg" onClick={() => addTask(selectedDate < today ? today : selectedDate)} data-tour="plano-nova-tarefa">
               + Nova tarefa
             </Button>
-            <Button variant="secondary" size="lg" onClick={() => setAutoPlan(true)}>
+            <Button variant="secondary" size="lg" onClick={() => setAutoPlan(true)} data-tour="plano-distribuir">
               Distribuir tarefas
             </Button>
-            <Button asChild variant="secondary" size="lg">
+            <Button asChild variant="secondary" size="lg" data-tour="plano-imprimir">
               <Link to={printHref}>
                 <Printer size={16} aria-hidden /> Imprimir semana
               </Link>
@@ -498,7 +501,7 @@ function TaskBlock({ task, onEdit, compact }: { task: Task; onEdit: (t: Task) =>
 /** Desktop (D2): sete colunas com cabeçalho de estado e blocos do dia em ordem de horário. */
 function WeekColumns({ days, today, pending, sessions, onEdit, onAdd, onManual }: DayProps & { days: CalendarDay[]; pending: number }) {
   return (
-    <div className="hidden grid-cols-7 gap-2 text-[12px] desktop:grid">
+    <div className="hidden grid-cols-7 gap-2 text-[12px] desktop:grid" data-tour="plano-semana">
       {days.map((d) => {
         const isToday = d.local_date === today;
         const t = minutesOf(d.target_seconds);
@@ -595,7 +598,7 @@ function WeekColumns({ days, today, pending, sessions, onEdit, onAdd, onManual }
 
 function WeekList({ days, today, pending, sessions, onEdit, onAdd, onManual, canRegister }: DayProps & { days: CalendarDay[]; pending: number; canRegister: boolean }) {
   return (
-    <div className="flex flex-col gap-[10px] desktop:max-w-[760px]">
+    <div className="flex flex-col gap-[10px] desktop:max-w-[760px]" data-tour="plano-semana">
       {days.map((d) => {
         const isToday = d.local_date === today;
         const t = minutesOf(d.target_seconds);

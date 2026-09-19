@@ -24,6 +24,8 @@ import { fmtDayShort, fmtDayTiny, fmtDateTimeShort, fmtMin, fmtMinutes, fmtRange
 import { useOnline } from "@/lib/online";
 import { cn } from "@/lib/utils";
 import { studyTypeLabel, useInsights } from "@/api/study";
+import { usePageTour } from "@/components/tour/use-tours";
+import { relatorioTour } from "@/tours/relatorio";
 import { fmtQuestions, StudyFields, studyFieldsFrom, studyFieldsPayload, validateStudyFields, type StudyFieldsValue } from "@/components/app/study-fields";
 
 const PERIOD_LABEL: Record<ReportPeriod, string> = { week: "semana", month: "mês", quarter: "trimestre" };
@@ -38,6 +40,7 @@ export default function ReportsPage() {
   const fullReports = useHasFeature("reports");
   const locked = period !== "week" && !fullReports;
   const summary = useReportSummary(locked ? "week" : period, date, activityId);
+  usePageTour(relatorioTour, !!summary.data);
 
   const acts = activities.data ?? [];
   const isCurrent = React.useMemo(() => {
@@ -70,7 +73,7 @@ export default function ReportsPage() {
             <span className="hidden desktop:inline">Relatório de constância</span>
           </h1>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2" data-tour="relatorio-periodo">
           <span className="desktop:hidden">
             <Seg
               label="Período"
@@ -178,7 +181,7 @@ function ReportBody({ data, period, activityId, activities, online }: { data: Su
 
   return (
     <>
-      <div className="tnum grid grid-cols-3 gap-2 desktop:grid-cols-4 desktop:gap-4">
+      <div className="tnum grid grid-cols-3 gap-2 desktop:grid-cols-4 desktop:gap-4" data-tour="relatorio-numeros">
         <StatCard value={fmtMinutes(data.logged_seconds)} label={`realizado de ${fmtMinutes(data.planned_seconds)}`} desktopLabel={`realizado de ${fmtMinutes(data.planned_seconds)} planejadas`} />
         <StatCard value={`${data.days_with_log} / ${data.goal_days_planned}`} label="dias com registro" desktopLabel="dias ativos com registro" />
         <StatCard value={fmtMinutes(data.pending_open_seconds)} label="a recuperar" desktopLabel={pendingLabel} pending={data.pending_open_seconds > 0} />
@@ -190,7 +193,7 @@ function ReportBody({ data, period, activityId, activities, online }: { data: Su
       </p>
 
       <div className="grid gap-[14px] desktop:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] desktop:gap-4">
-        <Card elev="sm" className="gap-3 p-4 desktop:gap-4 desktop:p-5">
+        <Card elev="sm" className="gap-3 p-4 desktop:gap-4 desktop:p-5" data-tour="relatorio-dias">
           <span className="kicker">Tempo por dia{typicalTarget(data.per_day) ? ` · meta ${typicalTarget(data.per_day)} min` : ""}</span>
           <DayBars rows={data.per_day} period={period} />
           <div className="flex flex-wrap gap-4 text-[12px] text-neutral-400" aria-hidden>
@@ -246,7 +249,7 @@ function ReportBody({ data, period, activityId, activities, online }: { data: Su
             ) : null}
           </Card>
 
-          <Card elev="sm" className="gap-2 p-4 text-[14px] desktop:flex-1 desktop:p-5">
+          <Card elev="sm" className="gap-2 p-4 text-[14px] desktop:flex-1 desktop:p-5" data-tour="relatorio-leitura">
             <span className="kicker">Leitura {period === "week" ? "da semana" : period === "month" ? "do mês" : "do trimestre"}</span>
             {data.reading ? <p>{data.reading}</p> : <p className="text-neutral-400">Ainda não há registros suficientes para uma leitura {period === "week" ? "desta semana" : "deste período"}.</p>}
             {/constância/i.test(data.reading ?? "") ? null : (
@@ -480,7 +483,7 @@ function StudyBreakdown({ activityId, activityTitle }: { activityId: string; act
 
   return (
     <div className="grid gap-[14px] tablet:grid-cols-2 desktop:gap-4">
-      <Card elev="sm" className="tnum gap-3 p-4 text-[14px] desktop:p-5">
+      <Card elev="sm" className="tnum gap-3 p-4 text-[14px] desktop:p-5" data-tour="relatorio-tipos">
         <div>
           <span className="kicker">Por tipo de estudo</span>
           <p className="text-[12px] text-neutral-400">
@@ -610,7 +613,7 @@ function SessionHistory({ start, end, activityId, online }: { start: string; end
 
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex items-end justify-between gap-3">
+      <div className="flex items-end justify-between gap-3" data-tour="relatorio-historico">
         <div>
           <span className="kicker">Histórico de sessões</span>
           <p className="text-[12px] text-neutral-400">Edite duração, data, tipo, questões ou observação; toda alteração fica registrada com o motivo.</p>

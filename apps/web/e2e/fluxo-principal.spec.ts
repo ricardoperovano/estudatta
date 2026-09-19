@@ -9,7 +9,15 @@ const password = "senha-forte-e2e-123";
 let seq = 0;
 const newEmail = () => `e2e-${Date.now()}-${++seq}-${Math.floor(Math.random() * 1e6)}@example.com`;
 
-async function register(page: Page) {
+/** Os tours guiados aparecem sozinhos na primeira visita de cada página: nos testes, são pulados. */
+async function skipTours(page: Page) {
+  await page.addLocatorHandler(page.locator("[data-tour-card]"), async (card) => {
+    await card.getByRole("button", { name: /Pular tour|Fechar$/ }).first().click();
+  });
+}
+
+async function register(page: Page, { keepTours = false } = {}) {
+  if (!keepTours) await skipTours(page);
   await page.goto("/cadastro");
   await page.getByLabel("E-mail").fill(newEmail());
   await page.getByLabel("Senha").fill(password);
@@ -41,8 +49,19 @@ async function onboarding(page: Page) {
 }
 
 test("cadastro → objetivo → sessão → saldo → recuperação → material → progresso", async ({ page }) => {
-  await register(page);
+  await register(page, { keepTours: true });
   await onboarding(page);
+
+  // Tour de boas-vindas: aparece sozinho para quem acabou de se cadastrar
+  const tour = page.locator("[data-tour-card]");
+  await expect(tour).toBeVisible({ timeout: 15_000 });
+  await expect(tour.getByRole("heading", { name: "Oi! Eu sou o Tatá." })).toBeVisible();
+  await tour.getByRole("button", { name: "Próximo" }).click();
+  await expect(tour.getByRole("heading", { name: "Seu objetivo de hoje" })).toBeVisible();
+  await page.keyboard.press("Escape"); // pular também conta como visto
+  await expect(tour).toBeHidden();
+  // os tours das outras páginas são pulados para o fluxo seguir
+  await skipTours(page);
 
   // Tela Hoje: meta base 60 min e 3 dias sem registro = 180 min de pendência anterior
   await expect(page.getByRole("heading", { name: "Hoje" })).toBeVisible();

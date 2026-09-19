@@ -12,6 +12,8 @@ import { NewObjectiveCard, ObjectiveCard } from "@/components/app/objective-card
 import { activeDaysCount, weekTargetSeconds } from "@/components/app/week-utils";
 import { fmtMinutes } from "@/lib/format";
 import { useOnline } from "@/lib/online";
+import { usePageTour } from "@/components/tour/use-tours";
+import { objetivosTour } from "@/tours/objetivos";
 
 type Status = "active" | "paused" | "archived";
 type Pending = { activity: Activity; action: "archive" | "delete" };
@@ -35,6 +37,7 @@ export default function ActivitiesListPage() {
   const archived = all.filter((a) => a.status === "archived");
   const activeIds = React.useMemo(() => all.filter((a) => a.status === "active").map((a) => a.id), [all]);
   const progress = useContentProgressMany(activeIds);
+  usePageTour(objetivosTour, activities.isSuccess && !today.isPending);
 
   const limitRaw = entitlements?.limits?.["max_active_activities"];
   const limit = typeof limitRaw === "number" ? limitRaw : null;
@@ -82,7 +85,7 @@ export default function ActivitiesListPage() {
           </span>
           <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">Objetivos</h1>
         </div>
-        <Button asChild variant="primary" size="lg" className="hidden desktop:inline-flex">
+        <Button asChild variant="primary" size="lg" className="hidden desktop:inline-flex" data-tour="objetivos-novo">
           <Link to="/app/objetivos/novo">+ Criar objetivo</Link>
         </Button>
       </header>
@@ -107,7 +110,7 @@ export default function ActivitiesListPage() {
           title="Nenhum objetivo ainda."
           description="Defina o que quer acompanhar, os dias e a meta diária. O plano mostra o que fazer hoje."
           action={
-            <Button asChild variant="primary" size="lg">
+            <Button asChild variant="primary" size="lg" data-tour="objetivos-novo">
               <Link to="/app/objetivos/novo">+ Criar objetivo</Link>
             </Button>
           }
@@ -128,7 +131,7 @@ export default function ActivitiesListPage() {
             ]
               .filter(Boolean)
               .join(" · ");
-            return (
+            const objectiveCard = (
               <ObjectiveCard
                 key={a.id}
                 to={`/app/objetivos/${a.id}`}
@@ -141,20 +144,30 @@ export default function ActivitiesListPage() {
                 meta={meta || undefined}
               />
             );
+            // o primeiro cartão é o alvo do tour; o invólucro em grid mantém a altura igual à dos vizinhos
+            return i === 0 ? (
+              <div key={a.id} className="grid" data-tour="objetivos-lista">
+                {objectiveCard}
+              </div>
+            ) : (
+              objectiveCard
+            );
           })}
-          <NewObjectiveCard
-            disabledReason={
-              atLimit ? (
-                <>
-                  Seu plano permite {limit} {limit === 1 ? "objetivo ativo" : "objetivos ativos"}. Pause outro ou{" "}
-                  <Link to="/app/planos" className="text-accent">
-                    veja os planos
-                  </Link>
-                  .
-                </>
-              ) : undefined
-            }
-          />
+          <div data-tour="objetivos-novo" className="grid">
+            <NewObjectiveCard
+              disabledReason={
+                atLimit ? (
+                  <>
+                    Seu plano permite {limit} {limit === 1 ? "objetivo ativo" : "objetivos ativos"}. Pause outro ou{" "}
+                    <Link to="/app/planos" className="text-accent">
+                      veja os planos
+                    </Link>
+                    .
+                  </>
+                ) : undefined
+              }
+            />
+          </div>
         </div>
       )}
 
@@ -174,7 +187,7 @@ export default function ActivitiesListPage() {
       ) : null}
 
       {active.length > 0 ? (
-        <Section title="Gerenciar ativos">
+        <Section title="Gerenciar ativos" tour="objetivos-gerenciar">
           {active.map((a) => (
             <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 text-[14px]">
               <Link to={`/app/objetivos/${a.id}`} className="min-w-0 flex-1 truncate text-primary no-underline">
@@ -224,9 +237,9 @@ export default function ActivitiesListPage() {
   );
 }
 
-function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+function Section({ title, hint, tour, children }: { title: string; hint?: string; tour?: string; children: React.ReactNode }) {
   return (
-    <section className="flex flex-col gap-2">
+    <section className="flex flex-col gap-2" data-tour={tour}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="kicker m-0 font-normal">{title}</h2>
         {hint ? <span className="text-[12px] text-neutral-400">{hint}</span> : null}

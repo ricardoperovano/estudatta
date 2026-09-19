@@ -11,6 +11,8 @@ import type { components } from "@/api/schema";
 import { currentTimezone, tzLabel } from "@/components/app/week-utils";
 import { fmtMinutes, todayIso } from "@/lib/format";
 import { useOnline } from "@/lib/online";
+import { usePageTour } from "@/components/tour/use-tours";
+import { objetivoNovoTour } from "@/tours/objetivo-novo";
 import { cn } from "@/lib/utils";
 
 type Body = components["schemas"]["ActivityCreate"];
@@ -22,6 +24,7 @@ export default function NewActivityPage() {
   const nav = useNavigate();
   const online = useOnline();
   const create = useCreateActivity();
+  usePageTour(objetivoNovoTour);
   const [title, setTitle] = React.useState("");
   const [category, setCategory] = React.useState<Body["category"]>("outro_estudo");
   const [language, setLanguage] = React.useState<LanguageCode>(DEFAULT_LANGUAGE);
@@ -108,44 +111,46 @@ export default function NewActivityPage() {
       ) : null}
       {error ? <Banner kind="error">{error}</Banner> : null}
 
-      <Field label="Nome" htmlFor="a-title" error={errors.title}>
-        <Input id="a-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Inglês, espanhol, concurso, violão…" maxLength={120} invalid={!!errors.title} autoFocus />
-      </Field>
-
-      <Field label="Categoria" htmlFor="a-category">
-        <Select
-          id="a-category"
-          value={category}
-          onChange={(e) => {
-            const next = e.target.value as Body["category"];
-            setCategory(next);
-            // nome vazio ganha o nome do idioma; a pessoa pode trocar
-            if (next === "idioma" && !title.trim()) setTitle(languageShortName(language) ?? "");
-          }}
-        >
-          {CATEGORY_OPTIONS.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </Select>
-      </Field>
-
-      {category === "idioma" ? (
-        <Field label="Idioma" htmlFor="a-language" hint="Mais de 90 idiomas, incluindo Libras. Se o seu não estiver na lista, escolha “Outro idioma”.">
-          <LanguageSelect
-            id="a-language"
-            value={language}
-            onChange={(v) => {
-              // se o nome ainda é o do idioma anterior, acompanha a troca
-              if (!title.trim() || title === languageShortName(language)) setTitle(languageShortName(v) ?? "");
-              setLanguage(v);
-            }}
-          />
+      <div className="flex flex-col gap-[14px]" data-tour="objetivo-novo-nome">
+        <Field label="Nome" htmlFor="a-title" error={errors.title}>
+          <Input id="a-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Inglês, espanhol, concurso, violão…" maxLength={120} invalid={!!errors.title} autoFocus />
         </Field>
-      ) : null}
 
-      <Field label="Como acompanhar" hint={mode === "time" ? "Meta diária em minutos, com saldo e recuperação." : mode === "checklist" ? "Só tarefas a concluir, sem meta de tempo." : "Meta de tempo e também tarefas a concluir."}>
+        <Field label="Categoria" htmlFor="a-category">
+          <Select
+            id="a-category"
+            value={category}
+            onChange={(e) => {
+              const next = e.target.value as Body["category"];
+              setCategory(next);
+              // nome vazio ganha o nome do idioma; a pessoa pode trocar
+              if (next === "idioma" && !title.trim()) setTitle(languageShortName(language) ?? "");
+            }}
+          >
+            {CATEGORY_OPTIONS.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        {category === "idioma" ? (
+          <Field label="Idioma" htmlFor="a-language" hint="Mais de 90 idiomas, incluindo Libras. Se o seu não estiver na lista, escolha “Outro idioma”.">
+            <LanguageSelect
+              id="a-language"
+              value={language}
+              onChange={(v) => {
+                // se o nome ainda é o do idioma anterior, acompanha a troca
+                if (!title.trim() || title === languageShortName(language)) setTitle(languageShortName(v) ?? "");
+                setLanguage(v);
+              }}
+            />
+          </Field>
+        ) : null}
+      </div>
+
+      <Field label="Como acompanhar" data-tour="objetivo-novo-modo" hint={mode === "time" ? "Meta diária em minutos, com saldo e recuperação." : mode === "checklist" ? "Só tarefas a concluir, sem meta de tempo." : "Meta de tempo e também tarefas a concluir."}>
         <Seg
           block
           size="lg"
@@ -161,14 +166,14 @@ export default function NewActivityPage() {
       </Field>
 
       {hasTime ? (
-        <>
+        <div className="flex flex-col gap-[14px]" data-tour="objetivo-novo-meta">
           <Field label="Meta por dia">
             <DurationStepper minutes={minutes} onChange={setMinutes} className="rounded-md bg-surface py-4" />
           </Field>
           <Field label="Dias ativos" error={errors.days} hint={days.length > 0 ? `${days.length}× por semana · ${fmtMinutes(weekTotal)} na semana` : undefined}>
             <DayPicker value={days} onChange={setDays} />
           </Field>
-        </>
+        </div>
       ) : null}
 
       <div className="grid grid-cols-2 gap-2">
@@ -181,7 +186,7 @@ export default function NewActivityPage() {
       </div>
 
       {hasTime ? (
-        <Field label="Quando um dia ficar abaixo da meta">
+        <Field label="Quando um dia ficar abaixo da meta" data-tour="objetivo-novo-recuperacao">
           <RadioGroup value={policy} onValueChange={(v) => setPolicy(v as Policy)} className="flex flex-col gap-1" aria-label="Política de recuperação">
             <RadioItem value="accumulate_suggest" label="Guardar como pendência e sugerir como recuperar" description="Recomendado: a sugestão nunca aumenta a dívida." />
             <RadioItem value="accumulate" label="Guardar como pendência, sem sugestões" description="Você decide quando e como recuperar." />

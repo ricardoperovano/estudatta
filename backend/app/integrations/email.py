@@ -1,10 +1,13 @@
-"""Envio de e-mail: SMTP configurável, console (dev) ou memória (testes)."""
+"""Envio de e-mail: Cloudflare Email Sending (API REST), SMTP, console (dev) ou memória (testes)."""
 
 from __future__ import annotations
 
 import smtplib
 from dataclasses import dataclass, field
 from email.message import EmailMessage
+from email.utils import parseaddr
+
+import httpx
 
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -68,7 +71,58 @@ class SmtpBackend(EmailBackend):
             return False
 
 
+CLOUDFLARE_SEND_URL = (
+    "https://api.cloudflare.com/client/v4/accounts/{account_id}/email/sending/send"
+)
+
+
+class CloudflareBackend(EmailBackend):
+    """Cloudflare Email Service (Email Sending) pela API REST. O domínio do remetente precisa
+    estar em Compute → Email Service → Email Sending, na mesma conta do token."""
+
+    def send(self, msg: OutgoingEmail) -> bool:
+        if not (settings.CLOUDFLARE_ACCOUNT_ID and settings.CLOUDFLARE_EMAIL_API_TOKEN):
+            log.warning("email.cloudflare_not_configured", to=msg.to)
+            return False
+        name, address = parseaddr(settings.EMAIL_FROM)
+        payload: dict = {
+            "from": {"address": address, "name": name or settings.APP_NAME},
+            "to": msg.to,
+            "subject": msg.subject,
+            "text": msg.text,
+        }
+        if msg.html:
+            payload["html"] = msg.html
+        if msg.headers:
+            payload["headers"] = msg.headers
+        try:
+            res = httpx.post(
+                CLOUDFLARE_SEND_URL.format(account_id=settings.CLOUDFLARE_ACCOUNT_ID),
+                json=payload,
+                headers={"Authorization": f"Bearer {settings.CLOUDFLARE_EMAIL_API_TOKEN}"},
+                timeout=20,
+            )
+            data = res.json() if res.content else {}
+        except (httpx.HTTPError, ValueError) as exc:
+            log.warning("email.cloudflare_failed", error=str(exc), to=msg.to)
+            return False
+        if res.status_code >= 400 or not data.get("success", False):
+            log.warning(
+                "email.cloudflare_failed",
+                status=res.status_code,
+                errors=data.get("errors"),
+                to=msg.to,
+            )
+            return False
+        if (data.get("result") or {}).get("permanent_bounces"):
+            log.warning("email.cloudflare_bounced", to=msg.to)
+            return False
+        return True
+
+
 def get_backend() -> EmailBackend:
+    if settings.EMAIL_BACKEND == "cloudflare":
+        return CloudflareBackend()
     if settings.EMAIL_BACKEND == "smtp":
         return SmtpBackend()
     if settings.EMAIL_BACKEND == "memory":

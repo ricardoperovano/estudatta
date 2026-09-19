@@ -297,7 +297,7 @@ export function DataSection({ online }: { online: boolean }) {
 
   return (
     <SettingsSection title="Dados">
-      <Card className="gap-2 p-[14px] text-[14px]">
+      <Card className="gap-2 p-[14px] text-[14px]" data-tour="preferencias-dados">
         <span>Exportar meus dados</span>
         <span className="text-[12px] text-neutral-400">Tudo o que você registrou, em um arquivo completo, ou só o histórico de sessões em planilha. Disponível em qualquer plano.</span>
         <div className="flex flex-wrap gap-2">

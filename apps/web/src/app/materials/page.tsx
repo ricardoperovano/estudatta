@@ -21,6 +21,8 @@ import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { ImportErrorCard } from "@/components/app/import-error-card";
 import { Banner, Button, Card, Dialog, DialogActions, DialogContent, EmptyState, Field, Input, Seg, Select, Spinner, Tag, Textarea, toast } from "@/components/ui";
 import { useOnline } from "@/lib/online";
+import { usePageTour } from "@/components/tour/use-tours";
+import { materiaisTour } from "@/tours/materiais";
 
 type AddKind = "pdf" | "link" | "physical";
 
@@ -62,6 +64,7 @@ export default function MaterialsPage() {
   const [failure, setFailure] = React.useState<UploadFailure | null>(null);
   const [uploadingName, setUploadingName] = React.useState<string | null>(null);
   const retryInput = React.useRef<HTMLInputElement>(null);
+  usePageTour(materiaisTour, materials.isSuccess && activities.isSuccess);
 
   const setFilter = (id: string) => {
     const next = new URLSearchParams(params);
@@ -97,7 +100,7 @@ export default function MaterialsPage() {
     <div className="flex flex-col gap-[14px]">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">Materiais</h1>
-        <Button variant="primary" size="lg" onClick={() => setAdd({ kind: "pdf" })}>
+        <Button variant="primary" size="lg" onClick={() => setAdd({ kind: "pdf" })} data-tour="materiais-adicionar">
           <Plus size={16} aria-hidden /> Adicionar material
         </Button>
       </header>
@@ -134,7 +137,7 @@ export default function MaterialsPage() {
       ) : null}
 
       {activities.data && activities.data.length > 1 ? (
-        <Field label="Objetivo" htmlFor="materials-filter" className="desktop:max-w-[320px]">
+        <Field label="Objetivo" htmlFor="materials-filter" className="desktop:max-w-[320px]" data-tour="materiais-filtro">
           <Select id="materials-filter" value={activityFilter ?? ""} onChange={(e) => setFilter(e.target.value)}>
             <option value="">Todos os objetivos</option>
             {activities.data.map((a) => (
@@ -183,7 +186,7 @@ export default function MaterialsPage() {
           }
         />
       ) : (
-        <ul className="grid gap-[14px] tablet:grid-cols-2 desktop:grid-cols-3">
+        <ul className="grid gap-[14px] tablet:grid-cols-2 desktop:grid-cols-3" data-tour="materiais-lista">
           {materials.data.map((m) => (
             <li key={m.id}>
               <MaterialCard material={m} activityTitle={activityTitle(m.activity_id)} onOpen={() => setOpenId(m.id)} />

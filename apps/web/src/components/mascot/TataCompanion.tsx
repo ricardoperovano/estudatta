@@ -23,6 +23,8 @@ interface Props {
   /** balão ao lado (row) ou abaixo (column) */
   layout?: "row" | "column";
   className?: string;
+  /** âncora do tour guiado */
+  "data-tour"?: string;
 }
 
 const MILESTONE = 25 * 60;
@@ -72,7 +74,7 @@ function reactionFor(prev: string | null, next: string, scene: CompanionScene, t
   return null;
 }
 
-export function TataCompanion({ scene, size = 112, layout = "row", className }: Props) {
+export function TataCompanion({ scene, size = 112, layout = "row", className, "data-tour": tour }: Props) {
   const { enabled, muted, tone } = useTataPrefs();
   const reduced = useReducedMotion();
   const wrapRef = React.useRef<HTMLDivElement>(null);
@@ -176,6 +178,7 @@ export function TataCompanion({ scene, size = 112, layout = "row", className }: 
     <div
       ref={wrapRef}
       role="group"
+      data-tour={tour}
       aria-label="Tatá, seu companheiro de estudo"
       className={cn("tata-companion flex items-center gap-3", layout === "column" ? "flex-col" : "flex-row", className)}
     >

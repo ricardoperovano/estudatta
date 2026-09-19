@@ -10,6 +10,7 @@ import { useUser } from "@/api/session";
 import { TataSvg } from "@/components/mascot/TataSvg";
 import { useTataPrefs } from "@/components/mascot/use-tata";
 import { AchievementBadge } from "./achievement-icon";
+import { useTourStore } from "@/components/tour/store";
 
 export function AchievementCelebration() {
   const user = useUser();
@@ -19,11 +20,12 @@ export function AchievementCelebration() {
   const seen = useMarkAchievementsSeen();
   const { enabled: tata } = useTataPrefs();
   const [dismissed, setDismissed] = React.useState<string>("");
+  const touring = useTourStore((s) => !!s.active);
 
   const unseen = g.data?.unseen ?? [];
   const key = unseen.map((a) => a.code).join(",");
   const blocked = pathname.startsWith("/app/sessao") || pathname.startsWith("/app/conquistas") || !user?.onboarding_completed_at;
-  const open = unseen.length > 0 && !blocked && dismissed !== key;
+  const open = unseen.length > 0 && !blocked && !touring && dismissed !== key;
   if (!open) return null;
 
   const close = (goTo?: string) => {

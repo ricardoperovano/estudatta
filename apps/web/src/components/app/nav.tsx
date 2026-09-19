@@ -27,7 +27,7 @@ export function BottomNav() {
   // cronômetro em tela cheia (tela 04): sem navegação inferior; "Minimizar" volta para Hoje
   if (pathname.startsWith("/app/sessao")) return null;
   return (
-    <nav aria-label="Principal" className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(var(--layout-bottom-nav-height)+env(safe-area-inset-bottom,0px))] items-center justify-around border-t border-divider bg-canvas pb-[calc(6px+env(safe-area-inset-bottom,0px))] text-[11px] desktop:hidden">
+    <nav aria-label="Principal" data-tour="nav" className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(var(--layout-bottom-nav-height)+env(safe-area-inset-bottom,0px))] items-center justify-around border-t border-divider bg-canvas pb-[calc(6px+env(safe-area-inset-bottom,0px))] text-[11px] desktop:hidden">
       {items.map(({ to, label, icon: Icon, end }) => (
         <NavLink
           key={to}
@@ -59,7 +59,7 @@ export function Sidebar() {
       active ? "bg-accent-900 text-accent" : "text-neutral-400 hover:bg-[color-mix(in_srgb,var(--color-text-primary)_5%,transparent)] hover:text-primary",
     );
   return (
-    <aside className="hidden h-dvh w-[72px] shrink-0 flex-col gap-1 border-r border-divider px-3 py-6 tablet:flex desktop:w-sidebar">
+    <aside data-tour="nav" className="hidden h-dvh w-[72px] shrink-0 flex-col gap-1 border-r border-divider px-3 py-6 tablet:flex desktop:w-sidebar">
       <div className="flex items-center gap-[10px] px-[10px] pb-5 tablet:justify-center desktop:justify-start">
         <span className="desktop:hidden">
           <Symbol size={24} />

@@ -18,11 +18,16 @@ import { readTheme, setTheme, type Theme } from "@/lib/theme";
 import type { PendingOp } from "@/offline/db";
 import { discardOp, listConflicts, retryOp, syncNow, useSyncStore } from "@/offline/sync";
 import { usePwaStore } from "@/pwa/register";
+import { useTourStore } from "@/components/tour/store";
+import { usePageTour, useResetTours } from "@/components/tour/use-tours";
+import { preferenciasTour } from "@/tours/preferencias";
 
 /** Preferências: lembretes, aparência, sessão padrão, conta, dados, sincronização, instalação e sair. */
 export default function SettingsPage() {
   const online = useOnline();
   const user = useUser();
+  const prefs = usePreferences();
+  usePageTour(preferenciasTour, !!prefs.data);
   return (
     <div className="flex flex-col gap-[14px] desktop:gap-8">
       <header>
@@ -42,6 +47,7 @@ export default function SettingsPage() {
           <DataSection online={online} />
           <SyncSection online={online} />
           <InstallSection />
+          <HelpSection online={online} />
           <MoreSection isAdmin={user?.role === "admin"} />
           <LogoutSection online={online} />
         </div>
@@ -169,7 +175,7 @@ function StudyCompanionSection({ online }: { online: boolean }) {
   const enabled = prefs.data?.mascot_enabled ?? true;
   return (
     <SettingsSection title="Tatá, o companheiro de estudo">
-      <Card className="flex-row items-center gap-4 p-[14px] text-[14px]">
+      <Card className="flex-row items-center gap-4 p-[14px] text-[14px]" data-tour="preferencias-tata">
         <TataSvg mood={enabled ? "wave" : "sleep"} size={64} />
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <SettingsRow label="Mostrar o Tatá" hint="Aparece no cronômetro, no Hoje e nas conquistas. Vale para todos os aparelhos." htmlFor="pref-tata">
@@ -214,7 +220,7 @@ function RevisionsSection({ online }: { online: boolean }) {
   };
   return (
     <SettingsSection title="Revisões espaçadas">
-      <Card className="gap-3 p-[14px] text-[14px]">
+      <Card className="gap-3 p-[14px] text-[14px]" data-tour="preferencias-revisoes">
         <SettingsRow label="Agendar revisões" hint="Depois de uma sessão de teoria, aula, leitura ou prática com matéria, o Estudatta agenda as revisões." htmlFor="pref-rev">
           <Switch id="pref-rev" checked={enabled} disabled={!online || prefs.isPending} onCheckedChange={(v) => patch({ revisions_enabled: v })} />
         </SettingsRow>
@@ -309,7 +315,7 @@ function SyncSection({ online }: { online: boolean }) {
 
   return (
     <SettingsSection title="Sincronização">
-      <Card className="gap-2 p-[14px] text-[14px]">
+      <Card className="gap-2 p-[14px] text-[14px]" data-tour="preferencias-sync">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span>Registros deste aparelho</span>
           {!online ? (
@@ -387,6 +393,33 @@ function InstallSection() {
           Se o navegador não mostrar o convite aqui, procure “Instalar app” ou “Adicionar à tela inicial” no menu dele. Instalado, o app abre em tela cheia e funciona melhor sem conexão.
         </p>
       ) : null}
+    </SettingsSection>
+  );
+}
+
+// --- Ajuda ---------------------------------------------------------------------------------------
+
+function HelpSection({ online }: { online: boolean }) {
+  const reset = useResetTours();
+  const markLocal = useTourStore((s) => s.markLocal);
+  const run = () =>
+    reset.mutate(undefined, {
+      onSuccess: () => {
+        // não reabre o tour desta página agora; ele volta na próxima visita
+        markLocal(preferenciasTour.key);
+        toast("success", "Os tours vão aparecer de novo em cada página.");
+      },
+      onError: (e) => toast("error", "Não foi possível reativar os tours", errorMessage(e)),
+    });
+  return (
+    <SettingsSection title="Ajuda">
+      <Card className="gap-2 p-[14px] text-[14px]" data-tour="preferencias-tours">
+        <span>Rever os tours</span>
+        <span className="text-[12px] text-neutral-400">Cada página tem um tour curto. Para rever só o da página aberta, toque no ? no canto da tela.</span>
+        <Button variant="secondary" className="min-h-[40px] self-start" loading={reset.isPending} disabled={!online} onClick={run}>
+          Mostrar os tours de novo
+        </Button>
+      </Card>
     </SettingsSection>
   );
 }

@@ -13,6 +13,8 @@ import { StudyInsightsCard } from "@/components/app/study-insights-card";
 import { useTimerStore, elapsedSeconds } from "@/app/timer/store";
 import { cn } from "@/lib/utils";
 import { TodayTata } from "@/components/mascot/today-tata";
+import { usePageTour } from "@/components/tour/use-tours";
+import { hojeTour } from "@/tours/hoje";
 import type { TodayCard, AgendaItem } from "@/api/types";
 
 /** Tela Hoje: um próximo passo executável por objetivo, "Começar sessão" em destaque e "Registrar tempo". */
@@ -26,6 +28,8 @@ export default function TodayPage() {
   const timer = useTimerStore((s) => s.timer);
   const nav = useNavigate();
 
+  // tour de boas-vindas: começa quando o plano de hoje carregou e há objetivo na tela
+  usePageTour(hojeTour, !!today.data && today.data.data.cards.length > 0);
   const wantsManual = params.get("registrar") === "1";
   const closeManual = () => {
     setManualFor(null);
@@ -88,10 +92,10 @@ export default function TodayPage() {
           </span>
           {first ? (
             <div className="hidden gap-2 desktop:flex">
-              <Button variant="secondary" size="lg" onClick={() => setManualFor(first)}>
+              <Button variant="secondary" size="lg" onClick={() => setManualFor(first)} data-tour="registrar">
                 Registrar manualmente
               </Button>
-              <Button variant="primary" size="lg" onClick={() => nav(`/app/sessao?objetivo=${first.activity.id}`)}>
+              <Button variant="primary" size="lg" onClick={() => nav(`/app/sessao?objetivo=${first.activity.id}`)} data-tour="comecar">
                 Começar sessão
               </Button>
             </div>
@@ -132,10 +136,14 @@ export default function TodayPage() {
 
       <div className="grid gap-[14px] desktop:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] desktop:gap-8">
         <div className="flex flex-col gap-[14px]">
+          <div className="flex flex-col gap-[14px]" data-tour="hoje-objetivos">
           {cards.map((c) => (
             <ActivityTodayCard key={c.activity.id} card={c} onManual={() => setManualFor(c)} onStart={() => nav(`/app/sessao?objetivo=${c.activity.id}`)} hideActionsOnDesktop={c === first} />
           ))}
-          <RevisionsToday />
+          </div>
+          <div data-tour="revisoes-hoje" className="empty:hidden">
+            <RevisionsToday />
+          </div>
           {studyActs.length > 0 ? <StudyInsightsCard activityId={studyActs[0].id} activities={studyActs} hideWhenEmpty /> : null}
         </div>
         <Agenda items={data.agenda} cards={cards} />
@@ -234,7 +242,7 @@ function ActivityTodayCard({ card, onManual, onStart, hideActionsOnDesktop }: { 
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-4 rounded-md bg-canvas px-3 py-[10px] desktop:px-4 desktop:py-[14px]">
+      <div className="flex items-center justify-between gap-4 rounded-md bg-canvas px-3 py-[10px] desktop:px-4 desktop:py-[14px]" data-tour="proximo-passo">
         <p className="text-[14px] leading-[1.45] desktop:text-[15px]">
           <strong className="font-medium">Próximo passo:</strong> {card.next_step}
         </p>
@@ -250,12 +258,12 @@ function ActivityTodayCard({ card, onManual, onStart, hideActionsOnDesktop }: { 
           Estudar mais um pouco
         </Button>
       ) : (
-        <Button variant="primary" size="xl" block onClick={onStart} className={cn(hideActionsOnDesktop && "desktop:hidden")}>
+        <Button variant="primary" size="xl" block onClick={onStart} className={cn(hideActionsOnDesktop && "desktop:hidden")} data-tour="comecar">
           Começar sessão
         </Button>
       )}
       <div className={cn("flex justify-between", hideActionsOnDesktop && "desktop:hidden")}>
-        <Button variant="ghost" size="sm" onClick={onManual}>
+        <Button variant="ghost" size="sm" onClick={onManual} data-tour="registrar">
           Registrar manualmente
         </Button>
         {s.pending_prior > 0 ? (
@@ -305,7 +313,7 @@ function Agenda({ items, cards }: { items: AgendaItem[]; cards: TodayCard[] }) {
   const tasks = items.filter((i) => i.kind === "checklist");
   const titleOf = (id: string) => cards.find((c) => c.activity.id === id)?.activity.title;
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3" data-tour="agenda">
       <span className="kicker">Agenda de hoje</span>
       {study.length === 0 ? (
         <p className="text-[13px] text-neutral-400">

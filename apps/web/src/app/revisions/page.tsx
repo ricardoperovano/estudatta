@@ -8,6 +8,8 @@ import { daysBetween } from "@/components/app/revisions-utils";
 import { todayIso } from "@/lib/format";
 import { useOnline } from "@/lib/online";
 import { cn } from "@/lib/utils";
+import { usePageTour } from "@/components/tour/use-tours";
+import { revisoesTour } from "@/tours/revisoes";
 
 type TabKey = "pendentes" | "concluidas";
 
@@ -19,6 +21,8 @@ export default function RevisionsPage() {
   const acts = activities.data ?? [];
   const activityId = params.get("objetivo") || undefined;
   const tab: TabKey = params.get("aba") === "concluidas" ? "concluidas" : "pendentes";
+  const pendingList = useRevisions({ status: "pending", activity_id: activityId });
+  usePageTour(revisoesTour, pendingList.isSuccess);
 
   const setParam = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
@@ -50,7 +54,7 @@ export default function RevisionsPage() {
       </header>
 
       <Tabs value={tab} onValueChange={(v) => setParam("aba", v === "concluidas" ? v : null)} className="flex flex-col gap-[14px]">
-        <TabsList>
+        <TabsList data-tour="revisoes-abas">
           <TabsTrigger value="pendentes">Pendentes</TabsTrigger>
           <TabsTrigger value="concluidas">Concluídas</TabsTrigger>
         </TabsList>
@@ -82,7 +86,7 @@ function PendingList({ activityId, today, titleOf }: { activityId?: string; toda
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="tnum grid grid-cols-3 gap-[10px] desktop:gap-4" role="group" aria-label="Resumo das revisões">
+      <div className="tnum grid grid-cols-3 gap-[10px] desktop:gap-4" role="group" aria-label="Resumo das revisões" data-tour="revisoes-contadores">
         <Figure value={counts.overdue} label={counts.overdue === 1 ? "atrasada" : "atrasadas"} tone={counts.overdue > 0 ? "pending" : undefined} />
         <Figure value={counts.today} label="para hoje" tone={counts.today > 0 ? "accent" : undefined} />
         <Figure value={counts.week} label="próximos 7 dias" />
@@ -97,7 +101,7 @@ function PendingList({ activityId, today, titleOf }: { activityId?: string; toda
           <Group title="Próximos dias" items={groups.soon} today={today} titleOf={titleOf} />
           <Group title="Mais adiante" items={groups.later} today={today} titleOf={titleOf} />
           <p className="text-[13px] text-neutral-400">
-            Uma sessão do tipo Revisão na mesma matéria ou tópico conclui a revisão sozinha e agenda a próxima etapa. <Link to="/app/preferencias">Mudar intervalos</Link>
+            Uma sessão do tipo Revisão na mesma matéria ou tópico conclui a revisão sozinha e agenda a próxima etapa. <Link to="/app/preferencias" data-tour="revisoes-intervalos">Mudar intervalos</Link>
           </p>
         </>
       )}
@@ -166,7 +170,7 @@ function HowItWorks() {
           <Button asChild variant="primary">
             <Link to="/app/sessao">Começar sessão</Link>
           </Button>
-          <Button asChild variant="secondary">
+          <Button asChild variant="secondary" data-tour="revisoes-intervalos">
             <Link to="/app/preferencias">Mudar intervalos</Link>
           </Button>
         </div>

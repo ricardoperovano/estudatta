@@ -183,7 +183,7 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
 
   return (
     <div className="flex flex-col gap-[14px]">
-      <Card className="gap-[10px] p-[14px] desktop:p-4">
+      <Card className="gap-[10px] p-[14px] desktop:p-4" data-tour="importar-revisao">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="flex min-w-0 flex-col gap-1">
             <span className="kicker">Revisão</span>
@@ -205,7 +205,7 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
         ) : null}
         {skipped > 0 ? <span className="tnum text-[12px] text-neutral-400">{plural(skipped, "linha foi ignorada", "linhas foram ignoradas")} por não parecerem itens de conteúdo.</span> : null}
         {aiEnabled ? (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1" data-tour="importar-ia">
             <Button
               variant="secondary"
               className="min-h-[44px]"

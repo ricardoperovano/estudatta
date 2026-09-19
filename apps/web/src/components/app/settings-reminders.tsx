@@ -122,7 +122,7 @@ export function RemindersSection({ online }: { online: boolean }) {
 
   return (
     <SettingsSection title="Lembretes">
-      <Card className="gap-3 p-[14px] text-[14px]">
+      <Card className="gap-3 p-[14px] text-[14px]" data-tour="preferencias-lembretes">
         <SettingsRow label="Lembrar de estudar">
           <Switch label="Lembrar de estudar" checked={p.enabled} disabled={!online} onCheckedChange={(v) => patch({ enabled: v })} />
         </SettingsRow>

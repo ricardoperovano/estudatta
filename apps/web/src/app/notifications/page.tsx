@@ -8,6 +8,8 @@ import { Banner, Button, Card, EmptyState, Seg, Spinner, Tag, toast } from "@/co
 import { fmtDateTimeShort, fmtTime, parseDate, todayIso, isoDate } from "@/lib/format";
 import { useOnline } from "@/lib/online";
 import { cn } from "@/lib/utils";
+import { usePageTour } from "@/components/tour/use-tours";
+import { notificacoesTour } from "@/tours/notificacoes";
 
 const PAGE = 30;
 
@@ -70,6 +72,7 @@ export default function NotificationsPage() {
   const prefs = useNotificationPrefs();
   const readAll = useMarkAllNotificationsRead();
   const snooze = useSnoozeReminders();
+  usePageTour(notificacoesTour, list.isSuccess);
 
   const now = useClock();
   const snoozedUntil = prefs.data?.snoozed_until && parseDate(prefs.data.snoozed_until).getTime() > now ? prefs.data.snoozed_until : null;
@@ -94,7 +97,7 @@ export default function NotificationsPage() {
           <span className="text-[13px] text-neutral-400">{unread > 0 ? `${unread} não ${unread === 1 ? "lida" : "lidas"}` : "Tudo em dia"}</span>
           <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">Notificações</h1>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2" data-tour="notificacoes-acoes">
           <Button variant="secondary" size="lg" loading={snooze.isPending} disabled={!online} onClick={onSnooze}>
             <BellSimpleSlash size={16} aria-hidden /> Adiar 1h
           </Button>
@@ -119,19 +122,20 @@ export default function NotificationsPage() {
       ) : null}
       {!online ? <Banner kind="offline">Sem conexão: a lista pode estar desatualizada, e marcar como lida precisa de internet.</Banner> : null}
 
-      <Seg<Filter>
-        label="Filtro"
-        className="self-start"
-        value={filter}
-        onChange={(v) => {
-          setFilter(v);
-          setLimit(PAGE);
-        }}
-        options={[
-          { value: "all", label: "Todas" },
-          { value: "unread", label: unread > 0 ? `Não lidas (${unread})` : "Não lidas" },
-        ]}
-      />
+      <div className="self-start" data-tour="notificacoes-filtro">
+        <Seg<Filter>
+          label="Filtro"
+          value={filter}
+          onChange={(v) => {
+            setFilter(v);
+            setLimit(PAGE);
+          }}
+          options={[
+            { value: "all", label: "Todas" },
+            { value: "unread", label: unread > 0 ? `Não lidas (${unread})` : "Não lidas" },
+          ]}
+        />
+      </div>
 
       {list.isPending ? (
         <div className="flex justify-center py-16" role="status">
@@ -168,8 +172,8 @@ export default function NotificationsPage() {
       ) : (
         <>
           <ul className="flex flex-col gap-2">
-            {list.data.items.map((n) => (
-              <NotificationRow key={n.id} item={n} online={online} />
+            {list.data.items.map((n, i) => (
+              <NotificationRow key={n.id} item={n} online={online} tour={i === 0} />
             ))}
           </ul>
           {list.data.total > list.data.items.length ? (
@@ -183,7 +187,7 @@ export default function NotificationsPage() {
   );
 }
 
-function NotificationRow({ item, online }: { item: NotificationItem; online: boolean }) {
+function NotificationRow({ item, online, tour }: { item: NotificationItem; online: boolean; tour?: boolean }) {
   const nav = useNavigate();
   const markRead = useMarkNotificationRead();
   const unread = !item.read_at;
@@ -195,7 +199,7 @@ function NotificationRow({ item, online }: { item: NotificationItem; online: boo
   };
 
   return (
-    <li>
+    <li data-tour={tour ? "notificacoes-item" : undefined}>
       <Card className={cn("gap-1.5 p-[14px]", unread ? "shadow-sm" : "opacity-75")}>
         <div className="flex items-center justify-between gap-2">
           <span className="flex items-center gap-2 text-[12px] text-neutral-400">

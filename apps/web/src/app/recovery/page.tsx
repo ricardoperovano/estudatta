@@ -2,10 +2,17 @@ import { Link, useParams } from "react-router";
 import { CaretLeft } from "@phosphor-icons/react";
 import { EmptyState, Button } from "@/components/ui";
 import { RecoveryPlanner } from "@/components/app/recovery-planner";
+import { useActivity, useBalance } from "@/api/queries";
+import { usePageTour } from "@/components/tour/use-tours";
+import { recuperacaoTour } from "@/tours/recuperacao";
 
 /** Tela 09: recuperação de tempo pendente e replanejamento do objetivo. */
 export default function RecoveryPage() {
   const { id } = useParams();
+  // mesmas consultas do planejador (o React Query reaproveita): o tour espera a tela carregar
+  const activity = useActivity(id);
+  const balance = useBalance(id, 14);
+  usePageTour(recuperacaoTour, !!id && activity.isSuccess && balance.isSuccess);
   if (!id) {
     return (
       <EmptyState

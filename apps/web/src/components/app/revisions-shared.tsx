@@ -53,7 +53,7 @@ export function RevisionRow({ revision: r, today, activityTitle, className }: { 
         {activityTitle ? ` · ${activityTitle}` : ""}
       </span>
       {pending ? (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2" data-tour="revisao-acoes">
           <Button asChild variant="primary" size="sm">
             <Link to={sessionHref({ activityId: r.activity_id, subjectId: r.subject_id, topicId: r.topic_id, type: "revisao" })} aria-label={`Revisar agora: ${r.title}`}>
               Revisar agora

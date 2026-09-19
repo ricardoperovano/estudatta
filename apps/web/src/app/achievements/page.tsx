@@ -7,6 +7,8 @@ import { AchievementBadge } from "@/components/app/achievement-icon";
 import { TataCompanion } from "@/components/mascot/TataCompanion";
 import { fmtDayShort, fmtMinutes } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { usePageTour } from "@/components/tour/use-tours";
+import { conquistasTour } from "@/tours/conquistas";
 
 type Filter = "todas" | "desbloqueadas" | "bloqueadas";
 
@@ -18,6 +20,7 @@ export default function AchievementsPage() {
   const g = useGamification();
   const seen = useMarkAchievementsSeen();
   const [filter, setFilter] = React.useState<Filter>("todas");
+  usePageTour(conquistasTour, !!g.data);
 
   // abrir a página conta como "vi": some o destaque de novidade
   const unseenCount = g.data?.unseen.length ?? 0;
@@ -53,7 +56,7 @@ export default function AchievementsPage() {
 
       <LevelCard d={d} />
 
-      <section aria-labelledby="desafios" className="flex flex-col gap-3">
+      <section aria-labelledby="desafios" className="flex flex-col gap-3" data-tour="conquistas-desafios">
         <div className="flex items-baseline justify-between gap-2">
           <h2 id="desafios" className="text-[17px] font-medium">Desafios da semana</h2>
           <span className="text-[12px] text-neutral-400">desde {fmtDayShort(d.challenges.week_start)}</span>
@@ -78,7 +81,7 @@ export default function AchievementsPage() {
       <Records d={d} />
 
       <section aria-labelledby="medalhas" className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3" data-tour="conquistas-medalhas">
           <h2 id="medalhas" className="text-[17px] font-medium">
             Medalhas <span className="tnum text-[14px] font-normal text-neutral-400">{d.unlocked_count} de {d.total_achievements}</span>
           </h2>
@@ -127,7 +130,7 @@ function LevelCard({ d }: { d: Gamification }) {
     ["Bônus (conquistas e desafios)", d.xp_breakdown.bonus ?? 0],
   ];
   return (
-    <Card elev="md" className="flex-row flex-wrap items-center gap-4 p-4 desktop:p-6">
+    <Card elev="md" className="flex-row flex-wrap items-center gap-4 p-4 desktop:p-6" data-tour="conquistas-nivel">
       <TataCompanion size={88} scene={{ kind: "static", mood: d.unseen.length ? "cheer" : "idle", text: levelLine(d) }} className="max-tablet:w-full" />
       <div className="flex min-w-[220px] flex-1 flex-col gap-2">
         <span className="kicker text-accent">Nível {lv.number}</span>
@@ -175,7 +178,7 @@ function Records({ d }: { d: Gamification }) {
     ["Páginas lidas", r.total_pages ? String(r.total_pages) : "—"],
   ];
   return (
-    <section aria-labelledby="recordes" className="flex flex-col gap-3">
+    <section aria-labelledby="recordes" className="flex flex-col gap-3" data-tour="conquistas-recordes">
       <h2 id="recordes" className="text-[17px] font-medium">Recordes pessoais</h2>
       <dl className="m-0 grid grid-cols-2 gap-2 tablet:grid-cols-5">
         {rows.map(([k, v]) => (

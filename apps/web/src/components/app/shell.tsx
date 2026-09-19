@@ -9,6 +9,8 @@ import { Banner, Button } from "@/components/ui";
 import { useTimerStore } from "@/app/timer/store";
 import { refreshPushSubscription } from "@/app/push";
 import { AchievementCelebration } from "./achievement-celebration";
+import { TourHelpButton } from "@/components/tour/TourHelpButton";
+import { TourOverlay } from "@/components/tour/TourOverlay";
 
 /** Shell autenticado: lateral (tablet/desktop) + conteúdo + navegação inferior (celular). */
 export function AppShell() {
@@ -72,6 +74,8 @@ export function AppShell() {
       </div>
       <BottomNav />
       <AchievementCelebration />
+      <TourHelpButton />
+      <TourOverlay />
     </div>
   );
 }

@@ -21,6 +21,8 @@ import { Banner, Button, Card, EmptyState, Seg, Spinner, Tag, toast } from "@/co
 import { fmtBRL, parseDate } from "@/lib/format";
 import { useOnline } from "@/lib/online";
 import { cn } from "@/lib/utils";
+import { usePageTour } from "@/components/tour/use-tours";
+import { planosTour } from "@/tours/planos";
 
 function fmtDateLong(d: string | null | undefined): string {
   if (!d) return "";
@@ -37,6 +39,7 @@ export default function BillingPage() {
   const [params, setParams] = useSearchParams();
   const [interval, setInterval] = React.useState<BillingInterval>("month");
   const [redirectingTo, setRedirectingTo] = React.useState<string | null>(null);
+  usePageTour(planosTour, !!plans.data && (!!sub.data || sub.isError));
 
   // o retorno do pagamento chega como ?checkout=sucesso (ou ?retorno=checkout); nenhum dos dois ativa nada
   const checkoutReturn = params.get("checkout") ?? (params.get("retorno") === "checkout" ? "sucesso" : null);
@@ -136,16 +139,17 @@ export default function BillingPage() {
         <SubscriptionCard state={state} online={online} onVerify={onVerify} verifying={verify.isPending} />
       ) : null}
 
-      <Seg<BillingInterval>
-        label="Periodicidade"
-        className="self-start"
-        value={interval}
-        onChange={setInterval}
-        options={[
-          { value: "month", label: "Mensal" },
-          { value: "year", label: "Anual" },
-        ]}
-      />
+      <div className="self-start" data-tour="planos-periodicidade">
+        <Seg<BillingInterval>
+          label="Periodicidade"
+          value={interval}
+          onChange={setInterval}
+          options={[
+            { value: "month", label: "Mensal" },
+            { value: "year", label: "Anual" },
+          ]}
+        />
+      </div>
 
       {plans.isPending ? (
         <div className="flex justify-center py-16" role="status">
@@ -166,9 +170,10 @@ export default function BillingPage() {
         <EmptyState title="Nenhum plano disponível no momento." description="Você continua usando o Estudatta normalmente." />
       ) : (
         <div className="grid items-start gap-[14px] tablet:grid-cols-2 desktop:grid-cols-3 desktop:gap-4">
-          {plans.data.plans.map((plan) => (
+          {plans.data.plans.map((plan, i, all) => (
             <PlanCard
               key={plan.code}
+              tour={all.some((p) => p.recommended) ? plan.recommended : i === 0}
               plan={plan}
               interval={interval}
               billingMode={billingMode}
@@ -196,7 +201,11 @@ function PriceFootnote({ plans, billingMode }: { plans: PublicPlan[]; billingMod
   if (billingMode === "disabled") lines.push("As assinaturas ainda não estão abertas. Ninguém é cobrado e o plano gratuito segue funcionando por inteiro.");
   if (billingMode === "test") lines.push("Ambiente de testes: pagamentos feitos aqui não geram cobrança real.");
   if (lines.length === 0) return null;
-  return <p className="text-[12px] text-neutral-500 desktop:text-[13px]">{lines.join(" ")}</p>;
+  return (
+    <p className="text-[12px] text-neutral-500 desktop:text-[13px]" data-tour="planos-aviso">
+      {lines.join(" ")}
+    </p>
+  );
 }
 
 interface PlanCardProps {
@@ -210,9 +219,10 @@ interface PlanCardProps {
   loading: boolean;
   disabled: boolean;
   onSubscribe: () => void;
+  tour?: boolean;
 }
 
-function PlanCard({ plan, interval, billingMode, isCurrent, hasPaidSubscription, pendingCheckoutUrl, online, loading, disabled, onSubscribe }: PlanCardProps) {
+function PlanCard({ plan, interval, billingMode, isCurrent, hasPaidSubscription, pendingCheckoutUrl, online, loading, disabled, onSubscribe, tour }: PlanCardProps) {
   const free = isFreePlan(plan);
   const price = priceFor(plan, interval);
   const amount = free ? 0 : (price?.amount_cents ?? null);
@@ -269,7 +279,7 @@ function PlanCard({ plan, interval, billingMode, isCurrent, hasPaidSubscription,
   }
 
   return (
-    <Card accent={plan.recommended} as="article" className="gap-2 p-4 desktop:gap-3 desktop:p-6" aria-label={`Plano ${plan.name}`}>
+    <Card accent={plan.recommended} as="article" className="gap-2 p-4 desktop:gap-3 desktop:p-6" aria-label={`Plano ${plan.name}`} data-tour={tour ? "planos-plano" : undefined}>
       <div className="flex items-center justify-between gap-2">
         <span className={cn("text-[17px] font-medium desktop:text-[20px]", plan.recommended && "text-accent")}>{plan.name}</span>
         {plan.recommended ? <Tag variant="accent">Recomendado</Tag> : null}
@@ -312,7 +322,7 @@ function SubscriptionCard({ state, online, onVerify, verifying }: { state: Subsc
     });
 
   return (
-    <Card as="section" elev="sm" className="gap-3 p-4 desktop:p-6" aria-label="Sua assinatura">
+    <Card as="section" elev="sm" className="gap-3 p-4 desktop:p-6" aria-label="Sua assinatura" data-tour="planos-atual">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-col">
           <span className="kicker">Seu plano</span>

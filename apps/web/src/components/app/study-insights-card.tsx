@@ -44,7 +44,7 @@ export function StudyInsightsCard({ activityId, activities, hideWhenEmpty, class
     ) : null;
 
   return (
-    <Card as="section" elev="sm" className={cn("gap-4 p-4", className)} aria-labelledby={`${selectId}-title`}>
+    <Card as="section" elev="sm" className={cn("gap-4 p-4", className)} aria-labelledby={`${selectId}-title`} data-tour="seu-estudo">
       <div className="flex items-center justify-between gap-2">
         <h2 id={`${selectId}-title`} className="text-[17px] font-medium">
           Seu estudo

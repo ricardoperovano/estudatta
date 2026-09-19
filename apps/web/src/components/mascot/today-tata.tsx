@@ -15,6 +15,7 @@ export function TodayTata({ cards, inSession, hour }: { cards: TodayCard[]; inSe
   const chip = (
     <Link
       to="/app/conquistas"
+      data-tour="conquistas-atalho"
       className="flex shrink-0 items-center gap-2 rounded-full border border-divider px-3 py-1.5 text-[13px] text-neutral-300 no-underline hover:text-primary"
       aria-label={level ? `Conquistas: nível ${level.number}, ${level.title}${unseen ? `, ${unseen} nova(s)` : ""}` : "Conquistas"}
     >
@@ -26,7 +27,7 @@ export function TodayTata({ cards, inSession, hour }: { cards: TodayCard[]; inSe
   );
   if (!enabled) return <div className="flex justify-end">{chip}</div>;
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="flex flex-wrap items-center justify-between gap-3" data-tour="tata">
       <TataCompanion size={72} scene={{ kind: "today", situation: todaySituation(cards, inSession, hour) }} className="min-w-0 flex-1" />
       {chip}
     </div>

@@ -46,7 +46,10 @@ class Settings(BaseSettings):
     REQUIRE_EMAIL_VERIFICATION: bool = False  # se True, login exige e-mail confirmado
 
     # --- E-mail --------------------------------------------------------------
-    EMAIL_BACKEND: Literal["smtp", "console", "memory"] = "console"
+    # cloudflare = API REST do Cloudflare Email Sending (mesmo formato do ai-runner)
+    EMAIL_BACKEND: Literal["smtp", "cloudflare", "console", "memory"] = "console"
+    CLOUDFLARE_ACCOUNT_ID: str | None = None
+    CLOUDFLARE_EMAIL_API_TOKEN: str | None = None  # permissão "Email Sending: Edit"
     SMTP_HOST: str = "localhost"
     SMTP_PORT: int = 1025
     SMTP_USER: str | None = None
