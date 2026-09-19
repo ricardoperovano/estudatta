@@ -78,7 +78,9 @@ export function AppShell() {
             </Banner>
           </div>
         ) : null}
-        <main className="mx-auto w-full max-w-content flex-1 px-gutter pt-[max(56px,calc(24px+env(safe-area-inset-top,0px)))] pb-6 max-xs:px-3 desktop:px-12 desktop:pt-10">
+        <main className="relative isolate mx-auto w-full max-w-content flex-1 px-gutter pt-[max(56px,calc(24px+env(safe-area-inset-top,0px)))] pb-6 max-xs:px-3 desktop:px-12 desktop:pt-10">
+          {/* fundo suave (manchas de cor da paleta) para as páginas não parecerem uma folha vazia */}
+          <div aria-hidden className="page-decor pointer-events-none absolute -inset-x-4 -top-14 -z-10 h-[760px] desktop:-inset-x-12 desktop:-top-10" />
           <Outlet />
         </main>
       </div>

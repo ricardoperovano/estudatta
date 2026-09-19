@@ -1,50 +1,72 @@
 import * as React from "react";
-import { DeviceMobile, ShareNetwork } from "@phosphor-icons/react";
-import { Button, Card } from "@/components/ui";
-import { usePwaStore } from "@/pwa/register";
-import { isIOS, isStandalone } from "@/lib/device";
+import { Link } from "react-router";
+import { BellRinging, CheckCircle } from "@phosphor-icons/react";
+import { Button, Card, toast } from "@/components/ui";
+import { TataSvg } from "@/components/mascot/TataSvg";
+import { shortHint } from "@/components/install/guides";
+import { useInstallState } from "@/components/install/use-install-state";
+import { cn } from "@/lib/utils";
 
 /**
- * Convite de instalação coerente com o navegador: prompt nativo quando existe,
- * instruções manuais no iOS (Compartilhar → Adicionar à Tela de Início).
+ * Convite de instalação coerente com o navegador: convite nativo quando existe; senão, a
+ * instrução de uma linha do navegador detectado e o link para o passo a passo (/app/instalar).
+ * Com `showInstalled`, mostra a confirmação quando o app já está instalado (em vez de sumir).
  */
-export function InstallPrompt({ compact = false }: { compact?: boolean }) {
-  const prompt = usePwaStore((s) => s.installPrompt);
-  const set = usePwaStore((s) => s.set);
-  const [standalone] = React.useState(() => (typeof window === "undefined" ? true : isStandalone()));
-  const [ios] = React.useState(() => (typeof window === "undefined" ? false : isIOS()));
-  if (standalone) return null;
-  const install = async () => {
-    if (!prompt) return;
-    await prompt.prompt();
-    const choice = await prompt.userChoice;
-    if (choice.outcome === "accepted") set({ installPrompt: null });
-  };
-  if (prompt) {
+export function InstallPrompt({ compact = false, showInstalled = false, className }: { compact?: boolean; showInstalled?: boolean; className?: string }) {
+  const s = useInstallState();
+  const [busy, setBusy] = React.useState(false);
+
+  if (s.installed || s.installedNow) {
+    if (!showInstalled) return null;
     return (
-      <Card className={compact ? "flex-row items-center justify-between gap-3 p-3" : "gap-2 p-4"}>
-        <div className="flex items-center gap-2 text-[14px]">
-          <DeviceMobile size={20} className="text-accent" aria-hidden />
-          <span>Instale o Estudatta para abrir direto da tela inicial.</span>
-        </div>
-        <Button variant="primary" size="md" onClick={install}>
-          Instalar
-        </Button>
-      </Card>
-    );
-  }
-  if (ios) {
-    return (
-      <Card className="gap-2 p-4 text-[14px]">
+      <Card className={cn("gap-2 p-4 text-[14px]", className)}>
         <div className="flex items-center gap-2">
-          <ShareNetwork size={20} className="text-accent" aria-hidden />
-          <span className="font-medium">Adicionar à tela inicial</span>
+          <CheckCircle size={20} weight="fill" className="shrink-0 text-success" aria-hidden />
+          <span className="font-medium">{s.installed ? "O Estudatta já está instalado neste aparelho." : "Prontinho! Abra o Estudatta pelo ícone na tela inicial."}</span>
         </div>
-        <p className="text-neutral-400">
-          No Safari, toque em Compartilhar e depois em “Adicionar à Tela de Início”. Assim o app abre em tela cheia e pode receber lembretes.
-        </p>
+        <Link to="/app/instalar" className="self-start text-[13px] text-accent underline-offset-2 hover:underline">
+          Instalar em outro aparelho
+        </Link>
       </Card>
     );
   }
-  return null;
+
+  const install = async () => {
+    setBusy(true);
+    const r = await s.promptInstall();
+    setBusy(false);
+    if (r === "accepted") toast("success", "Prontinho! O Estudatta foi instalado.");
+  };
+
+  const title = s.env.mobile ? "Coloque o Estudatta na tela inicial" : "Instale o Estudatta no computador";
+
+  return (
+    <Card className={cn(compact ? "gap-2 p-3" : "gap-3 p-4", "text-[14px]", className)}>
+      <div className="flex items-start gap-3">
+        {compact ? null : <TataSvg mood="wave" size={48} className="-mt-1 shrink-0" />}
+        <div className="flex min-w-0 flex-col gap-1">
+          <span className="font-medium leading-snug">{title}</span>
+          <span className="text-[13px] leading-snug text-secondary">
+            {s.canPrompt ? "Seu navegador instala com um toque: abre em tela cheia e direto da tela inicial." : shortHint(s.env)}
+          </span>
+          {s.group === "ios" && s.env.pushCapable ? (
+            <span className="mt-0.5 flex items-start gap-1.5 text-[12px] leading-snug text-secondary">
+              <BellRinging size={14} className="mt-px shrink-0 text-accent" aria-hidden />
+              No iPhone, os lembretes só chegam com o app instalado.
+            </span>
+          ) : null}
+        </div>
+      </div>
+      <div className={cn("flex flex-wrap items-center gap-2", !compact && "pl-[60px]")}>
+        {s.canPrompt ? (
+          <Button variant="primary" size="md" onClick={install} loading={busy}>
+            Instalar
+          </Button>
+        ) : null}
+        <Button asChild variant={s.canPrompt ? "ghost" : "secondary"} size="md">
+          <Link to="/app/instalar">Ver passo a passo</Link>
+        </Button>
+      </div>
+    </Card>
+  );
 }

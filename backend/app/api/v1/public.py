@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
+from fastapi.responses import HTMLResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -83,3 +84,53 @@ def contact(payload: ContactIn, db: Session = Depends(get_db)) -> OkResponse:
     )
     db.commit()
     return OkResponse(message="Mensagem recebida. Respondemos pelo e-mail informado.")
+
+
+_UNSUB_PAGE = """<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Estudatta</title></head>
+<body style="margin:0;background:#f3f5fe;font-family:Inter,-apple-system,'Segoe UI',Roboto,sans-serif;color:#292b31">
+<div style="max-width:480px;margin:10vh auto;padding:28px;background:#fff;border:1px solid #e4e7f5;border-radius:20px">
+<h1 style="margin:0 0 10px;font-size:22px">{title}</h1><p style="margin:0 0 18px;color:#595d6c;line-height:1.6">{body}</p>
+<a href="{app}/app/preferencias" style="color:#5d5294">Abrir preferências</a></div></body></html>"""
+
+
+def _unsub_response(ok: bool) -> HTMLResponse:
+    from app.core.config import settings
+
+    if ok:
+        title, body = (
+            "Pronto.",
+            "Você não vai mais receber lembretes de retorno por e-mail. Dá para reativar quando quiser em Preferências.",
+        )
+    else:
+        title, body = (
+            "Link inválido.",
+            "Não foi possível confirmar este link. Você pode desligar os lembretes em Preferências.",
+        )
+    return HTMLResponse(
+        _UNSUB_PAGE.format(title=title, body=body, app=settings.APP_URL.rstrip("/")),
+        status_code=200 if ok else 400,
+    )
+
+
+@router.get("/unsubscribe", response_class=HTMLResponse, include_in_schema=False)
+def unsubscribe_page(
+    u: str = Query(default=""), t: str = Query(default=""), db: Session = Depends(get_db)
+) -> HTMLResponse:
+    """Descadastro dos e-mails de retorno pelo link do e-mail (sem login)."""
+    from app.services.notifications import unsubscribe_reengagement
+
+    ok = unsubscribe_reengagement(db, u, t)
+    db.commit()
+    return _unsub_response(ok)
+
+
+@router.post("/unsubscribe", response_class=HTMLResponse, include_in_schema=False)
+def unsubscribe_one_click(
+    u: str = Query(default=""), t: str = Query(default=""), db: Session = Depends(get_db)
+) -> HTMLResponse:
+    """List-Unsubscribe-Post (RFC 8058): o provedor de e-mail descadastra com um clique."""
+    from app.services.notifications import unsubscribe_reengagement
+
+    ok = unsubscribe_reengagement(db, u, t)
+    db.commit()
+    return _unsub_response(ok)

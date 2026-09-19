@@ -149,6 +149,21 @@ export function RemindersSection({ online }: { online: boolean }) {
         </SettingsRow>
       </Card>
 
+      <Card className="gap-3 p-[14px] text-[14px]" data-tour="preferencias-retorno">
+        <div className="flex flex-col gap-0.5">
+          <span className="font-medium">Não me deixe desistir</span>
+          <span className="text-[12px] text-neutral-400">
+            Se você ficar alguns dias sem estudar (3, 7, 14 e 30 dias) ou ainda não tiver criado um objetivo, o Tatá manda um lembrete gentil. Pausas planejadas e objetivos pausados ficam em silêncio.
+          </span>
+        </div>
+        <SettingsRow label="Lembretes de retorno">
+          <Switch label="Lembretes de retorno" checked={p.reengagement} disabled={off} onCheckedChange={(v) => patch({ reengagement: v })} />
+        </SettingsRow>
+        <SettingsRow label="Também por e-mail" hint="Cada e-mail tem um link para parar de receber.">
+          <Switch label="Lembretes de retorno por e-mail" checked={p.reengagement && p.reengagement_email} disabled={off || !p.reengagement} onCheckedChange={(v) => patch({ reengagement_email: v })} />
+        </SettingsRow>
+      </Card>
+
       <Field label="Dias com lembrete">
         <DayPicker
           value={p.reminder_days}

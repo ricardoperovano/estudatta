@@ -11,13 +11,11 @@ import { RemindersSection, SettingsRow, SettingsSection } from "@/components/app
 import { Banner, Button, Card, Dialog, DialogContent, DurationStepper, Input, Seg, Spinner, Switch, Tag, toast } from "@/components/ui";
 import { TataSvg } from "@/components/mascot/TataSvg";
 import { setTataMuted, useTataPrefs } from "@/components/mascot/use-tata";
-import { isStandalone } from "@/lib/device";
 import { fmtDateTimeShort } from "@/lib/format";
 import { useOnline } from "@/lib/online";
 import { readTheme, setTheme, subscribeTheme, type Theme } from "@/lib/theme";
 import type { PendingOp } from "@/offline/db";
 import { discardOp, listConflicts, retryOp, syncNow, useSyncStore } from "@/offline/sync";
-import { usePwaStore } from "@/pwa/register";
 import { useTourStore } from "@/components/tour/store";
 import { usePageTour, useResetTours } from "@/components/tour/use-tours";
 import { preferenciasTour } from "@/tours/preferencias";
@@ -376,19 +374,11 @@ function SyncSection({ online }: { online: boolean }) {
 
 // --- Instalar ------------------------------------------------------------------------------------
 
+/** Instalação: convite nativo ou a instrução do navegador detectado + "Ver passo a passo" (/app/instalar). */
 function InstallSection() {
-  const hasPrompt = usePwaStore((s) => !!s.installPrompt);
-  const [standalone] = React.useState(() => isStandalone());
   return (
     <SettingsSection title="Instalar o app">
-      <InstallPrompt />
-      {standalone ? (
-        <p className="text-[13px] text-neutral-400">O Estudatta já está instalado neste aparelho.</p>
-      ) : !hasPrompt ? (
-        <p className="text-[13px] text-neutral-400">
-          Se o navegador não mostrar o convite aqui, procure “Instalar app” ou “Adicionar à tela inicial” no menu dele. Instalado, o app abre em tela cheia e funciona melhor sem conexão.
-        </p>
-      ) : null}
+      <InstallPrompt showInstalled />
     </SettingsSection>
   );
 }

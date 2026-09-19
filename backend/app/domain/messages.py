@@ -80,6 +80,35 @@ def render(
             "direto": f"{days} dias sem registro em {name}. Pendência: {pending}. Retome ou reorganize o plano.",
             "firme": f"{days} dias sem registro em {name}. Há {pending} a recuperar. Comece uma sessão ou revise a meta.",
         }[tone]
+    elif kind == "no_goal":
+        title = {
+            "acolhedor": "O Tatá está te esperando",
+            "direto": "Falta criar seu objetivo",
+            "firme": "Primeiro passo: um objetivo",
+        }[tone]
+        body = {
+            "acolhedor": "Que tal criar seu primeiro objetivo? Leva dois minutos: você diz o que quer estudar e quanto tempo por dia, e o plano de hoje aparece pronto.",
+            "direto": "Crie um objetivo (o que estudar e quantos minutos por dia) e o Estudatta monta o plano de hoje.",
+            "firme": "Sem objetivo, não há plano. Crie o seu agora: o que estudar, quantos minutos, em quais dias.",
+        }[tone]
+    elif kind == "inactive":
+        title = {
+            "acolhedor": "Sentimos sua falta",
+            "direto": f"{days} dias sem estudar",
+            "firme": "Hora de voltar ao plano",
+        }[tone]
+        if days >= 14:
+            body = {
+                "acolhedor": f"Faz {days} dias. Tudo bem: recomeçar também é parte do caminho. Seu plano está guardado — que tal 10 minutos hoje?",
+                "direto": f"{days} dias sem registro. Seus dados continuam lá. Uma sessão curta hoje já recoloca o plano em movimento.",
+                "firme": f"{days} dias parado. Escolha um horário hoje e faça 10 minutos. O resto o plano reorganiza.",
+            }[tone]
+        else:
+            body = {
+                "acolhedor": f"Faz {days} dias que você não estuda. Sem culpa: 15 minutos hoje já contam, e o Tatá guardou seu lugar.",
+                "direto": f"{days} dias sem sessão registrada. Comece com 15 minutos hoje; a pendência se ajusta.",
+                "firme": f"{days} dias sem estudar. Abra o app e faça uma sessão curta hoje.",
+            }[tone]
     elif kind == "weekly_summary":
         title = "Resumo da semana"
         body = ctx.get("summary_text", "")

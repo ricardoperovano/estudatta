@@ -128,6 +128,13 @@ class NotificationPreferences(Timestamps, Base):
     end_of_window_alert: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     goal_completed_alert: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     resume_after_days: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    # lembretes de retorno (sem objetivo / dias sem estudar), em todos os planos
+    reengagement: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+    reengagement_email: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
     weekly_summary: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     weekly_summary_email: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     quiet_start: Mapped[str] = mapped_column(String(5), nullable=False, default="22:00")

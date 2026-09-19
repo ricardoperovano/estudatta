@@ -64,7 +64,7 @@ test("cadastro → objetivo → sessão → saldo → recuperação → material
   await skipTours(page);
 
   // Tela Hoje: meta base 60 min e 3 dias sem registro = 180 min de pendência anterior
-  await expect(page.getByRole("heading", { name: "Hoje" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Hoje", level: 1 })).toBeVisible();
   await expect(page.getByText("meta base 60 min").filter({ visible: true }).first()).toBeVisible();
   await expect(page.getByText("3h").filter({ visible: true }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Começar sessão" }).filter({ visible: true }).first()).toBeVisible();

@@ -105,6 +105,13 @@ Registro vivo das decisões tomadas durante a implementação. Cada item indica 
 - **Mesma regra de antes:** o webhook (validado pelo `asaas-access-token`) só aponta qual assinatura conferir; o estado sai da consulta ao Asaas. O Mercado Pago continua disponível por `BILLING_PROVIDER`.
 - **Termos e privacidade do site** passaram a citar o Asaas.
 
+## 2026-09-19 — Lembretes de retorno, e-mails com a marca e instalação do app
+
+- **Pedido do responsável:** lembrar por e-mail e push quem fica um tempo sem acessar ou com o plano parado ("muitas pessoas desistem por falta de estímulo"), orientar a instalação no Android e no iOS e dar mais vida às telas.
+- **Lembretes de retorno, em todos os planos:** sem objetivo, convite no 1º, 3º e 7º dia após o cadastro; com objetivo e sem estudar, lembrete aos 3, 7, 14 e 30 dias da última sessão. Uma mensagem por etapa (dedupe), no horário de lembrete, respeitando silêncio, limite diário, pausa planejada e objetivos pausados; depois de 30 dias para de insistir. Não repete se o lembrete de retomada (planos pagos) saiu nos últimos 2 dias.
+- **Canais:** no app, push e e-mail. O e-mail de retorno vem ligado por padrão (`reengagement_email`), com link de descadastro de um clique (`/api/v1/public/unsubscribe`, token HMAC) e cabeçalhos `List-Unsubscribe`/`List-Unsubscribe-Post`.
+- **E-mails com a identidade atual:** fundo claro da paleta, logo, Tatá (PNG em `apps/web/public/marca/tata-email.png`), botão cheio; tabelas e estilos inline para Gmail/Outlook.
+
 ## Pendências que dependem exclusivamente do responsável
 
 - **[pendente do responsável]** Validar os preços sugeridos (R$ 9,90 e R$ 19,90) e os tetos de IA após o primeiro mês com dados reais de uso.

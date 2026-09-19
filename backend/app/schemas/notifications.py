@@ -42,6 +42,8 @@ class NotificationPreferencesOut(ORMModel):
     end_of_window_alert: bool
     goal_completed_alert: bool
     resume_after_days: int
+    reengagement: bool = True
+    reengagement_email: bool = True
     weekly_summary: bool
     weekly_summary_email: bool
     quiet_start: str
@@ -64,6 +66,8 @@ class NotificationPreferencesUpdate(BaseModel):
     end_of_window_alert: bool | None = None
     goal_completed_alert: bool | None = None
     resume_after_days: int | None = Field(default=None, ge=1, le=30)
+    reengagement: bool | None = None
+    reengagement_email: bool | None = None
     weekly_summary: bool | None = None
     weekly_summary_email: bool | None = None
     quiet_start: str | None = None

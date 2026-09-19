@@ -43,3 +43,12 @@ def weekly_summaries() -> dict:
         stats = svc.weekly_summaries(db)
     log.info("weekly_summaries.done", **stats)
     return stats
+
+
+@celery_app.task(name="app.jobs.tasks_notifications.schedule_reengagement")
+def schedule_reengagement() -> dict:
+    """De hora em hora: convida quem não criou objetivo e chama de volta quem parou de estudar."""
+    with SessionLocal() as db:
+        stats = svc.schedule_reengagement(db)
+    log.info("schedule_reengagement.done", **stats)
+    return stats

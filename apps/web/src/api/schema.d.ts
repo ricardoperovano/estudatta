@@ -4081,6 +4081,16 @@ export interface components {
             goal_completed_alert: boolean;
             /** Resume After Days */
             resume_after_days: number;
+            /**
+             * Reengagement
+             * @default true
+             */
+            reengagement: boolean;
+            /**
+             * Reengagement Email
+             * @default true
+             */
+            reengagement_email: boolean;
             /** Weekly Summary */
             weekly_summary: boolean;
             /** Weekly Summary Email */
@@ -4122,6 +4132,10 @@ export interface components {
             goal_completed_alert?: boolean | null;
             /** Resume After Days */
             resume_after_days?: number | null;
+            /** Reengagement */
+            reengagement?: boolean | null;
+            /** Reengagement Email */
+            reengagement_email?: boolean | null;
             /** Weekly Summary */
             weekly_summary?: boolean | null;
             /** Weekly Summary Email */

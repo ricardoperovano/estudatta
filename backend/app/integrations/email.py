@@ -130,25 +130,82 @@ def get_backend() -> EmailBackend:
     return ConsoleBackend()
 
 
-def send_email(to: str, subject: str, text: str, html: str | None = None) -> bool:
-    return get_backend().send(OutgoingEmail(to=to, subject=subject, text=text, html=html))
+def send_email(
+    to: str, subject: str, text: str, html: str | None = None, headers: dict[str, str] | None = None
+) -> bool:
+    return get_backend().send(
+        OutgoingEmail(to=to, subject=subject, text=text, html=html, headers=headers or {})
+    )
 
 
-def _layout(title: str, body_html: str) -> str:
-    return f"""<!doctype html><html lang="pt-BR"><body style="margin:0;background:#161826;color:#e9e9ed;font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
-<div style="max-width:560px;margin:0 auto;padding:32px 20px">
-<div style="display:flex;align-items:center;gap:10px;margin-bottom:24px"><span style="font-weight:500;font-size:18px">Estudatta</span></div>
-<h1 style="font-size:25px;font-weight:500;line-height:1.12;letter-spacing:-0.015em;margin:0 0 12px">{title}</h1>
-<div style="font-size:15px;line-height:1.55;color:#b2b6ca">{body_html}</div>
-<p style="font-size:12px;color:#9397ab;margin-top:32px">Você recebeu este e-mail porque tem uma conta no Estudatta. Se não foi você, ignore esta mensagem.</p>
-</div></body></html>"""
+# --- Modelo visual (tema claro da marca; tabelas e estilos inline para Gmail/Outlook) -----------
+
+_FONT = "Inter,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
+
+
+def _asset(path: str) -> str:
+    return f"{settings.APP_URL.rstrip('/')}{path}"
+
+
+def _button(label: str, url: str) -> str:
+    return (
+        '<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0 8px">'
+        f'<tr><td style="border-radius:12px;background:#5d5294">'
+        f'<a href="{url}" style="display:inline-block;padding:13px 22px;font-family:{_FONT};font-size:15px;'
+        f'font-weight:600;color:#ffffff;text-decoration:none;border-radius:12px">{label}</a></td></tr></table>'
+    )
+
+
+def _layout(
+    title: str,
+    body_html: str,
+    *,
+    cta: tuple[str, str] | None = None,
+    footer_note: str | None = None,
+    unsubscribe_url: str | None = None,
+    tata: bool = True,
+) -> str:
+    tata_html = (
+        f'<img src="{_asset("/marca/tata-email.png")}" width="88" height="97" alt="Tatá, o mascote do Estudatta" '
+        'style="display:block;border:0;margin:0 0 12px">'
+        if tata
+        else ""
+    )
+    unsub = (
+        f' <a href="{unsubscribe_url}" style="color:#75798c;text-decoration:underline">Não quero receber estes lembretes</a>.'
+        if unsubscribe_url
+        else ""
+    )
+    note = (
+        footer_note
+        or "Você recebeu este e-mail porque tem uma conta no Estudatta. Se não foi você, ignore esta mensagem."
+    )
+    return f"""<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>{title}</title></head>
+<body style="margin:0;padding:0;background:#f3f5fe">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f3f5fe"><tr><td align="center" style="padding:28px 14px">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px">
+<tr><td style="padding:0 6px 16px">
+<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
+<td><img src="{_asset("/marca/logo-claro-128.png")}" width="32" height="32" alt="" style="display:block;border:0;border-radius:8px"></td>
+<td style="padding-left:10px;font-family:{_FONT};font-size:18px;font-weight:600;color:#292b31;letter-spacing:-0.2px">Estudatta</td>
+</tr></table></td></tr>
+<tr><td style="background:#ffffff;border-radius:20px;border:1px solid #e4e7f5;padding:28px 28px 24px">
+{tata_html}
+<h1 style="margin:0 0 12px;font-family:{_FONT};font-size:24px;line-height:1.2;font-weight:600;color:#292b31;letter-spacing:-0.3px">{title}</h1>
+<div style="font-family:{_FONT};font-size:15px;line-height:1.6;color:#595d6c">{body_html}</div>
+{_button(*cta) if cta else ""}
+</td></tr>
+<tr><td style="padding:18px 10px 0;font-family:{_FONT};font-size:12px;line-height:1.5;color:#75798c">{note}{unsub}</td></tr>
+</table></td></tr></table></body></html>"""
 
 
 def send_verification_email(to: str, link: str) -> bool:
-    text = f"Confirme seu e-mail no Estudatta acessando: {link}\n\nO link vale por 24 horas."
+    text = f"Oi! Confirme seu e-mail no Estudatta acessando: {link}\n\nO link vale por 24 horas."
     html = _layout(
         "Confirme seu e-mail",
-        f'<p>Para ativar sua conta, confirme seu e-mail.</p><p><a href="{link}" style="display:inline-block;border:1px solid #9184d9;color:#9184d9;padding:10px 16px;border-radius:8px;text-decoration:none">Confirmar e-mail</a></p><p>O link vale por 24 horas.</p>',
+        '<p style="margin:0 0 10px">Que bom ter você por aqui! Para deixar sua conta pronta, confirme seu e-mail.</p>'
+        '<p style="margin:0">O link vale por 24 horas.</p>',
+        cta=("Confirmar e-mail", link),
     )
     return send_email(to, "Confirme seu e-mail · Estudatta", text, html)
 
@@ -157,7 +214,10 @@ def send_password_reset_email(to: str, link: str) -> bool:
     text = f"Para redefinir sua senha no Estudatta, acesse: {link}\n\nO link vale por 1 hora. Se você não pediu, ignore."
     html = _layout(
         "Redefinir senha",
-        f'<p>Recebemos um pedido para redefinir sua senha.</p><p><a href="{link}" style="display:inline-block;border:1px solid #9184d9;color:#9184d9;padding:10px 16px;border-radius:8px;text-decoration:none">Redefinir senha</a></p><p>O link vale por 1 hora. Se você não pediu, ignore esta mensagem.</p>',
+        '<p style="margin:0 0 10px">Recebemos um pedido para redefinir sua senha.</p>'
+        '<p style="margin:0">O link vale por 1 hora. Se não foi você, é só ignorar: sua senha continua a mesma.</p>',
+        cta=("Criar nova senha", link),
+        tata=False,
     )
     return send_email(to, "Redefinir senha · Estudatta", text, html)
 
@@ -165,6 +225,29 @@ def send_password_reset_email(to: str, link: str) -> bool:
 def send_weekly_summary_email(to: str, summary_text: str) -> bool:
     html = _layout(
         "Resumo da semana",
-        f'<p>{summary_text}</p><p><a href="{settings.APP_URL}/app/relatorio" style="color:#9184d9">Ver relatório completo</a></p>',
+        f'<p style="margin:0">{summary_text}</p>',
+        cta=("Ver relatório completo", f"{settings.APP_URL.rstrip('/')}/app/relatorio"),
     )
     return send_email(to, "Resumo da semana · Estudatta", summary_text, html)
+
+
+def send_nudge_email(to: str, *, title: str, body: str, url: str, unsubscribe_url: str) -> bool:
+    """Lembrete de retorno (sem objetivo / dias sem estudar), com descadastro de um clique."""
+    text = f"{body}\n\nAbrir o Estudatta: {url}\n\nNão quer mais estes lembretes? {unsubscribe_url}"
+    html = _layout(
+        title,
+        f'<p style="margin:0">{body}</p>',
+        cta=("Abrir o Estudatta", url),
+        footer_note="Você recebe este lembrete porque ativou os lembretes de retorno no Estudatta.",
+        unsubscribe_url=unsubscribe_url,
+    )
+    return send_email(
+        to,
+        f"{title} · Estudatta",
+        text,
+        html,
+        headers={
+            "List-Unsubscribe": f"<{unsubscribe_url}>",
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        },
+    )

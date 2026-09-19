@@ -53,6 +53,7 @@ export const routes: RouteObject[] = [
           { path: "notificacoes", element: lazy(() => import("@/app/notifications/page")) },
           { path: "materiais", element: lazy(() => import("@/app/materials/page")) },
           { path: "importar", element: lazy(() => import("@/app/imports/page")) },
+          { path: "instalar", element: lazy(() => import("@/app/install/page")) },
         ],
       },
     ],

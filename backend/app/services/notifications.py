@@ -37,7 +37,7 @@ from app.core.timeutil import local_datetime_to_utc, local_midnight_utc, today_i
 from app.domain.balance import TodaySummary
 from app.domain.messages import fmt_minutes, render
 from app.integrations import push as push_integration
-from app.integrations.email import send_weekly_summary_email
+from app.integrations.email import send_nudge_email, send_weekly_summary_email
 from app.models.activity import Activity, ActivityPause
 from app.models.notification import Notification, NotificationDelivery, NotificationOutbox
 from app.models.user import NotificationPreferences, PushSubscription, User, UserPreferences
@@ -57,7 +57,13 @@ END_OF_WINDOW_LEAD = timedelta(hours=1)
 PUSH_MAX_FAILURES = 8
 PROACTIVE_KINDS = {"planned_start", "follow_up", "end_of_window", "resume"}
 BALANCE_KINDS = PROACTIVE_KINDS | {"goal_completed"}
+# lembretes de retorno: todos os planos; e-mail com descadastro de um clique
+REENGAGE_KINDS = {"no_goal", "inactive"}
+NO_GOAL_STEPS = (1, 3, 7)  # dias desde o cadastro, sem nenhum objetivo
+INACTIVE_STEPS = (3, 7, 14, 30)  # dias desde a última sessão (ou do 1º objetivo)
 DEFAULT_URLS = {
+    "no_goal": "/app/objetivos/novo",
+    "inactive": "/app",
     "weekly_summary": "/app/relatorio",
     "system": "/app/preferencias",
 }
@@ -508,6 +514,160 @@ def schedule_reminders(db: Session, *, now: datetime | None = None) -> dict:
     return dict(stats)
 
 
+# --- Lembretes de retorno -----------------------------------------------------------
+
+
+def unsubscribe_token(user_id: uuid.UUID) -> str:
+    import hmac
+
+    return hmac.new(
+        settings.SECRET_KEY.encode(), f"unsub:{user_id}".encode(), hashlib.sha256
+    ).hexdigest()[:40]
+
+
+def unsubscribe_url(user_id: uuid.UUID) -> str:
+    return (
+        f"{settings.API_URL.rstrip('/')}/api/v1/public/unsubscribe"
+        f"?u={user_id}&t={unsubscribe_token(user_id)}"
+    )
+
+
+def unsubscribe_reengagement(db: Session, user_id_raw: str, token: str) -> bool:
+    """Descadastro de um clique dos e-mails de retorno (sem login). Idempotente."""
+    import hmac
+
+    try:
+        user_id = uuid.UUID(user_id_raw)
+    except (ValueError, TypeError):
+        return False
+    if not hmac.compare_digest(unsubscribe_token(user_id), token or ""):
+        return False
+    user = db.get(User, user_id)
+    if user is None:
+        return False
+    prefs = get_preferences(db, user)
+    prefs.reengagement_email = False
+    db.flush()
+    return True
+
+
+def _step_for(days: int, steps: tuple[int, ...]) -> int | None:
+    """Etapa atual: a maior etapa alcançada, só enquanto não chegou a próxima (a última vale por
+    15 dias). Quem já estava parado há muito tempo quando o recurso entrou não recebe nada."""
+    for i, s in enumerate(steps):
+        nxt = steps[i + 1] if i + 1 < len(steps) else s + 15
+        if s <= days < nxt:
+            return s
+    return None
+
+
+def _nudge_time(user: User, prefs: NotificationPreferences, now: datetime) -> tuple[date, datetime]:
+    today = today_in(user.timezone)
+    slot = _parse_hhmm(prefs.reminder_time) or time(19, 30)
+    return today, max(now, local_datetime_to_utc(today, slot, user.timezone))
+
+
+def _schedule_reengagement(
+    db: Session, user: User, prefs: NotificationPreferences, now: datetime
+) -> int:
+    from app.models.session import StudySession
+
+    if not prefs.reengagement:
+        return 0
+    today, when = _nudge_time(user, prefs, now)
+    acts = list(db.execute(select(Activity).where(Activity.user_id == user.id)).scalars())
+    signup = (user.created_at or now).astimezone(ZoneInfo(user.timezone)).date()
+
+    if not acts:
+        step = _step_for((today - signup).days, NO_GOAL_STEPS)
+        if step is None:
+            return 0
+        row = outbox.enqueue(
+            db,
+            user_id=user.id,
+            kind="no_goal",
+            dedupe_key=f"no_goal:{user.id}:{step}",
+            scheduled_for=when,
+            payload={"days_without": (today - signup).days},
+            ttl=timedelta(hours=12),
+            channels=["inapp", "push", "email"],
+        )
+        return 1 if row else 0
+
+    active = [a for a in acts if a.status == "active"]
+    if not active:
+        return 0  # tudo pausado ou arquivado: a pessoa decidiu parar
+    paused_today = db.execute(
+        select(func.count())
+        .select_from(ActivityPause)
+        .where(
+            ActivityPause.activity_id.in_([a.id for a in active]),
+            ActivityPause.start_date <= today,
+            ActivityPause.end_date >= today,
+        )
+    ).scalar_one()
+    if paused_today:
+        return 0  # pausa planejada: silêncio
+    last = db.execute(
+        select(func.max(StudySession.local_date)).where(
+            StudySession.user_id == user.id, StudySession.status == "finished"
+        )
+    ).scalar_one()
+    anchor = last or min((a.start_date for a in active), default=signup)
+    days = (today - anchor).days
+    step = _step_for(days, INACTIVE_STEPS)
+    if step is None:
+        return 0
+    # o lembrete de retomada por objetivo (planos pagos) já foi nos últimos dias: não repete
+    recent_resume = db.execute(
+        select(func.count())
+        .select_from(NotificationOutbox)
+        .where(
+            NotificationOutbox.user_id == user.id,
+            NotificationOutbox.kind == "resume",
+            NotificationOutbox.created_at >= now - timedelta(days=2),
+        )
+    ).scalar_one()
+    if recent_resume:
+        return 0
+    row = outbox.enqueue(
+        db,
+        user_id=user.id,
+        kind="inactive",
+        dedupe_key=f"inactive:{user.id}:{anchor.isoformat()}:{step}",
+        scheduled_for=when,
+        payload={"days_without": days, "activity_title": active[0].title},
+        ttl=timedelta(hours=12),
+        channels=["inapp", "push", "email"],
+    )
+    return 1 if row else 0
+
+
+def schedule_reengagement(db: Session, *, now: datetime | None = None) -> dict:
+    """Job (de hora em hora): convida quem ainda não criou objetivo e chama de volta quem parou.
+    Uma mensagem por etapa (dedupe), no horário de lembrete; envio respeita silêncio e limite."""
+    now = now or utcnow()
+    stats = Counter()
+    users = db.execute(
+        select(User)
+        .where(User.is_active.is_(True), User.deleted_at.is_(None))
+        .order_by(User.created_at)
+    ).scalars()
+    for user in list(users):
+        try:
+            prefs = get_preferences(db, user)
+            if not prefs.enabled:
+                continue
+            stats["enqueued"] += _schedule_reengagement(db, user, prefs, now)
+            stats["users"] += 1
+            db.commit()
+        except Exception as exc:  # noqa: BLE001 - um usuário não derruba o job
+            db.rollback()
+            log.warning("schedule_reengagement.failed", user_id=str(user.id), error=str(exc))
+            stats["errors"] += 1
+    return dict(stats)
+
+
 # --- Resumo semanal --------------------------------------------------------------
 
 
@@ -772,6 +932,8 @@ def _effective_channels(
             and prefs.weekly_summary_email
         ):
             allowed.append(ch)
+        elif ch == "email" and row.kind in REENGAGE_KINDS and prefs.reengagement_email:
+            allowed.append(ch)
     return allowed
 
 
@@ -937,7 +1099,16 @@ def _deliver(
                 continue
             status, error, called = "failed", None, False
             try:
-                ok = send_weekly_summary_email(user.email, body)
+                if row.kind == "weekly_summary":
+                    ok = send_weekly_summary_email(user.email, body)
+                else:
+                    ok = send_nudge_email(
+                        user.email,
+                        title=title,
+                        body=body,
+                        url=f"{settings.APP_URL.rstrip('/')}{url}",
+                        unsubscribe_url=unsubscribe_url(user.id),
+                    )
                 called = True
                 status = "sent" if ok else "failed"
                 error = None if ok else "email_backend_failed"

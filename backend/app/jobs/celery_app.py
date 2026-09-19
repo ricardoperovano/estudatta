@@ -36,6 +36,10 @@ celery_app.conf.update(
             "task": "app.jobs.tasks_notifications.dispatch_outbox",
             "schedule": 60.0,
         },
+        "reengagement": {
+            "task": "app.jobs.tasks_notifications.schedule_reengagement",
+            "schedule": crontab(minute=20),
+        },
         "close-days": {"task": "app.jobs.tasks_maintenance.close_days", "schedule": 1800.0},
         "weekly-summaries": {
             "task": "app.jobs.tasks_notifications.weekly_summaries",

@@ -60,3 +60,14 @@ Componentes em `apps/web/src/components/mascot/`:
 - `TataCompanion`: escolhe a pose pelo estado e reage a transições: começar, pausar, voltar, bater a meta, marcos de 25 min e pausa longa (10 min, cochila). Também reage ao carinho (clique), cochila com a tela parada no Hoje e segue o ponteiro com os olhos.
 - `tata-messages.ts`: falas por situação nos três tons dos lembretes (acolhedor, direto, firme), com teste.
 - Aparece no cronômetro, no Hoje (com atalho para Conquistas), em Conquistas, na comemoração e em Preferências.
+
+## Lembretes de retorno
+
+Job `schedule_reengagement` (de hora em hora, `app/services/notifications.py`):
+
+| Situação | Quando | Tipo |
+|---|---|---|
+| Cadastrou e não criou objetivo | 1, 3 e 7 dias depois do cadastro | `no_goal` |
+| Tem objetivo ativo e não estuda | 3, 7, 14 e 30 dias depois da última sessão | `inactive` |
+
+Silêncio quando: lembretes desligados, retorno desligado, pausa planejada cobrindo o dia, todos os objetivos pausados ou arquivados, ou retomada enviada nos últimos 2 dias. Envio no horário de lembrete, pelo despachante comum (silêncio noturno e limite diário). O e-mail tem descadastro de um clique.

@@ -26,8 +26,8 @@ export default defineConfig(() => ({
           display: "standalone",
           display_override: ["standalone", "minimal-ui"],
           orientation: "portrait",
-          background_color: "#161826",
-          theme_color: "#161826",
+          background_color: "#f3f5fe",
+          theme_color: "#f3f5fe",
           categories: ["education", "productivity"],
           icons: [
             { src: "/marca/icon-192.png", sizes: "192x192", type: "image/png" },
