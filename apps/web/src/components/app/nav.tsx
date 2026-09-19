@@ -7,6 +7,7 @@ import { Check } from "@phosphor-icons/react";
 import { fmtTime } from "@/lib/format";
 import { useOnline } from "@/lib/online";
 import { useUnreadCount } from "@/api/notifications";
+import { ThemeToggle } from "./theme-toggle";
 
 const items = [
   { to: "/app", label: "Hoje", icon: Clock, end: true },
@@ -91,6 +92,7 @@ export function Sidebar() {
             {unread > 0 ? <span className="ml-2 inline-block h-2 w-2 rounded-full bg-pending align-middle" aria-label={`${unread} não lidas`} /> : null}
           </span>
         </NavLink>
+        <ThemeToggle withLabel className={linkCls(false)} />
         <NavLink to="/app/preferencias" className={({ isActive }) => linkCls(isActive || pathname.startsWith("/app/preferencias"))} title="Preferências">
           <Gear size={24} aria-hidden className="shrink-0 desktop:hidden" />
           <span className="hidden desktop:inline">Preferências</span>

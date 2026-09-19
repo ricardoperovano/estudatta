@@ -91,6 +91,13 @@ Registro vivo das decisões tomadas durante a implementação. Cada item indica 
 - **Motor próprio, sem biblioteca:** foco no elemento com o resto escurecido, cartão com o Tatá, teclado (Enter/→, ←, Esc), movimento reduzido respeitado, cartão encaixado no topo ou na base no celular. Passos cujo alvo depende de dados são opcionais e pulam quando o elemento não existe. A comemoração de conquistas espera o tour terminar.
 - **E-mail pela API REST da Cloudflare** (`EMAIL_BACKEND=cloudflare`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_EMAIL_API_TOKEN`), no mesmo formato do ai-runner. O SMTP da Cloudflare continua possível pelo backend `smtp`.
 
+## 2026-09-19 — Tema claro como padrão do app
+
+- **Pedido do responsável:** o app parecia ter só o modo escuro. O claro existia, mas o padrão era seguir o sistema e a escolha ficava escondida em Preferências.
+- **Padrão claro**, igual ao site. "Sistema" e "Escuro" continuam em Preferências > Aparência.
+- **Troca rápida:** botão de tema na barra lateral (tablet e desktop) e no topo, ao lado do "?", no celular.
+- **Vale em todos os aparelhos:** a escolha fica na conta; um aparelho sem escolha própria adota o tema salvo na conta.
+
 ## Pendências que dependem exclusivamente do responsável
 
 - **[pendente do responsável]** Validar os preços sugeridos (R$ 9,90 e R$ 19,90) e os tetos de IA após o primeiro mês com dados reais de uso.

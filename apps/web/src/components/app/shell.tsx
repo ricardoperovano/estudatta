@@ -11,6 +11,9 @@ import { refreshPushSubscription } from "@/app/push";
 import { AchievementCelebration } from "./achievement-celebration";
 import { TourHelpButton } from "@/components/tour/TourHelpButton";
 import { TourOverlay } from "@/components/tour/TourOverlay";
+import { ThemeToggle } from "./theme-toggle";
+import { usePreferences } from "@/api/settings";
+import { hasStoredTheme, setTheme } from "@/lib/theme";
 
 /** Shell autenticado: lateral (tablet/desktop) + conteúdo + navegação inferior (celular). */
 export function AppShell() {
@@ -20,6 +23,13 @@ export function AppShell() {
   const pwa = usePwaStore();
   const timerActive = useTimerStore((s) => s.timer?.status === "active");
   const fullScreen = useLocation().pathname.startsWith("/app/sessao");
+  const prefs = usePreferences();
+  const serverTheme = prefs.data?.theme;
+
+  // tema escolhido em outro aparelho: vale aqui se este aparelho ainda não tem escolha própria
+  React.useEffect(() => {
+    if ((serverTheme === "light" || serverTheme === "dark") && !hasStoredTheme()) setTheme(serverTheme);
+  }, [serverTheme]);
 
   React.useEffect(() => {
     if (!user) return;
@@ -75,6 +85,8 @@ export function AppShell() {
       <BottomNav />
       <AchievementCelebration />
       <TourHelpButton />
+      {/* troca rápida de tema no celular (no tablet/desktop fica na barra lateral) */}
+      <ThemeToggle className="fixed right-[52px] top-[calc(env(safe-area-inset-top,0px)+10px)] z-30 flex h-9 w-9 items-center justify-center rounded-full border border-divider bg-surface text-neutral-300 shadow-sm hover:text-primary focus-visible:ring-2 focus-visible:ring-accent tablet:hidden" />
       <TourOverlay />
     </div>
   );

@@ -14,7 +14,7 @@ import { setTataMuted, useTataPrefs } from "@/components/mascot/use-tata";
 import { isStandalone } from "@/lib/device";
 import { fmtDateTimeShort } from "@/lib/format";
 import { useOnline } from "@/lib/online";
-import { readTheme, setTheme, type Theme } from "@/lib/theme";
+import { readTheme, setTheme, subscribeTheme, type Theme } from "@/lib/theme";
 import type { PendingOp } from "@/offline/db";
 import { discardOp, listConflicts, retryOp, syncNow, useSyncStore } from "@/offline/sync";
 import { usePwaStore } from "@/pwa/register";
@@ -75,18 +75,14 @@ function usePatchPreferences() {
 
 function AppearanceSection({ online }: { online: boolean }) {
   const patch = usePatchPreferences();
-  const [theme, setLocal] = React.useState<Theme>(() => readTheme());
+  // acompanha também a troca rápida (botão de tema na barra lateral / no topo)
+  const theme = React.useSyncExternalStore(subscribeTheme, readTheme, readTheme);
 
   const choose = (t: Theme) => {
     const before = theme;
-    setLocal(t);
     setTheme(t);
     // o tema vale neste aparelho na hora; a conta guarda a escolha para os outros aparelhos
-    if (online)
-      patch({ theme: t }, () => {
-        setLocal(before);
-        setTheme(before);
-      });
+    if (online) patch({ theme: t }, () => setTheme(before));
   };
 
   return (
