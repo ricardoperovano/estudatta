@@ -17,6 +17,7 @@ import {
   type Subject,
   type Topic,
 } from "@/api/content";
+import { DIFFICULTIES } from "@/api/study";
 import { fmtMinutes } from "@/lib/format";
 import { useOnline } from "@/lib/online";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,15 @@ import { fmtPages, materialKindLabel } from "./week-utils";
 type TopicStatus = "not_started" | "in_progress" | "done";
 const NEXT_STATUS: Record<TopicStatus, TopicStatus> = { not_started: "in_progress", in_progress: "done", done: "not_started" };
 const STATUS_LABEL: Record<TopicStatus, string> = { not_started: "não iniciado", in_progress: "em andamento", done: "concluído" };
+type Difficulty = (typeof DIFFICULTIES)[number]["value"];
+const difficultyLabel = (v: string | null | undefined) => DIFFICULTIES.find((d) => d.value === v)?.label ?? "Média";
+/** "Peso 3 · Difícil" — só o que foge do padrão (peso 1, média), para não poluir a lista. */
+function subjectMeta(s: Subject): string | null {
+  const parts: string[] = [];
+  if ((s.weight ?? 1) !== 1) parts.push(`Peso ${s.weight}`);
+  if ((s.difficulty ?? "media") !== "media") parts.push(difficultyLabel(s.difficulty));
+  return parts.length ? parts.join(" · ") : null;
+}
 
 /**
  * Árvore de matérias e tópicos (06 / 03): recuo 16px por nível, tags de material por tópico,
@@ -118,6 +128,7 @@ function SubjectCard({ subject, index, total, activityId, onEdit, onAddTopic, on
           <PencilSimple size={14} className="text-neutral-500" aria-hidden />
         </button>
         <span className="tnum shrink-0 text-[12px] text-neutral-400">
+          {subjectMeta(subject) ? <span className="text-neutral-500">{subjectMeta(subject)} · </span> : null}
           {subject.topics_total} {subject.topics_total === 1 ? "tópico" : "tópicos"}
           {subject.logged_seconds > 0 ? ` · ${fmtMinutes(subject.logged_seconds)}` : ""}
         </span>
@@ -173,6 +184,8 @@ function SubjectCard({ subject, index, total, activityId, onEdit, onAddTopic, on
 function SubjectSheet({ activityId, subject, subjects, open, onOpenChange }: { activityId: string; subject?: Subject; subjects: Subject[]; open: boolean; onOpenChange: (o: boolean) => void }) {
   const [title, setTitle] = React.useState(subject?.title ?? "");
   const [description, setDescription] = React.useState(subject?.description ?? "");
+  const [weight, setWeight] = React.useState(String(subject?.weight ?? 1));
+  const [difficulty, setDifficulty] = React.useState<Difficulty>(DIFFICULTIES.some((d) => d.value === subject?.difficulty) ? (subject!.difficulty as Difficulty) : "media");
   const [error, setError] = React.useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = React.useState(false);
   const create = useCreateSubject(activityId);
@@ -186,8 +199,9 @@ function SubjectSheet({ activityId, subject, subjects, open, onOpenChange }: { a
     setError(null);
     if (!title.trim()) return setError("Dê um nome à matéria.");
     try {
-      if (subject) await update.mutateAsync({ id: subject.id, body: { title: title.trim(), description: description || null } });
-      else await create.mutateAsync({ title: title.trim(), description: description || null });
+      const body = { title: title.trim(), description: description || null, weight: Number(weight), difficulty };
+      if (subject) await update.mutateAsync({ id: subject.id, body });
+      else await create.mutateAsync(body);
       toast.success(subject ? "Matéria atualizada" : "Matéria adicionada");
       onOpenChange(false);
     } catch (err) {
@@ -217,6 +231,12 @@ function SubjectSheet({ activityId, subject, subjects, open, onOpenChange }: { a
           </Field>
           <Field label="Descrição (opcional)" htmlFor="s-desc">
             <Textarea id="s-desc" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} />
+          </Field>
+          <Field label="Peso" hint="Quanto essa matéria vale na prova ou importa para você (1 = pouco, 5 = muito).">
+            <Seg block label="Peso" value={weight} onChange={setWeight} options={["1", "2", "3", "4", "5"].map((v) => ({ value: v, label: v }))} />
+          </Field>
+          <Field label="Dificuldade">
+            <Seg block label="Dificuldade" value={difficulty} onChange={setDifficulty} options={DIFFICULTIES.map((d) => ({ value: d.value, label: d.label }))} />
           </Field>
           <Button type="submit" size="xl" block loading={create.isPending || update.isPending}>
             Salvar

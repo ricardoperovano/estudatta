@@ -8,6 +8,11 @@ from pydantic import BaseModel, Field
 
 from app.schemas.common import ORMModel
 
+# mesma lista de app.services.sessions.STUDY_TYPES
+StudyTypeLit = Literal[
+    "teoria", "questoes", "revisao", "leitura", "aula", "simulado", "pratica", "outro"
+]
+
 
 class SessionStart(BaseModel):
     activity_id: UUID
@@ -20,6 +25,7 @@ class SessionStart(BaseModel):
     pomodoro_config: dict | None = None
     client_uuid: UUID | None = None
     started_at: datetime | None = None
+    study_type: StudyTypeLit | None = None
 
 
 class SessionTransition(BaseModel):
@@ -31,6 +37,9 @@ class SessionFinish(SessionTransition):
     note: str | None = Field(default=None, max_length=2000)
     page_from: int | None = Field(default=None, ge=0, le=100000)
     page_to: int | None = Field(default=None, ge=0, le=100000)
+    study_type: StudyTypeLit | None = None
+    questions_total: int | None = Field(default=None, ge=0, le=5000)
+    questions_correct: int | None = Field(default=None, ge=0, le=5000)
     subject_id: UUID | None = None
     topic_id: UUID | None = None
     confirmed_duration_seconds: int | None = Field(default=None, ge=60, le=57600)
@@ -48,6 +57,9 @@ class SessionManual(BaseModel):
     note: str | None = Field(default=None, max_length=2000)
     page_from: int | None = Field(default=None, ge=0, le=100000)
     page_to: int | None = Field(default=None, ge=0, le=100000)
+    study_type: StudyTypeLit | None = None
+    questions_total: int | None = Field(default=None, ge=0, le=5000)
+    questions_correct: int | None = Field(default=None, ge=0, le=5000)
     client_uuid: UUID | None = None
 
 
@@ -61,9 +73,13 @@ class SessionUpdate(BaseModel):
     note: str | None = Field(default=None, max_length=2000)
     page_from: int | None = None
     page_to: int | None = None
+    study_type: StudyTypeLit | None = None
+    questions_total: int | None = Field(default=None, ge=0, le=5000)
+    questions_correct: int | None = Field(default=None, ge=0, le=5000)
     reason: str | None = Field(default=None, max_length=300)
     expected_version: int | None = None
     resolve_review: bool = False
+    clear_questions: bool = False  # apaga questões/acertos (ex.: trocou para um tipo sem questões)
 
 
 class IntervalOut(ORMModel):
@@ -92,6 +108,9 @@ class SessionOut(ORMModel):
     note: str | None
     page_from: int | None
     page_to: int | None
+    study_type: str = "teoria"
+    questions_total: int | None = None
+    questions_correct: int | None = None
     pomodoro_config: dict | None
     client_uuid: UUID | None
     device_id: str | None

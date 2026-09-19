@@ -67,6 +67,7 @@ def start(
         client_uuid=payload.client_uuid,
         device_id=device_id,
         started_at=payload.started_at,
+        study_type=payload.study_type,
     )
     db.commit()
     db.refresh(sess)
@@ -95,6 +96,9 @@ def manual(
         note=payload.note,
         page_from=payload.page_from,
         page_to=payload.page_to,
+        study_type=payload.study_type,
+        questions_total=payload.questions_total,
+        questions_correct=payload.questions_correct,
         client_uuid=payload.client_uuid,
         device_id=device_id,
     )
@@ -181,6 +185,9 @@ def finish(
         note=p.note,
         page_from=p.page_from,
         page_to=p.page_to,
+        study_type=p.study_type,
+        questions_total=p.questions_total,
+        questions_correct=p.questions_correct,
         subject_id=p.subject_id,
         topic_id=p.topic_id,
         confirmed_duration_seconds=p.confirmed_duration_seconds,
@@ -221,6 +228,10 @@ def update(
         note=payload.note,
         page_from=payload.page_from,
         page_to=payload.page_to,
+        study_type=payload.study_type,
+        questions_total=payload.questions_total,
+        questions_correct=payload.questions_correct,
+        clear_questions=payload.clear_questions,
         reason=payload.reason,
         expected_version=payload.expected_version,
         resolve_review=payload.resolve_review,

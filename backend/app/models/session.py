@@ -80,6 +80,12 @@ class StudySession(UUIDPk, Timestamps, Base):
     )  # long_running | overlap | offline_conflict
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     counts_toward_goal: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # tipo de estudo: teoria | questoes | revisao | leitura | aula | pratica | outro
+    study_type: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="teoria", server_default="teoria"
+    )
+    questions_total: Mapped[int | None] = mapped_column(Integer)
+    questions_correct: Mapped[int | None] = mapped_column(Integer)
 
     intervals: Mapped[list[SessionInterval]] = relationship(
         back_populates="session",

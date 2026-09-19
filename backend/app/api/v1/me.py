@@ -41,6 +41,9 @@ class PreferencesOut(ORMModel):
     pomodoro_break_minutes: int
     analytics_consent: bool | None
     reduced_motion: bool
+    revisions_enabled: bool = True
+    revision_intervals: list[int] = [1, 7, 30]
+    mascot_enabled: bool = True
     extra: dict
 
 
@@ -53,6 +56,9 @@ class PreferencesUpdate(BaseModel):
     pomodoro_break_minutes: int | None = Field(default=None, ge=1, le=60)
     analytics_consent: bool | None = None
     reduced_motion: bool | None = None
+    revisions_enabled: bool | None = None
+    revision_intervals: list[int] | None = None
+    mascot_enabled: bool | None = None
     extra: dict | None = None
 
 
@@ -109,6 +115,10 @@ def update_preferences(
     for k, v in payload.model_dump(exclude_unset=True).items():
         if k == "extra" and v is not None:
             prefs.extra = {**(prefs.extra or {}), **v}
+        elif k == "revision_intervals" and v is not None:
+            from app.services.revisions import validate_intervals
+
+            prefs.revision_intervals = validate_intervals(v)
         elif v is not None or k == "analytics_consent":
             setattr(prefs, k, v)
     db.commit()

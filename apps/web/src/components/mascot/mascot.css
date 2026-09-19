@@ -1,0 +1,78 @@
+/* Tatá — animações por estado. Tudo desligado com prefers-reduced-motion (poses mantidas). */
+.tata { overflow: visible; display: block; }
+.tata .tata-body { transform-origin: 100px 190px; transform-box: view-box; }
+.tata .tata-book, .tata .tata-cup, .tata .tata-zzz, .tata .tata-sparkles, .tata .tata-heart, .tata .tata-dots { opacity: 0; transition: opacity 240ms cubic-bezier(0.2, 0, 0, 1); }
+.tata .tata-arm { transform-box: view-box; }
+.tata .tata-arm--left { transform-origin: 36px 116px; }
+.tata .tata-arm--right { transform-origin: 164px 116px; }
+.tata .tata-tail { transform-box: view-box; transform-origin: 146px 166px; animation: tata-tail 2.8s ease-in-out infinite; }
+.tata .tata-eye-open { transform-box: fill-box; transform-origin: center; animation: tata-blink 5.2s infinite; }
+.tata .tata-eyes { transition: transform 160ms linear; }
+
+/* ocioso: respira e pisca */
+.tata--idle .tata-body { animation: tata-bob 3.2s ease-in-out infinite; }
+/* foco: segura o livro, balança de leve */
+.tata--focus .tata-body { animation: tata-sway 4s ease-in-out infinite; }
+.tata--focus .tata-book { opacity: 1; }
+.tata--focus .tata-arm--left { transform: rotate(-38deg); }
+.tata--focus .tata-arm--right { transform: rotate(38deg); }
+.tata--focus .tata-eyes { transform: translate(0, 5px) !important; }
+/* comemora: pula, braços para cima, brilhos */
+.tata--cheer .tata-body { animation: tata-jump 0.9s cubic-bezier(0.2, 0, 0, 1) infinite; }
+.tata--cheer .tata-arm--left { animation: tata-arm-up-l 0.9s ease-in-out infinite; }
+.tata--cheer .tata-arm--right { animation: tata-arm-up-r 0.9s ease-in-out infinite; }
+.tata--cheer .tata-sparkles { opacity: 1; animation: tata-twinkle 1.2s ease-in-out infinite; }
+/* dorme */
+.tata--sleep .tata-body { animation: tata-breathe 4s ease-in-out infinite; }
+.tata--sleep .tata-zzz { opacity: 1; animation: tata-float 2.6s ease-in-out infinite; }
+/* pausa: xícara com vapor */
+.tata--paused .tata-body { animation: tata-bob 4.5s ease-in-out infinite; }
+.tata--paused .tata-cup { opacity: 1; }
+.tata--paused .tata-steam { animation: tata-steam 2.2s ease-in-out infinite; }
+.tata--paused .tata-arm--right { transform: rotate(46deg); }
+/* acena */
+.tata--wave .tata-body { animation: tata-bob 3.2s ease-in-out infinite; }
+.tata--wave .tata-arm--right { animation: tata-wave 1.1s ease-in-out infinite; }
+/* encoraja: acena com a cabeça */
+.tata--encourage .tata-body { animation: tata-nod 1.6s ease-in-out infinite; }
+.tata--encourage .tata-arm--left { transform: rotate(-24deg); }
+/* carinho */
+.tata--love .tata-body { animation: tata-squish 0.8s ease-in-out infinite; }
+.tata--love .tata-heart { opacity: 1; animation: tata-float 1.6s ease-in-out infinite; }
+/* pensando */
+.tata--think .tata-body { animation: tata-tilt 3s ease-in-out infinite; }
+.tata--think .tata-dots { opacity: 1; animation: tata-twinkle 1.6s ease-in-out infinite; }
+.tata--think .tata-arm--right { transform: rotate(-70deg) translate(-6px, -6px); }
+
+@keyframes tata-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes tata-breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.03, 0.97); } }
+@keyframes tata-sway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+@keyframes tata-tilt { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-6deg); } }
+@keyframes tata-nod { 0%, 100% { transform: translateY(0) rotate(0); } 30% { transform: translateY(3px) rotate(3deg); } 60% { transform: translateY(0) rotate(0); } }
+@keyframes tata-jump { 0%, 100% { transform: translateY(0) scale(1, 1); } 15% { transform: translateY(0) scale(1.06, 0.92); } 45% { transform: translateY(-22px) scale(0.96, 1.05); } 75% { transform: translateY(0) scale(1.05, 0.95); } }
+@keyframes tata-squish { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.06, 0.94); } }
+@keyframes tata-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+@keyframes tata-wave { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-60deg); } 50% { transform: rotate(-35deg); } 75% { transform: rotate(-60deg); } }
+@keyframes tata-arm-up-l { 0%, 100% { transform: rotate(20deg); } 50% { transform: rotate(70deg); } }
+@keyframes tata-arm-up-r { 0%, 100% { transform: rotate(-20deg); } 50% { transform: rotate(-70deg); } }
+@keyframes tata-tail { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(8deg); } }
+@keyframes tata-float { 0% { transform: translateY(4px); opacity: 0.2; } 50% { opacity: 1; } 100% { transform: translateY(-10px); opacity: 0.2; } }
+@keyframes tata-twinkle { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+@keyframes tata-steam { 0% { opacity: 0; transform: translateY(4px); } 50% { opacity: 1; } 100% { opacity: 0; transform: translateY(-6px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .tata *, .tata { animation: none !important; transition: none !important; }
+}
+
+/* balão de fala */
+.tata-bubble { position: relative; }
+.tata-bubble--left::before {
+  content: ""; position: absolute; left: -6px; top: 14px; width: 10px; height: 10px;
+  background: inherit; border-left: 1px solid var(--color-divider, rgba(127,127,127,.25)); border-bottom: 1px solid var(--color-divider, rgba(127,127,127,.25));
+  transform: rotate(45deg);
+}
+.tata-bubble--up::before {
+  content: ""; position: absolute; top: -6px; left: calc(50% - 5px); width: 10px; height: 10px;
+  background: inherit; border-left: 1px solid var(--color-divider, rgba(127,127,127,.25)); border-top: 1px solid var(--color-divider, rgba(127,127,127,.25));
+  transform: rotate(45deg);
+}

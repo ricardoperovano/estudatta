@@ -25,6 +25,11 @@ class Subject(UUIDPk, Timestamps, Base):
     description: Mapped[str | None] = mapped_column(Text)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     color: Mapped[str | None] = mapped_column(String(16))
+    # peso no edital/prova (1–5) e dificuldade percebida: usados na sugestão da próxima matéria
+    weight: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    difficulty: Mapped[str] = mapped_column(
+        String(8), nullable=False, default="media", server_default="media"
+    )
     archived_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
 
     topics: Mapped[list[Topic]] = relationship(

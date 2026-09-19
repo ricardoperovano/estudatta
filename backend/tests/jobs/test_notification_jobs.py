@@ -60,12 +60,12 @@ def _outbox() -> dict[str, NotificationOutbox]:
 
 
 def _inbox() -> list[Notification]:
-    """Central, sem a mensagem de boas-vindas criada no cadastro."""
+    """Central, sem boas-vindas (cadastro) nem conquistas (gamificação)."""
     with SessionLocal() as db:
         rows = list(
             db.execute(
                 select(Notification)
-                .where(Notification.kind != "welcome")
+                .where(Notification.kind.not_in(("welcome", "achievement")))
                 .order_by(Notification.created_at)
             ).scalars()
         )
@@ -449,8 +449,8 @@ def test_one_user_failing_or_logging_does_not_affect_another(client):
             assert dispatch_outbox() == {"sent": 1, "skipped": 1, "claimed": 2}
         ana_list = client.get(f"{API}/notifications").json()
         bia_list = other.get(f"{API}/notifications").json()
-    ana_kinds = [n["kind"] for n in ana_list["items"]]
+    ana_kinds = [n["kind"] for n in ana_list["items"] if n["kind"] != "achievement"]
     assert sorted(ana_kinds) == ["planned_start", "welcome"]
     reminder = next(n for n in ana_list["items"] if n["kind"] == "planned_start")
     assert reminder["data"]["activity_id"] == ana_act["id"]
-    assert [n["kind"] for n in bia_list["items"]] == ["welcome"]
+    assert [n["kind"] for n in bia_list["items"] if n["kind"] != "achievement"] == ["welcome"]

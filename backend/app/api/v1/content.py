@@ -47,7 +47,14 @@ def create_subject(
 ) -> SubjectOut:
     act = activity_service.get_activity(db, user, activity_id)
     s = svc.create_subject(
-        db, user, act, title=payload.title, description=payload.description, color=payload.color
+        db,
+        user,
+        act,
+        title=payload.title,
+        description=payload.description,
+        color=payload.color,
+        weight=payload.weight,
+        difficulty=payload.difficulty,
     )
     audit(db, actor_id=user.id, action="subject.create", target_type="subject", target_id=str(s.id))
     db.commit()

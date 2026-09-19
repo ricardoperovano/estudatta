@@ -1780,6 +1780,178 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Revisions */
+        get: operations["list_revisions_api_v1_revisions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/revisions/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Revisions Summary */
+        get: operations["revisions_summary_api_v1_revisions_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/revisions/{revision_id}/done": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revision Done */
+        post: operations["revision_done_api_v1_revisions__revision_id__done_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/revisions/{revision_id}/skip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revision Skip */
+        post: operations["revision_skip_api_v1_revisions__revision_id__skip_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/revisions/{revision_id}/reschedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revision Reschedule */
+        post: operations["revision_reschedule_api_v1_revisions__revision_id__reschedule_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/activities/{activity_id}/mock-exams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mock Overview */
+        get: operations["mock_overview_api_v1_activities__activity_id__mock_exams_get"];
+        put?: never;
+        /** Mock Create */
+        post: operations["mock_create_api_v1_activities__activity_id__mock_exams_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mock-exams/{exam_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Mock Delete */
+        delete: operations["mock_delete_api_v1_mock_exams__exam_id__delete"];
+        options?: never;
+        head?: never;
+        /** Mock Update */
+        patch: operations["mock_update_api_v1_mock_exams__exam_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/activities/{activity_id}/insights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Activity Insights */
+        get: operations["activity_insights_api_v1_activities__activity_id__insights_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gamification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Gamification Profile */
+        get: operations["gamification_profile_api_v1_gamification_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gamification/seen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Gamification Seen */
+        post: operations["gamification_seen_api_v1_gamification_seen_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/billing/subscription": {
         parameters: {
             query?: never;
@@ -2242,6 +2414,44 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AccuracyRow */
+        AccuracyRow: {
+            /** Subject Id */
+            subject_id: string | null;
+            /** Subject Title */
+            subject_title: string;
+            /** Questions */
+            questions: number;
+            /** Correct */
+            correct: number;
+            /** Percent */
+            percent: number | null;
+        };
+        /** AchievementOut */
+        AchievementOut: {
+            /** Code */
+            code: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string;
+            /** Category */
+            category: string;
+            /** Category Label */
+            category_label: string;
+            /** Icon */
+            icon: string;
+            /** Target */
+            target: number;
+            /** Progress */
+            progress: number;
+            /** Unlocked */
+            unlocked: boolean;
+            /** Unlocked At */
+            unlocked_at: string | null;
+            /** Seen */
+            seen: boolean;
+        };
         /** ActivityCreate */
         ActivityCreate: {
             /** Title */
@@ -2285,6 +2495,10 @@ export interface components {
             color?: string | null;
             /** Icon */
             icon?: string | null;
+            /** Weekly Questions Goal */
+            weekly_questions_goal?: number | null;
+            /** Weekly Pages Goal */
+            weekly_pages_goal?: number | null;
         };
         /** ActivityDetailOut */
         ActivityDetailOut: {
@@ -2328,6 +2542,10 @@ export interface components {
             };
             /** Sort Order */
             sort_order: number;
+            /** Weekly Questions Goal */
+            weekly_questions_goal?: number | null;
+            /** Weekly Pages Goal */
+            weekly_pages_goal?: number | null;
             /**
              * Created At
              * Format: date-time
@@ -2383,6 +2601,10 @@ export interface components {
             };
             /** Sort Order */
             sort_order: number;
+            /** Weekly Questions Goal */
+            weekly_questions_goal?: number | null;
+            /** Weekly Pages Goal */
+            weekly_pages_goal?: number | null;
             /**
              * Created At
              * Format: date-time
@@ -2419,6 +2641,10 @@ export interface components {
             color?: string | null;
             /** Icon */
             icon?: string | null;
+            /** Weekly Questions Goal */
+            weekly_questions_goal?: number | null;
+            /** Weekly Pages Goal */
+            weekly_pages_goal?: number | null;
             /** Tracking Mode */
             tracking_mode?: ("time" | "checklist" | "mixed") | null;
             /** Sort Order */
@@ -2764,6 +2990,20 @@ export interface components {
             /** Title */
             title?: string | null;
         };
+        /** BonusOut */
+        BonusOut: {
+            /** Title */
+            title: string;
+            /** Points */
+            points: number;
+            /** Kind */
+            kind: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** CalendarActivityOut */
         CalendarActivityOut: {
             /**
@@ -2852,6 +3092,33 @@ export interface components {
             end: string;
             /** Days */
             days: components["schemas"]["CalendarDayOut"][];
+        };
+        /** ChallengeOut */
+        ChallengeOut: {
+            /** Code */
+            code: string;
+            /** Title */
+            title: string;
+            /** Target */
+            target: number;
+            /** Progress */
+            progress: number;
+            /** Unit */
+            unit: string;
+            /** Done */
+            done: boolean;
+            /** Xp */
+            xp: number;
+        };
+        /** ChallengesOut */
+        ChallengesOut: {
+            /**
+             * Week Start
+             * Format: date
+             */
+            week_start: string;
+            /** Items */
+            items: components["schemas"]["ChallengeOut"][];
         };
         /** ChangePasswordRequest */
         ChangePasswordRequest: {
@@ -2969,6 +3236,19 @@ export interface components {
             tasks_skipped: number;
             /** Tasks Planned */
             tasks_planned: number;
+        };
+        /** CoverageOut */
+        CoverageOut: {
+            /** Topics Total */
+            topics_total: number;
+            /** Topics Studied */
+            topics_studied: number;
+            /** Topics Done */
+            topics_done: number;
+            /** Percent Studied */
+            percent_studied: number;
+            /** Percent Done */
+            percent_done: number;
         };
         /** DayBalanceOut */
         DayBalanceOut: {
@@ -3097,6 +3377,28 @@ export interface components {
              * Format: email
              */
             email: string;
+        };
+        /** GamificationOut */
+        GamificationOut: {
+            /** Xp */
+            xp: number;
+            level: components["schemas"]["LevelOut"];
+            /** Xp Breakdown */
+            xp_breakdown: {
+                [key: string]: number;
+            };
+            /** Achievements */
+            achievements: components["schemas"]["AchievementOut"][];
+            /** Unlocked Count */
+            unlocked_count: number;
+            /** Total Achievements */
+            total_achievements: number;
+            /** Unseen */
+            unseen: components["schemas"]["AchievementOut"][];
+            challenges: components["schemas"]["ChallengesOut"];
+            records: components["schemas"]["RecordsOut"];
+            /** Recent Bonus */
+            recent_bonus: components["schemas"]["BonusOut"][];
         };
         /** GoalRuleIn */
         GoalRuleIn: {
@@ -3248,6 +3550,19 @@ export interface components {
         ImportPatch: {
             proposal: components["schemas"]["ProposalIn"];
         };
+        /** InsightsOut */
+        InsightsOut: {
+            /**
+             * Activity Id
+             * Format: uuid
+             */
+            activity_id: string;
+            next_subject: components["schemas"]["NextSubjectOut"] | null;
+            coverage: components["schemas"]["CoverageOut"];
+            week: components["schemas"]["WeekStatsOut"];
+            /** Accuracy By Subject */
+            accuracy_by_subject: components["schemas"]["AccuracyRow"][];
+        };
         /** IntervalOut */
         IntervalOut: {
             /**
@@ -3266,6 +3581,19 @@ export interface components {
             ended_at: string | null;
             /** Block Index */
             block_index: number | null;
+        };
+        /** LevelOut */
+        LevelOut: {
+            /** Number */
+            number: number;
+            /** Title */
+            title: string;
+            /** Xp Into Level */
+            xp_into_level: number;
+            /** Xp For Next */
+            xp_for_next: number;
+            /** Next At */
+            next_at: number;
         };
         /** LoginRequest */
         LoginRequest: {
@@ -3464,6 +3792,157 @@ export interface components {
              * @default false
              */
             clear_activity: boolean;
+        };
+        /** MockExamIn */
+        MockExamIn: {
+            /**
+             * Title
+             * @default Simulado
+             */
+            title: string;
+            /**
+             * Taken On
+             * Format: date
+             */
+            taken_on: string;
+            /** Total Questions */
+            total_questions?: number | null;
+            /** Correct */
+            correct?: number | null;
+            /** Duration Minutes */
+            duration_minutes?: number | null;
+            /** Notes */
+            notes?: string | null;
+            /** Subjects */
+            subjects?: components["schemas"]["MockSubjectIn"][] | null;
+        };
+        /** MockExamOut */
+        MockExamOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Activity Id
+             * Format: uuid
+             */
+            activity_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Taken On
+             * Format: date
+             */
+            taken_on: string;
+            /** Total Questions */
+            total_questions: number;
+            /** Correct */
+            correct: number;
+            /** Duration Minutes */
+            duration_minutes: number | null;
+            /** Notes */
+            notes: string | null;
+            /** Percent */
+            percent?: number | null;
+            /**
+             * Subjects
+             * @default []
+             */
+            subjects: components["schemas"]["MockSubjectOut"][];
+        };
+        /** MockExamUpdate */
+        MockExamUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Taken On */
+            taken_on?: string | null;
+            /** Total Questions */
+            total_questions?: number | null;
+            /** Correct */
+            correct?: number | null;
+            /** Duration Minutes */
+            duration_minutes?: number | null;
+            /** Notes */
+            notes?: string | null;
+            /** Subjects */
+            subjects?: components["schemas"]["MockSubjectIn"][] | null;
+        };
+        /** MockOverviewOut */
+        MockOverviewOut: {
+            /** Exams */
+            exams: components["schemas"]["MockExamOut"][];
+            /** Count */
+            count: number;
+            /** Best Percent */
+            best_percent: number | null;
+            /** Last Percent */
+            last_percent: number | null;
+            /** Change From Previous */
+            change_from_previous: number | null;
+            /** Subjects */
+            subjects: components["schemas"]["MockSubjectStat"][];
+        };
+        /** MockSubjectIn */
+        MockSubjectIn: {
+            /** Subject Id */
+            subject_id?: string | null;
+            /** Subject Title */
+            subject_title?: string | null;
+            /** Total */
+            total: number;
+            /** Correct */
+            correct: number;
+        };
+        /** MockSubjectOut */
+        MockSubjectOut: {
+            /** Subject Id */
+            subject_id: string | null;
+            /** Subject Title */
+            subject_title: string;
+            /** Total */
+            total: number;
+            /** Correct */
+            correct: number;
+        };
+        /** MockSubjectStat */
+        MockSubjectStat: {
+            /** Subject Id */
+            subject_id: string | null;
+            /** Subject Title */
+            subject_title: string;
+            /** Total */
+            total: number;
+            /** Correct */
+            correct: number;
+            /** Percent */
+            percent: number | null;
+            /** Last Percent */
+            last_percent: number | null;
+        };
+        /** NextSubjectOut */
+        NextSubjectOut: {
+            /**
+             * Subject Id
+             * Format: uuid
+             */
+            subject_id: string;
+            /** Subject Title */
+            subject_title: string;
+            /** Topic Id */
+            topic_id: string | null;
+            /** Topic Title */
+            topic_title: string | null;
+            /** Weight */
+            weight: number;
+            /** Difficulty */
+            difficulty: string;
+            /** Expected Share */
+            expected_share: number;
+            /** Actual Share */
+            actual_share: number;
+            /** Reason */
+            reason: string;
         };
         /** NotificationListOut */
         NotificationListOut: {
@@ -3955,6 +4434,25 @@ export interface components {
             analytics_consent: boolean | null;
             /** Reduced Motion */
             reduced_motion: boolean;
+            /**
+             * Revisions Enabled
+             * @default true
+             */
+            revisions_enabled: boolean;
+            /**
+             * Revision Intervals
+             * @default [
+             *       1,
+             *       7,
+             *       30
+             *     ]
+             */
+            revision_intervals: number[];
+            /**
+             * Mascot Enabled
+             * @default true
+             */
+            mascot_enabled: boolean;
             /** Extra */
             extra: {
                 [key: string]: unknown;
@@ -3978,6 +4476,12 @@ export interface components {
             analytics_consent?: boolean | null;
             /** Reduced Motion */
             reduced_motion?: boolean | null;
+            /** Revisions Enabled */
+            revisions_enabled?: boolean | null;
+            /** Revision Intervals */
+            revision_intervals?: number[] | null;
+            /** Mascot Enabled */
+            mascot_enabled?: boolean | null;
             /** Extra */
             extra?: {
                 [key: string]: unknown;
@@ -4239,6 +4743,31 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** RecordsOut */
+        RecordsOut: {
+            /** Best Week Seconds */
+            best_week_seconds: number;
+            /** Best Week Start */
+            best_week_start: string | null;
+            /** This Week Seconds */
+            this_week_seconds: number;
+            /** Best Streak */
+            best_streak: number;
+            /** Current Streak */
+            current_streak: number;
+            /** Longest Session Seconds */
+            longest_session_seconds: number;
+            /** Most Questions Week */
+            most_questions_week: number;
+            /** Best Mock Percent */
+            best_mock_percent: number | null;
+            /** Total Seconds */
+            total_seconds: number;
+            /** Total Questions */
+            total_questions: number;
+            /** Total Pages */
+            total_pages: number;
+        };
         /** RecoveryAllocationOut */
         RecoveryAllocationOut: {
             /**
@@ -4437,6 +4966,15 @@ export interface components {
             page_from: number | null;
             /** Page To */
             page_to: number | null;
+            /**
+             * Study Type
+             * @default teoria
+             */
+            study_type: string;
+            /** Questions Total */
+            questions_total?: number | null;
+            /** Questions Correct */
+            questions_correct?: number | null;
             /** Pomodoro Config */
             pomodoro_config: {
                 [key: string]: unknown;
@@ -4509,6 +5047,65 @@ export interface components {
             /** Password */
             password: string;
         };
+        /** RevisionOut */
+        RevisionOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Activity Id
+             * Format: uuid
+             */
+            activity_id: string;
+            /** Subject Id */
+            subject_id: string | null;
+            /** Topic Id */
+            topic_id: string | null;
+            /** Title */
+            title: string;
+            /** Step */
+            step: number;
+            /** Interval Days */
+            interval_days: number;
+            /**
+             * Due Date
+             * Format: date
+             */
+            due_date: string;
+            /** Status */
+            status: string;
+            /** Done At */
+            done_at: string | null;
+            /**
+             * Overdue
+             * @default false
+             */
+            overdue: boolean;
+        };
+        /** RevisionRescheduleIn */
+        RevisionRescheduleIn: {
+            /**
+             * Due Date
+             * Format: date
+             */
+            due_date: string;
+        };
+        /** RevisionSummaryOut */
+        RevisionSummaryOut: {
+            /**
+             * Today
+             * Format: date
+             */
+            today: string;
+            /** Overdue */
+            overdue: number;
+            /** Due Today */
+            due_today: number;
+            /** Next 7 Days */
+            next_7_days: number;
+        };
         /** RoleIn */
         RoleIn: {
             /**
@@ -4516,6 +5113,11 @@ export interface components {
              * @enum {string}
              */
             role: "user" | "admin";
+        };
+        /** SeenIn */
+        SeenIn: {
+            /** Codes */
+            codes?: string[] | null;
         };
         /** SeriesCreate */
         SeriesCreate: {
@@ -4631,6 +5233,12 @@ export interface components {
             page_from?: number | null;
             /** Page To */
             page_to?: number | null;
+            /** Study Type */
+            study_type?: ("teoria" | "questoes" | "revisao" | "leitura" | "aula" | "simulado" | "pratica" | "outro") | null;
+            /** Questions Total */
+            questions_total?: number | null;
+            /** Questions Correct */
+            questions_correct?: number | null;
             /** Subject Id */
             subject_id?: string | null;
             /** Topic Id */
@@ -4668,6 +5276,12 @@ export interface components {
             page_from?: number | null;
             /** Page To */
             page_to?: number | null;
+            /** Study Type */
+            study_type?: ("teoria" | "questoes" | "revisao" | "leitura" | "aula" | "simulado" | "pratica" | "outro") | null;
+            /** Questions Total */
+            questions_total?: number | null;
+            /** Questions Correct */
+            questions_correct?: number | null;
             /** Client Uuid */
             client_uuid?: string | null;
         };
@@ -4713,6 +5327,15 @@ export interface components {
             page_from: number | null;
             /** Page To */
             page_to: number | null;
+            /**
+             * Study Type
+             * @default teoria
+             */
+            study_type: string;
+            /** Questions Total */
+            questions_total?: number | null;
+            /** Questions Correct */
+            questions_correct?: number | null;
             /** Pomodoro Config */
             pomodoro_config: {
                 [key: string]: unknown;
@@ -4800,6 +5423,8 @@ export interface components {
             client_uuid?: string | null;
             /** Started At */
             started_at?: string | null;
+            /** Study Type */
+            study_type?: ("teoria" | "questoes" | "revisao" | "leitura" | "aula" | "simulado" | "pratica" | "outro") | null;
         };
         /** SessionTransition */
         SessionTransition: {
@@ -4828,6 +5453,12 @@ export interface components {
             page_from?: number | null;
             /** Page To */
             page_to?: number | null;
+            /** Study Type */
+            study_type?: ("teoria" | "questoes" | "revisao" | "leitura" | "aula" | "simulado" | "pratica" | "outro") | null;
+            /** Questions Total */
+            questions_total?: number | null;
+            /** Questions Correct */
+            questions_correct?: number | null;
             /** Reason */
             reason?: string | null;
             /** Expected Version */
@@ -4837,6 +5468,11 @@ export interface components {
              * @default false
              */
             resolve_review: boolean;
+            /**
+             * Clear Questions
+             * @default false
+             */
+            clear_questions: boolean;
         };
         /** SettingIn */
         SettingIn: {
@@ -4881,6 +5517,10 @@ export interface components {
             description?: string | null;
             /** Color */
             color?: string | null;
+            /** Weight */
+            weight?: number | null;
+            /** Difficulty */
+            difficulty?: ("facil" | "media" | "dificil") | null;
         };
         /** SubjectOut */
         SubjectOut: {
@@ -4900,6 +5540,16 @@ export interface components {
             description: string | null;
             /** Color */
             color: string | null;
+            /**
+             * Weight
+             * @default 1
+             */
+            weight: number;
+            /**
+             * Difficulty
+             * @default media
+             */
+            difficulty: string;
             /** Sort Order */
             sort_order: number;
             /**
@@ -4943,6 +5593,10 @@ export interface components {
             description?: string | null;
             /** Color */
             color?: string | null;
+            /** Weight */
+            weight?: number | null;
+            /** Difficulty */
+            difficulty?: ("facil" | "media" | "dificil") | null;
         };
         /** SubscriptionOut */
         SubscriptionOut: {
@@ -5510,6 +6164,15 @@ export interface components {
              */
             clear_parent: boolean;
         };
+        /** TypeSeconds */
+        TypeSeconds: {
+            /** Study Type */
+            study_type: string;
+            /** Label */
+            label: string;
+            /** Seconds */
+            seconds: number;
+        };
         /** UnreadCountOut */
         UnreadCountOut: {
             /** Count */
@@ -5628,6 +6291,33 @@ export interface components {
             planned_seconds: number;
             /** Recovery Seconds */
             recovery_seconds: number;
+        };
+        /** WeekStatsOut */
+        WeekStatsOut: {
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
+            /**
+             * End
+             * Format: date
+             */
+            end: string;
+            /** Questions */
+            questions: number;
+            /** Questions Correct */
+            questions_correct: number;
+            /** Accuracy */
+            accuracy: number | null;
+            /** Pages */
+            pages: number;
+            /** Questions Goal */
+            questions_goal: number | null;
+            /** Pages Goal */
+            pages_goal: number | null;
+            /** By Type */
+            by_type: components["schemas"]["TypeSeconds"][];
         };
         /** WeeklySummaryIn */
         WeeklySummaryIn: {
@@ -9441,6 +10131,373 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SyncStatusOut"];
+                };
+            };
+        };
+    };
+    list_revisions_api_v1_revisions_get: {
+        parameters: {
+            query?: {
+                status?: ("pending" | "done" | "skipped") | null;
+                until?: string | null;
+                activity_id?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevisionOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revisions_summary_api_v1_revisions_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevisionSummaryOut"];
+                };
+            };
+        };
+    };
+    revision_done_api_v1_revisions__revision_id__done_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                revision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevisionOut"] | null;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revision_skip_api_v1_revisions__revision_id__skip_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                revision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revision_reschedule_api_v1_revisions__revision_id__reschedule_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                revision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevisionRescheduleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevisionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mock_overview_api_v1_activities__activity_id__mock_exams_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MockOverviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mock_create_api_v1_activities__activity_id__mock_exams_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MockExamIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MockExamOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mock_delete_api_v1_mock_exams__exam_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mock_update_api_v1_mock_exams__exam_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MockExamUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MockExamOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    activity_insights_api_v1_activities__activity_id__insights_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InsightsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    gamification_profile_api_v1_gamification_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GamificationOut"];
+                };
+            };
+        };
+    };
+    gamification_seen_api_v1_gamification_seen_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SeenIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

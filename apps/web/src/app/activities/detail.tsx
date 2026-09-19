@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router";
-import { CaretLeft } from "@phosphor-icons/react";
+import { ArrowsClockwise, CaretLeft, ChartLineUp } from "@phosphor-icons/react";
 import { Banner, Bar, Button, EmptyState, Spinner, Tabs, TabsContent, TabsList, TabsTrigger, Tag } from "@/components/ui";
 import { ApiError } from "@/api/client";
 import { useActivity, useBalance } from "@/api/queries";
@@ -8,6 +8,7 @@ import { categoryLabel, useSummary } from "@/api/activity-settings";
 import { ActivityMaterialsTab } from "@/components/app/activity-materials-tab";
 import { ActivitySettingsTab } from "@/components/app/activity-settings-tab";
 import { ActivityTasksTab } from "@/components/app/activity-tasks-tab";
+import { StudyInsightsCard } from "@/components/app/study-insights-card";
 import { SubjectTree } from "@/components/app/subject-tree";
 import { weekTargetSeconds } from "@/components/app/week-utils";
 import { fmtDayShort, fmtMinutes, todayIso } from "@/lib/format";
@@ -138,6 +139,24 @@ export default function ActivityDetailPage() {
               <Link to={`/app/objetivos/${act.id}/recuperar`}>Distribuir pendência</Link>
             </Button>
           ) : null}
+        </div>
+      ) : null}
+
+      {hasTime ? (
+        <div className="flex max-w-[760px] flex-col gap-2">
+          <StudyInsightsCard activityId={act.id} />
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="secondary" size="lg">
+              <Link to={`/app/objetivos/${act.id}/simulados`}>
+                <ChartLineUp size={16} aria-hidden /> Simulados
+              </Link>
+            </Button>
+            <Button asChild variant="secondary" size="lg">
+              <Link to={`/app/revisoes?objetivo=${act.id}`}>
+                <ArrowsClockwise size={16} aria-hidden /> Revisões
+              </Link>
+            </Button>
+          </div>
         </div>
       ) : null}
 

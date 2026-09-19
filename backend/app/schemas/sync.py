@@ -74,6 +74,9 @@ class ManualPayload(BaseModel):
     note: str | None = Field(default=None, max_length=2000)
     page_from: int | None = Field(default=None, ge=0, le=100000)
     page_to: int | None = Field(default=None, ge=0, le=100000)
+    study_type: str | None = Field(default=None, max_length=16)
+    questions_total: int | None = Field(default=None, ge=0, le=5000)
+    questions_correct: int | None = Field(default=None, ge=0, le=5000)
 
 
 class StartPayload(BaseModel):
@@ -87,6 +90,7 @@ class StartPayload(BaseModel):
     planned_task_id: UUID | None = None
     note: str | None = Field(default=None, max_length=2000)
     pomodoro_config: dict | None = None
+    study_type: str | None = Field(default=None, max_length=16)
 
 
 class SessionRefPayload(BaseModel):
@@ -100,6 +104,9 @@ class FinishPayload(SessionRefPayload):
     note: str | None = Field(default=None, max_length=2000)
     page_from: int | None = Field(default=None, ge=0, le=100000)
     page_to: int | None = Field(default=None, ge=0, le=100000)
+    study_type: str | None = Field(default=None, max_length=16)
+    questions_total: int | None = Field(default=None, ge=0, le=5000)
+    questions_correct: int | None = Field(default=None, ge=0, le=5000)
     subject_id: UUID | None = None
     topic_id: UUID | None = None
     confirmed_duration_seconds: int | None = Field(default=None, ge=60, le=57600)

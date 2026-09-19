@@ -1,13 +1,13 @@
 # Estudatta — app e API
 
-Planejador de estudo e prática: mostra o que fazer hoje, registra o tempo (cronômetro ou lançamento manual), transforma o que faltou em **tempo a recuperar** e ajuda a retomar o plano — sem culpa. PWA (React + TypeScript + Vite) e API (FastAPI + PostgreSQL + Redis + Celery), publicados em `app.estudatta.com.br`.
+Planejador de estudo e prática: mostra o que fazer hoje, registra o tempo (cronômetro ou lançamento manual), transforma o que faltou em **tempo a recuperar** e ajuda a retomar o plano — sem culpa. Também tem revisões espaçadas, simulados, análise por matéria, conquistas e o Tatá, um mascote que faz companhia nas sessões. PWA (React + TypeScript + Vite) e API (FastAPI + PostgreSQL + Redis + Celery), publicados em `app.estudatta.com.br`.
 
 O **site público** (`estudatta.com.br`) é um projeto separado, em HTML/CSS/JS puros: repositório `estudatta-site`. Ele usa só os endpoints públicos desta API (`/api/v1/public/*`) e precisa estar em `CORS_ORIGINS`.
 
 - Identidade visual e design: `../Identidade visual e design system PWA Estudatta/` (referência; os assets usados estão copiados em `apps/web/src/assets` e `apps/web/public`). Mapeamento em `docs/design-implementation.md`.
 - Regras de saldo: `docs/regras-de-saldo.md`. Planos, preços e limites: `docs/planos-e-precos.md`. Decisões e suposições: `docs/decisoes.md`.
 - Verificações executadas: `docs/verificacoes.md`. Verificação visual: `docs/visual-comparison/README.md`.
-- Publicação: `docs/deploy.md`. Cobrança: `docs/billing.md`. Importação/materiais: `docs/importacao-e-materiais.md`. IA: `docs/ia.md`.
+- Publicação: `docs/deploy.md`. Cobrança: `docs/billing.md`. Importação/materiais: `docs/importacao-e-materiais.md`. IA: `docs/ia.md`. Revisões, simulados, conquistas e o Tatá: `docs/estudo-e-gamificacao.md`.
 
 ## Estrutura
 

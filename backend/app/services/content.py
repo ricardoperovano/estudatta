@@ -78,6 +78,8 @@ def create_subject(
     title: str,
     description: str | None = None,
     color: str | None = None,
+    weight: int | None = None,
+    difficulty: str | None = None,
 ) -> Subject:
     n = db.execute(
         select(func.count())
@@ -90,6 +92,8 @@ def create_subject(
         title=title.strip()[:160],
         description=description,
         color=color,
+        weight=weight or 1,
+        difficulty=difficulty or "media",
         sort_order=int(n),
     )
     db.add(s)
@@ -98,8 +102,8 @@ def create_subject(
 
 
 def update_subject(db: Session, subject: Subject, fields: dict) -> Subject:
-    for k in ("title", "description", "color"):
-        if k in fields:
+    for k in ("title", "description", "color", "weight", "difficulty"):
+        if k in fields and (fields[k] is not None or k in ("description", "color")):
             v = fields[k]
             setattr(subject, k, v.strip()[:160] if (k == "title" and v) else v)
     db.flush()
@@ -415,6 +419,8 @@ def subjects_tree(db: Session, user: User, act: Activity) -> list[dict]:
                 "title": s.title,
                 "description": s.description,
                 "color": s.color,
+                "weight": s.weight,
+                "difficulty": s.difficulty,
                 "sort_order": s.sort_order,
                 "created_at": s.created_at,
                 "topics_total": len(mine),

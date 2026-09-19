@@ -131,6 +131,17 @@ def test_seed_demo_is_idempotent_and_matches_mockup(client):
         ).scalar_one()
         assert sess.duration_seconds == 2400 and sess.entry_mode == "timed"
         assert sess.started_at.isoformat().startswith("2026-09-15T10:00")  # 07:00 em São Paulo
+    # recursos de estudo: simulados, revisões, questões e conquistas
+    assert first["mock_exams_created"] == 2 and second["mock_exams_created"] == 0
+    mocks = client.get(f"{API}/activities/{first['activity_id']}/mock-exams").json()
+    assert mocks["count"] == 2 and mocks["last_percent"] == 75.0 and mocks["best_percent"] == 75.0
+    assert client.get(f"{API}/revisions").json(), (
+        "revisões pendentes a partir das sessões de teoria"
+    )
+    ins = client.get(f"{API}/activities/{first['activity_id']}/insights").json()
+    assert ins["next_subject"] is not None and ins["accuracy_by_subject"]
+    g = client.get(f"{API}/gamification").json()
+    assert g["unlocked_count"] >= 3 and g["xp"] > 0
 
 
 @freeze_time("2026-09-14 12:00:00")  # segunda: "ontem" é domingo (descanso), nada a recuperar

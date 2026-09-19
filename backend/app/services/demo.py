@@ -24,10 +24,15 @@ from app.core.timeutil import local_datetime_to_utc, today_in, utcnow
 from app.models.activity import Activity
 from app.models.content import Material, Subject, Topic
 from app.models.planning import PlannedTask
+from app.models.session import StudySession
+from app.models.study import MockExam
 from app.models.user import User
 from app.services import activities as activity_service
 from app.services import auth as auth_service
+from app.services import gamification as gamification_service
 from app.services import materials as materials_service
+from app.services import mock_exams as mock_service
+from app.services import revisions as revision_service
 from app.services import sessions as session_service
 
 DEMO_EMAIL = "demo@estudatta.com.br"
@@ -359,6 +364,92 @@ def _seed_tasks(db: Session, user: User, act: Activity, topics: list[Topic], tod
     return created
 
 
+# peso e dificuldade das matérias (para a "próxima matéria sugerida")
+DEMO_SUBJECT_SETTINGS = {
+    "Gramática": (3, "dificil"),
+    "Listening": (2, "media"),
+    "Vocabulário": (1, "facil"),
+}
+# ciclo de tipos das sessões passadas: (tipo, questões, acertos)
+DEMO_TYPE_CYCLE = [
+    ("teoria", None, None),
+    ("questoes", 30, 22),
+    ("leitura", None, None),
+    ("questoes", 25, 21),
+]
+
+
+def _seed_study_extras(db: Session, user: User, act: Activity, today: date) -> dict:
+    """Tipos de estudo e questões nas sessões antigas, revisões, dois simulados e conquistas.
+    Idempotente: só preenche o que ainda está no padrão."""
+    for title, (weight, difficulty) in DEMO_SUBJECT_SETTINGS.items():
+        subj = _find_subject(db, act, title)
+        if subj is not None:
+            subj.weight, subj.difficulty = weight, difficulty
+    past = list(
+        db.execute(
+            select(StudySession)
+            .where(
+                StudySession.activity_id == act.id,
+                StudySession.status == "finished",
+                StudySession.local_date < today,
+            )
+            .order_by(StudySession.local_date)
+        ).scalars()
+    )
+    for i, sess in enumerate(past):
+        if sess.study_type == "teoria" and sess.questions_total is None:
+            kind, total, correct = DEMO_TYPE_CYCLE[i % len(DEMO_TYPE_CYCLE)]
+            sess.study_type = kind
+            sess.questions_total, sess.questions_correct = total, correct
+            if kind == "leitura" and sess.page_from is None:
+                sess.page_from, sess.page_to = 10 + i * 12, 22 + i * 12
+    db.flush()
+    for sess in past:
+        revision_service.on_session_recorded(db, user, sess)
+    exams = 0
+    has_exam = db.execute(
+        select(MockExam.id).where(MockExam.activity_id == act.id).limit(1)
+    ).scalar_one_or_none()
+    if has_exam is None:
+        subjects = {t: _find_subject(db, act, t) for t in DEMO_SUBJECT_SETTINGS}
+        for days_ago, title, rows in (
+            (
+                9,
+                "Simulado 1",
+                {"Gramática": (20, 11), "Listening": (10, 7), "Vocabulário": (10, 8)},
+            ),
+            (
+                2,
+                "Simulado 2",
+                {"Gramática": (20, 14), "Listening": (10, 7), "Vocabulário": (10, 9)},
+            ),
+        ):
+            mock_service.create(
+                db,
+                user,
+                act,
+                {
+                    "title": title,
+                    "taken_on": today - timedelta(days=days_ago),
+                    "duration_minutes": 60,
+                    "subjects": [
+                        {
+                            "subject_id": subjects[name].id if subjects[name] else None,
+                            "subject_title": name,
+                            "total": total,
+                            "correct": correct,
+                        }
+                        for name, (total, correct) in rows.items()
+                    ],
+                },
+            )
+            exams += 1
+    db.flush()
+    unlocked = gamification_service.evaluate(db, user)
+    return {"mock_exams_created": exams, "achievements_unlocked": len(unlocked)}
+
+
 def seed_demo(db: Session, *, password: str | None = None) -> dict:
     """Cria/atualiza o cenário de demonstração. Idempotente. Quem chama faz o commit."""
     user, generated_password, user_created = _get_or_create_user(db, password)
@@ -375,7 +466,9 @@ def seed_demo(db: Session, *, password: str | None = None) -> dict:
     n_sessions = _seed_sessions(db, user, act, topics, start, today, today_task)
     n_tasks = n_today_tasks + _seed_tasks(db, user, act, topics, today)
     db.flush()
+    extras = _seed_study_extras(db, user, act, today)
     return {
+        **extras,
         "email": DEMO_EMAIL,
         "user_id": str(user.id),
         "user_created": user_created,

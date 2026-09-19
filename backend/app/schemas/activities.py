@@ -47,6 +47,8 @@ class ActivityCreate(BaseModel):
     availability: dict = Field(default_factory=dict)
     color: str | None = Field(default=None, max_length=16)
     icon: str | None = Field(default=None, max_length=32)
+    weekly_questions_goal: int | None = Field(default=None, ge=1, le=10000)
+    weekly_pages_goal: int | None = Field(default=None, ge=1, le=10000)
 
 
 class ActivityUpdate(BaseModel):
@@ -61,6 +63,8 @@ class ActivityUpdate(BaseModel):
     availability: dict | None = None
     color: str | None = None
     icon: str | None = None
+    weekly_questions_goal: int | None = Field(default=None, ge=0, le=10000)
+    weekly_pages_goal: int | None = Field(default=None, ge=0, le=10000)
     tracking_mode: Literal["time", "checklist", "mixed"] | None = None
     sort_order: int | None = None
 
@@ -120,6 +124,8 @@ class ActivityOut(ORMModel):
     preferred_times: list
     availability: dict
     sort_order: int
+    weekly_questions_goal: int | None = None
+    weekly_pages_goal: int | None = None
     created_at: datetime
     current_rule: GoalRuleOut | None = None
 

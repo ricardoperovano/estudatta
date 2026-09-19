@@ -151,6 +151,9 @@ def _op_manual(db: Session, user: User, op: SyncOperationIn, device_id: str | No
         note=p.note,
         page_from=p.page_from,
         page_to=p.page_to,
+        study_type=p.study_type,
+        questions_total=p.questions_total,
+        questions_correct=p.questions_correct,
         client_uuid=op.op_id,
         device_id=device_id,
     )
@@ -219,6 +222,7 @@ def _op_start(db: Session, user: User, op: SyncOperationIn, device_id: str | Non
         client_uuid=client_uuid,
         device_id=device_id,
         started_at=p.started_at,
+        study_type=p.study_type,
     )
     return "applied", session_result(sess), None
 
@@ -249,6 +253,9 @@ def _op_finish(db: Session, user: User, op: SyncOperationIn, device_id: str | No
         note=p.note,
         page_from=p.page_from,
         page_to=p.page_to,
+        study_type=p.study_type,
+        questions_total=p.questions_total,
+        questions_correct=p.questions_correct,
         subject_id=p.subject_id,
         topic_id=p.topic_id,
         confirmed_duration_seconds=p.confirmed_duration_seconds,

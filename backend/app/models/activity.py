@@ -45,6 +45,8 @@ class Activity(UUIDPk, Timestamps, Base):
         JSONType, nullable=False, default=dict
     )  # {"0": [["19:00","21:00"]]}
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    weekly_questions_goal: Mapped[int | None] = mapped_column(Integer)
+    weekly_pages_goal: Mapped[int | None] = mapped_column(Integer)
     archived_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
 
     goal_rules: Mapped[list[GoalRule]] = relationship(

@@ -15,12 +15,16 @@ class SubjectCreate(BaseModel):
     title: str = Field(min_length=1, max_length=160)
     description: str | None = Field(default=None, max_length=2000)
     color: str | None = Field(default=None, max_length=16)
+    weight: int | None = Field(default=None, ge=1, le=5)
+    difficulty: Literal["facil", "media", "dificil"] | None = None
 
 
 class SubjectUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=160)
     description: str | None = Field(default=None, max_length=2000)
     color: str | None = Field(default=None, max_length=16)
+    weight: int | None = Field(default=None, ge=1, le=5)
+    difficulty: Literal["facil", "media", "dificil"] | None = None
 
 
 class SubjectReorder(BaseModel):
@@ -79,6 +83,8 @@ class SubjectOut(ORMModel):
     title: str
     description: str | None
     color: str | None
+    weight: int = 1
+    difficulty: str = "media"
     sort_order: int
     created_at: datetime
     topics_total: int = 0

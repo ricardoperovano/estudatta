@@ -34,6 +34,7 @@ export interface LocalTimer {
   subject_id?: string | null;
   topic_id?: string | null;
   label?: string;
+  study_type?: string;
   kind: "timer" | "pomodoro";
   status: "active" | "paused";
   started_at: string; // ISO

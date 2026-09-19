@@ -7,8 +7,8 @@ Executadas em 18/09/2026, na máquina de desenvolvimento (CachyOS, Docker 29, No
 | Verificação | Comando | Resultado |
 |---|---|---|
 | Lint | `ruff check app tests` | sem problemas |
-| Formatação | `ruff format --check app tests` | 123 arquivos ok |
-| Testes (pytest, SQLite) | `pytest tests -q` | **169 passaram**, 0 falharam (inclui CORS para a origem do site) |
+| Formatação | `ruff format --check app tests` | 131 arquivos ok |
+| Testes (pytest, SQLite) | `pytest tests -q` | **185 passaram**, 0 falharam (inclui revisões, simulados, análise, gamificação e o seed de demonstração) |
 | Migrações em Postgres 16 vazio | `alembic upgrade head` + `alembic check` | aplicadas; modelos e migração sem divergência |
 | Ida e volta de migração | `alembic downgrade base` + `upgrade head` | ok |
 | API real | `GET /api/v1/health/ready` | `{"database":"ok","redis":"ok"}` |
@@ -35,7 +35,7 @@ Cobertura dos testes obrigatórios (seção 21 do escopo):
 |---|---|---|
 | Tipos | `tsc -b` | sem erros |
 | Lint | `eslint .` | 0 erros; 8 avisos `react-refresh/only-export-components` em módulos que exportam constantes |
-| Testes unitários | `vitest run` | 4 passaram |
+| Testes unitários | `vitest run` | 7 passaram (inclui as falas do Tatá) |
 | Build de produção | `npm run build` | ok; service worker com 95 arquivos no precache; `robots.txt` bloqueia indexação do app |
 | Independência da pasta de design | busca por "Identidade visual" em `src/`, `vite.config.ts`, `index.html` | 0 ocorrências; os assets estão no repositório |
 
@@ -50,7 +50,7 @@ Cobertura dos testes obrigatórios (seção 21 do escopo):
 
 ## Ponta a ponta (Playwright + Chrome, API real em Postgres dedicado)
 
-Após a separação do site, `npx playwright test` teve **6 de 6 aprovados** nos projetos mobile (390×844) e desktop (1440×900).
+Após a gamificação e o Tatá, `npx playwright test` teve **6 de 6 aprovados** (o fluxo principal agora confere a comemoração da primeira conquista) nos projetos mobile (390×844) e desktop (1440×900).
 
 - **Fluxo principal:**
   1. Cadastro e onboarding com Inglês a 60 min/dia, iniciado há 3 dias; a tela Hoje mostra meta de 60 min e 3h de pendência.

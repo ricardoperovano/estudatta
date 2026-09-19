@@ -23,6 +23,8 @@ import { Banner, Bar, Button, Card, Checkbox, Dialog, DialogActions, DialogConte
 import { fmtDayShort, fmtDayTiny, fmtDateTimeShort, fmtMin, fmtMinutes, fmtRange, fmtTime, isoDate, parseDate, todayIso, WEEKDAY_LABELS, WEEKDAY_NAMES, WEEKDAY_SHORT } from "@/lib/format";
 import { useOnline } from "@/lib/online";
 import { cn } from "@/lib/utils";
+import { studyTypeLabel, useInsights } from "@/api/study";
+import { fmtQuestions, StudyFields, studyFieldsFrom, studyFieldsPayload, validateStudyFields, type StudyFieldsValue } from "@/components/app/study-fields";
 
 const PERIOD_LABEL: Record<ReportPeriod, string> = { week: "semana", month: "mês", quarter: "trimestre" };
 
@@ -264,6 +266,8 @@ function ReportBody({ data, period, activityId, activities, online }: { data: Su
         </div>
       </div>
 
+      {activityId || activities[0] ? <StudyBreakdown activityId={activityId ?? activities[0].id} activityTitle={activities.length > 1 ? activities.find((a) => a.id === (activityId ?? activities[0].id))?.title : undefined} /> : null}
+
       <ContentProgress activities={activityId ? activities.filter((a) => a.id === activityId) : activities} />
 
       <SessionHistory start={data.start} end={data.end} activityId={activityId} online={online} />
@@ -439,6 +443,115 @@ function DayBars({ rows, period }: { rows: ReportDayRow[]; period: ReportPeriod 
   );
 }
 
+const fmtPercent = (p: number) => `${Number.isInteger(p) ? p : p.toFixed(1).replace(".", ",")}%`;
+
+/**
+ * Tempo por tipo de estudo (semana atual) e acertos por matéria (desde o início), do endpoint de análise.
+ * Só mostra o que o servidor devolveu — sem estimativas.
+ */
+function StudyBreakdown({ activityId, activityTitle }: { activityId: string; activityTitle?: string }) {
+  const insights = useInsights(activityId);
+  if (insights.isPending) {
+    return (
+      <div className="flex justify-center py-6" role="status">
+        <Spinner />
+      </div>
+    );
+  }
+  if (insights.isError || !insights.data) {
+    return (
+      <Banner
+        kind={isNetworkError(insights.error) ? "offline" : "error"}
+        actions={
+          <Button size="sm" variant="secondary" onClick={() => insights.refetch()}>
+            Tentar de novo
+          </Button>
+        }
+      >
+        {errorMessage(insights.error, "Não foi possível carregar a análise por tipo e acertos.")}
+      </Banner>
+    );
+  }
+  const { week, accuracy_by_subject: accuracy } = insights.data;
+  const types = week.by_type.filter((t) => t.seconds > 0);
+  const typeTotal = types.reduce((a, t) => a + t.seconds, 0);
+  const rows = accuracy.filter((r) => r.questions > 0);
+  const suffix = activityTitle ? ` · ${activityTitle}` : "";
+
+  return (
+    <div className="grid gap-[14px] tablet:grid-cols-2 desktop:gap-4">
+      <Card elev="sm" className="tnum gap-3 p-4 text-[14px] desktop:p-5">
+        <div>
+          <span className="kicker">Por tipo de estudo</span>
+          <p className="text-[12px] text-neutral-400">
+            Esta semana ({fmtRange(week.start, week.end)}){suffix}
+          </p>
+        </div>
+        {types.length === 0 ? (
+          <p className="text-[13px] text-neutral-400">Nenhum tempo registrado nesta semana.</p>
+        ) : (
+          types.map((t, i) => {
+            const share = typeTotal > 0 ? t.seconds / typeTotal : 0;
+            return (
+              <div key={t.study_type}>
+                <div className="flex justify-between gap-3">
+                  <span className="truncate">{t.label || studyTypeLabel(t.study_type)}</span>
+                  <span className="shrink-0 text-neutral-400">
+                    {fmtMinutes(t.seconds)} · {Math.round(share * 100)}%
+                  </span>
+                </div>
+                <Bar value={share} color={i % 2 ? "accent-600" : "accent"} className="mt-1.5" label={`${t.label || studyTypeLabel(t.study_type)}: ${fmtMinutes(t.seconds)} (${Math.round(share * 100)}% da semana)`} />
+              </div>
+            );
+          })
+        )}
+        {week.questions > 0 || week.pages > 0 ? (
+          <p className="text-[13px] text-neutral-400">
+            {[
+              week.questions > 0
+                ? `${week.questions_correct}/${week.questions} questões${week.accuracy != null ? ` (${fmtPercent(week.accuracy)})` : ""}${week.questions_goal ? ` · meta ${week.questions_goal}` : ""}`
+                : null,
+              week.pages > 0 ? `${week.pages} ${week.pages === 1 ? "página" : "páginas"}${week.pages_goal ? ` · meta ${week.pages_goal}` : ""}` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+        ) : null}
+      </Card>
+
+      <Card elev="sm" className="tnum gap-3 p-4 text-[14px] desktop:p-5">
+        <div>
+          <span className="kicker">Acertos por matéria</span>
+          <p className="text-[12px] text-neutral-400">Desde o início{suffix} · das mais difíceis para as mais fáceis</p>
+        </div>
+        {rows.length === 0 ? (
+          <p className="text-[13px] text-neutral-400">Registre questões nas sessões para ver seus acertos.</p>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {rows.map((r) => (
+              <li key={r.subject_id ?? r.subject_title}>
+                <div className="flex justify-between gap-3">
+                  <span className="truncate">{r.subject_title}</span>
+                  <span className="shrink-0 text-neutral-400">
+                    {r.correct}/{r.questions}
+                    {r.percent != null ? ` · ${fmtPercent(r.percent)}` : ""}
+                  </span>
+                </div>
+                <Bar
+                  value={r.questions > 0 ? r.correct / r.questions : 0}
+                  color="success"
+                  className="mt-1.5"
+                  label={`${r.subject_title}: ${r.correct} acertos em ${r.questions} questões${r.percent != null ? ` (${fmtPercent(r.percent)})` : ""}`}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </div>
+  );
+}
+
 function ContentProgress({ activities }: { activities: { id: string; title: string }[] }) {
   const reports = useContentReports(activities.map((a) => a.id));
   const rows = reports.map((r, i) => ({ activity: activities[i], q: r })).filter(({ q }) => q.data && (q.data.topics_total > 0 || q.data.tasks_total > 0));
@@ -500,7 +613,7 @@ function SessionHistory({ start, end, activityId, online }: { start: string; end
       <div className="flex items-end justify-between gap-3">
         <div>
           <span className="kicker">Histórico de sessões</span>
-          <p className="text-[12px] text-neutral-400">Edite duração, data ou observação; toda alteração fica registrada com o motivo.</p>
+          <p className="text-[12px] text-neutral-400">Edite duração, data, tipo, questões ou observação; toda alteração fica registrada com o motivo.</p>
         </div>
       </div>
       {sessions.isPending ? (
@@ -540,11 +653,14 @@ function SessionHistory({ start, end, activityId, online }: { start: string; end
                       {s.started_at && s.kind === "timer" ? ` · ${fmtTime(s.started_at)}` : ""}
                     </span>
                     <span className="truncate">{s.activity_title ?? "Objetivo"}</span>
+                    <Tag variant="neutral" icon={false}>
+                      {studyTypeLabel(s.study_type)}
+                    </Tag>
                     {s.needs_review ? <Tag variant="pending">Revisar</Tag> : null}
                     {s.status !== "finished" ? <Tag variant="neutral">{s.status === "active" ? "em andamento" : s.status === "paused" ? "pausada" : s.status}</Tag> : null}
                   </div>
                   <span className="block truncate text-[12px] text-neutral-400">
-                    {[s.subject_title, s.topic_title, s.note, s.page_from ? `p. ${s.page_from}${s.page_to ? `–${s.page_to}` : ""}` : null, s.entry_mode === "manual" ? "registro manual" : s.kind === "pomodoro" ? "pomodoro" : null].filter(Boolean).join(" · ") || " "}
+                    {[s.subject_title, s.topic_title, fmtQuestions(s.questions_total, s.questions_correct), s.note, s.page_from ? `p. ${s.page_from}${s.page_to ? `–${s.page_to}` : ""}` : null, s.entry_mode === "manual" ? "registro manual" : s.kind === "pomodoro" ? "pomodoro" : null].filter(Boolean).join(" · ") || " "}
                   </span>
                 </div>
                 <span className="tnum shrink-0 font-medium">{fmtMinutes(s.duration_seconds ?? s.elapsed_seconds ?? 0)}</span>
@@ -584,6 +700,7 @@ function EditSessionSheet({ session, open, onOpenChange }: { session: ReportSess
   const [note, setNote] = React.useState(session.note ?? "");
   const [pageFrom, setPageFrom] = React.useState(session.page_from ? String(session.page_from) : "");
   const [pageTo, setPageTo] = React.useState(session.page_to ? String(session.page_to) : "");
+  const [study, setStudy] = React.useState<StudyFieldsValue>(() => studyFieldsFrom(session));
   const [reason, setReason] = React.useState("");
   const [resolve, setResolve] = React.useState(session.needs_review);
   const [error, setError] = React.useState<string | null>(null);
@@ -596,11 +713,17 @@ function EditSessionSheet({ session, open, onOpenChange }: { session: ReportSess
       setError("Informe uma duração de pelo menos 1 minuto.");
       return;
     }
+    const studyError = validateStudyFields(study);
+    if (studyError) {
+      setError(studyError);
+      return;
+    }
     if (!reason.trim()) {
       setError("Diga em poucas palavras o motivo da alteração.");
       return;
     }
-    const body: SessionUpdate = { reason: reason.trim(), expected_version: session.version, resolve_review: false };
+    // `clear_questions` pode ainda não estar no schema gerado; o servidor o aceita na edição.
+    const body: SessionUpdate = { reason: reason.trim(), expected_version: session.version, resolve_review: false, clear_questions: false };
     if (m !== initialMinutes) body.duration_seconds = m * 60;
     if (date !== session.local_date) body.local_date = date;
     if (time) body.start_time = time;
@@ -609,6 +732,15 @@ function EditSessionSheet({ session, open, onOpenChange }: { session: ReportSess
     const pt = pageTo ? Number(pageTo) : null;
     if (pf !== (session.page_from ?? null)) body.page_from = pf;
     if (pt !== (session.page_to ?? null)) body.page_to = pt;
+    const sp = studyFieldsPayload(study);
+    if (sp.study_type !== (session.study_type || "teoria")) body.study_type = sp.study_type as SessionUpdate["study_type"];
+    const hadQuestions = session.questions_total != null;
+    if (!sp.hasQuestions) {
+      if (hadQuestions) body.clear_questions = true;
+    } else if (sp.questions_total !== (session.questions_total ?? null) || sp.questions_correct !== (session.questions_correct ?? null)) {
+      body.questions_total = sp.questions_total;
+      body.questions_correct = sp.questions_correct;
+    }
     if (session.needs_review && resolve) body.resolve_review = true;
     try {
       await update.mutateAsync({ id: session.id, body });
@@ -650,6 +782,7 @@ function EditSessionSheet({ session, open, onOpenChange }: { session: ReportSess
               </div>
             </Field>
           </div>
+          <StudyFields idPrefix="e-study" value={study} onChange={setStudy} />
           <Field label="Conteúdo / observação (opcional)" htmlFor="e-note">
             <Input id="e-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={2000} placeholder="Vocabulário · lista 12" />
           </Field>
@@ -686,6 +819,9 @@ const FIELD_LABEL: Record<string, string> = {
   needs_review: "revisão",
   kind: "tipo",
   entry_mode: "modo",
+  study_type: "tipo de estudo",
+  questions_total: "questões",
+  questions_correct: "acertos",
 };
 const ACTION_LABEL: Record<string, string> = { create: "criada", update: "editada", delete: "excluída", finish: "encerrada", discard: "descartada", review: "revisada" };
 
@@ -694,6 +830,7 @@ function fmtRevValue(k: string, v: unknown): string {
   if (k === "duration_seconds" && typeof v === "number") return fmtMinutes(v);
   if (k === "local_date" && typeof v === "string") return fmtDayShort(v);
   if (typeof v === "boolean") return v ? "sim" : "não";
+  if (k === "study_type" && typeof v === "string") return studyTypeLabel(v);
   return String(v);
 }
 

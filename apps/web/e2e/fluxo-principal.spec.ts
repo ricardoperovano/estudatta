@@ -57,6 +57,17 @@ test("cadastro → objetivo → sessão → saldo → recuperação → material
   // 30 da meta + recuperação sugerida (180 pendentes distribuídos em 3 dias = 60/dia); dívida não aumenta
   await expect(page.getByText(/Mais 90 min hoje: 30 min da meta \+ 60 min de recuperação/).filter({ visible: true }).first()).toBeVisible();
 
+  // Gamificação: a primeira sessão desbloqueia uma conquista, comemorada uma única vez
+  const celebration = page.getByRole("dialog", { name: "Conquista nova!" });
+  await expect(celebration).toBeVisible();
+  await expect(celebration.getByText("Primeira sessão", { exact: true })).toBeVisible();
+  await celebration.getByRole("button", { name: "Fechar" }).last().click();
+  await expect(celebration).toBeHidden();
+  // conquistas seguintes (material, metas…) também abrem a comemoração: fecha e segue o fluxo
+  await page.addLocatorHandler(page.getByRole("dialog", { name: /conquistas? novas?!/i }), async (d) => {
+    await d.getByRole("button", { name: "Fechar" }).last().click();
+  });
+
   // Objetivo: matéria e tópico
   await page.goto("/app/objetivos");
   await page.getByRole("link", { name: /Inglês/ }).first().click();

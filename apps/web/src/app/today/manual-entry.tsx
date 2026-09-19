@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Dialog, DialogContent, Button, Field, Input, Seg, Select, Banner } from "@/components/ui";
-import { useManualSession } from "@/api/queries";
+import { useManualSession, type ManualBody } from "@/api/queries";
 import { errorMessage, isNetworkError } from "@/api/client";
 import { todayIso } from "@/lib/format";
 import { enqueueOp } from "@/offline/sync";
@@ -8,8 +8,9 @@ import { useUser } from "@/api/session";
 import { toast } from "@/components/ui/toast";
 import { uuid } from "@/lib/utils";
 import type { TodayCard } from "@/api/types";
+import { EMPTY_STUDY_FIELDS, StudyFields, studyFieldsPayload, validateStudyFields, type StudyFieldsValue } from "@/components/app/study-fields";
 
-/** Folha "Registrar tempo": presets 15/30/45/60/Outro, quando, conteúdo, páginas. */
+/** Folha "Registrar tempo": presets 15/30/45/60/Outro, tipo de estudo (+ questões/acertos), quando, conteúdo, páginas. */
 export function ManualEntrySheet({ card, cards, open, onOpenChange, defaultDate }: { card: TodayCard; cards: TodayCard[]; open: boolean; onOpenChange: (o: boolean) => void; defaultDate?: string }) {
   const user = useUser();
   const manual = useManualSession();
@@ -20,6 +21,7 @@ export function ManualEntrySheet({ card, cards, open, onOpenChange, defaultDate 
   const [time, setTime] = React.useState("");
   const [note, setNote] = React.useState("");
   const [pages, setPages] = React.useState("");
+  const [study, setStudy] = React.useState<StudyFieldsValue>(EMPTY_STUDY_FIELDS);
   const [error, setError] = React.useState<string | null>(null);
 
   const minutes = preset === "outro" ? Number(custom) || 0 : Number(preset);
@@ -31,6 +33,12 @@ export function ManualEntrySheet({ card, cards, open, onOpenChange, defaultDate 
       setError("Informe uma duração de pelo menos 1 minuto.");
       return;
     }
+    const studyError = validateStudyFields(study);
+    if (studyError) {
+      setError(studyError);
+      return;
+    }
+    const { study_type, questions_total, questions_correct } = studyFieldsPayload(study);
     const [pf, pt] = pages.replace(/[^\d–-]/g, "").split(/[–-]/).map((x) => (x ? Number(x) : undefined));
     const body = {
       activity_id: activityId,
@@ -40,6 +48,10 @@ export function ManualEntrySheet({ card, cards, open, onOpenChange, defaultDate 
       note: note || null,
       page_from: pf ?? null,
       page_to: pt ?? null,
+      // o schema gerado pode ainda não listar todos os tipos (ex.: "simulado"); o servidor valida
+      study_type: study_type as ManualBody["study_type"],
+      questions_total,
+      questions_correct,
       client_uuid: uuid(),
     };
     try {
@@ -92,6 +104,7 @@ export function ManualEntrySheet({ card, cards, open, onOpenChange, defaultDate 
               <Input id="m-custom" type="number" inputMode="numeric" min={1} max={960} value={custom} onChange={(e) => setCustom(e.target.value)} />
             </Field>
           ) : null}
+          <StudyFields idPrefix="m-study" value={study} onChange={setStudy} />
           <div className="grid grid-cols-2 gap-2">
             <Field label="Quando" htmlFor="m-date">
               <Input id="m-date" type="date" max={todayIso()} value={date} onChange={(e) => setDate(e.target.value)} />

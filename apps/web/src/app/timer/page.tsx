@@ -12,6 +12,10 @@ import { fmtClock, fmtMinutes, fmtRemaining } from "@/lib/format";
 import { uuid } from "@/lib/utils";
 import { toast } from "@/components/ui/toast";
 import type { StudySession } from "@/api/types";
+import { TataCompanion } from "@/components/mascot/TataCompanion";
+import { STUDY_TYPES, studyTypeLabel, type StudyType } from "@/api/study";
+import { cn } from "@/lib/utils";
+import { StudyFields, studyFieldsPayload, validateStudyFields, type StudyFieldsValue } from "@/components/app/study-fields";
 
 /**
  * Cronômetro: número 72/96px tnum; controles Pausar / Encerrar; "Ajustar tempo ou trocar conteúdo".
@@ -39,16 +43,22 @@ export default function TimerPage() {
   const [conflict, setConflict] = React.useState<{ session_id: string; activity_id: string; device_id: string | null } | null>(null);
   const [starting, setStarting] = React.useState(false);
   const objetivoParam = params.get("objetivo");
+  // vindo de revisões / próxima matéria: matéria, tópico e tipo de estudo pré-escolhidos
+  const subjectParam = params.get("materia");
+  const topicParam = params.get("topico");
+  const tipoParam = params.get("tipo");
   const [activityId, setActivityId] = React.useState<string>(objetivoParam || "");
+  const [studyType, setStudyType] = React.useState<StudyType>(() => STUDY_TYPES.find((t) => t.value === tipoParam)?.value ?? "teoria");
 
   React.useEffect(() => {
     if (user) useTimerStore.getState().load(user.id);
   }, [user]);
 
-  // visor: redesenha 1×/s só enquanto ativo (recupera após bloqueio/recarga porque usa timestamps)
+  // visor: redesenha 1×/s enquanto ativo; pausado, a cada 15 s (o Tatá percebe pausa longa).
+  // Recupera após bloqueio/recarga porque usa timestamps.
   React.useEffect(() => {
-    if (!timer || timer.status !== "active") return;
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    if (!timer) return;
+    const id = window.setInterval(() => setNow(Date.now()), timer.status === "active" ? 1000 : 15_000);
     const onVis = () => setNow(Date.now());
     document.addEventListener("visibilitychange", onVis);
     return () => {
@@ -72,6 +82,7 @@ export default function TimerPage() {
       activity_title: act?.title || "Objetivo",
       subject_id: serverActive.subject_id,
       topic_id: serverActive.topic_id,
+      study_type: serverActive.study_type,
       kind: (serverActive.kind as "timer" | "pomodoro") || "timer",
       status: serverActive.status as "active" | "paused",
       started_at: serverActive.started_at || new Date().toISOString(),
@@ -111,6 +122,9 @@ export default function TimerPage() {
       client_uuid,
       activity_id: id,
       activity_title: act?.title || card?.activity.title || "Objetivo",
+      subject_id: subjectParam,
+      topic_id: topicParam,
+      study_type: studyType,
       kind: "timer",
       status: "active",
       started_at: startedAt,
@@ -119,7 +133,7 @@ export default function TimerPage() {
       synced: false,
     };
     try {
-      const s = unwrap(await api.POST("/api/v1/sessions/start", { body: { activity_id: id, kind: "timer", client_uuid, started_at: startedAt } }));
+      const s = unwrap(await api.POST("/api/v1/sessions/start", { body: { activity_id: id, kind: "timer", client_uuid, started_at: startedAt, subject_id: subjectParam, topic_id: topicParam, study_type: studyType } }));
       local.session_id = s.id;
       local.version = s.version;
       local.synced = true;
@@ -131,7 +145,7 @@ export default function TimerPage() {
         qc.invalidateQueries({ queryKey: keys.activeSession });
       } else if (isNetworkError(e)) {
         await setTimer(local);
-        await enqueueOp(user.id, "session.start", { activity_id: id, client_uuid, started_at: startedAt, kind: "timer" }, client_uuid);
+        await enqueueOp(user.id, "session.start", { activity_id: id, client_uuid, started_at: startedAt, kind: "timer", subject_id: subjectParam, topic_id: topicParam, study_type: studyType }, client_uuid);
         toast.offline("Sessão iniciada neste aparelho", "Vamos sincronizar quando você voltar à internet.");
       } else setError(errorMessage(e));
     } finally {
@@ -173,13 +187,15 @@ export default function TimerPage() {
     }
   };
 
-  const finish = async (note?: string) => {
+  const finish = async (note?: string, study?: StudyFieldsValue) => {
     if (!timer || !user) return;
     setBusy(true);
     const at = new Date().toISOString();
+    const sp = study ? studyFieldsPayload(study) : null;
+    const extra = sp ? { study_type: sp.study_type, questions_total: sp.questions_total, questions_correct: sp.questions_correct } : {};
     try {
       if (timer.session_id) {
-        const s = unwrap(await api.POST("/api/v1/sessions/{session_id}/finish", { params: { path: { session_id: timer.session_id } }, body: { at, note: note || null } }));
+        const s = unwrap(await api.POST("/api/v1/sessions/{session_id}/finish", { params: { path: { session_id: timer.session_id } }, body: { at, note: note || null, ...extra } }));
         await clearTimer(user.id);
         invalidate();
         if (s.needs_review) {
@@ -189,14 +205,14 @@ export default function TimerPage() {
         toast.success(`${fmtMinutes(s.duration_seconds || 0)} registrados`, s.status === "discarded" ? "Sessão sem tempo válido foi descartada." : "A pendência foi ajustada.");
         nav("/app");
       } else {
-        await enqueueOp(user.id, "session.finish", { client_uuid: timer.client_uuid, at, note: note || null, intervals: timer.intervals.map((i) => ({ ...i, ended_at: i.ended_at ?? at })) });
+        await enqueueOp(user.id, "session.finish", { client_uuid: timer.client_uuid, at, note: note || null, ...extra, intervals: timer.intervals.map((i) => ({ ...i, ended_at: i.ended_at ?? at })) });
         await clearTimer(user.id);
         toast.offline("Sessão encerrada neste aparelho", "Vamos sincronizar quando você voltar à internet.");
         nav("/app");
       }
     } catch (e) {
       if (isNetworkError(e)) {
-        await enqueueOp(user.id, "session.finish", { session_id: timer.session_id, client_uuid: timer.client_uuid, at, note: note || null });
+        await enqueueOp(user.id, "session.finish", { session_id: timer.session_id, client_uuid: timer.client_uuid, at, note: note || null, ...extra });
         await clearTimer(user.id);
         toast.offline("Sessão encerrada neste aparelho", "Vamos sincronizar quando você voltar à internet.");
         nav("/app");
@@ -280,6 +296,26 @@ export default function TimerPage() {
               </Select>
             </Field>
             {card?.summary ? <p className="text-[14px] text-neutral-400">{cards.find((c) => c.activity.id === chosen)?.next_step}</p> : null}
+            <fieldset className="flex flex-col gap-2">
+              <legend className="mb-2 text-[13px] text-neutral-300">Tipo de estudo</legend>
+              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Tipo de estudo">
+                {STUDY_TYPES.map((t) => (
+                  <button
+                    key={t.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={studyType === t.value}
+                    onClick={() => setStudyType(t.value)}
+                    className={cn(
+                      "min-h-[36px] rounded-full border px-3 text-[13px] transition-colors duration-base",
+                      studyType === t.value ? "border-accent bg-accent-900 text-accent" : "border-divider text-neutral-300 hover:text-primary",
+                    )}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
             <Button size="xl" block loading={starting} onClick={start} autoFocus>
               Começar sessão
             </Button>
@@ -293,7 +329,10 @@ export default function TimerPage() {
   }
 
   // --- estado: em sessão ------------------------------------------------------
-  const label = [timer.activity_title, timer.label].filter(Boolean).join(" · ");
+  const label = [timer.activity_title, timer.label, timer.study_type ? studyTypeLabel(timer.study_type) : null].filter(Boolean).join(" · ");
+  const lastInterval = timer.intervals[timer.intervals.length - 1];
+  const pausedFor = timer.status === "paused" && lastInterval?.kind === "pause" ? Math.max(0, Math.floor((now - Date.parse(lastInterval.started_at)) / 1000)) : 0;
+  const goalReached = !!card?.summary && card.summary.next_step_seconds > 0 && remainingToday === 0;
   return (
     <div className="glow-center -mx-gutter -mt-[max(56px,calc(24px+env(safe-area-inset-top,0px)))] flex min-h-dvh flex-col items-center gap-4 px-4 pb-6 pt-[max(56px,calc(24px+env(safe-area-inset-top,0px)))] text-center max-xs:-mx-3 desktop:-mx-12 desktop:-mt-10 desktop:min-h-dvh desktop:pt-10">
       <div className="flex w-full max-w-[560px] items-center justify-between">
@@ -304,7 +343,13 @@ export default function TimerPage() {
       </div>
       {error ? <Banner kind="error" className="w-full max-w-[560px] text-left">{error}</Banner> : null}
       {!timer.synced ? <Banner kind="offline" className="w-full max-w-[560px] text-left">Sessão salva neste aparelho. Vamos sincronizar quando você voltar à internet.</Banner> : null}
-      <div className="mt-auto flex flex-col items-center gap-[10px]">
+      <TataCompanion
+        className="mt-auto"
+        layout="column"
+        size={104}
+        scene={{ kind: "timer", status: timer.status, elapsed, pausedFor, goalReached }}
+      />
+      <div className="flex flex-col items-center gap-[10px]">
         <span className="kicker text-neutral-400">{timer.status === "active" ? "Em sessão" : "Pausada"}</span>
         <span className="tnum text-[72px] font-semibold leading-none tracking-[-0.02em] desktop:text-[96px]" aria-live="off">
           {fmtClock(elapsed)}
@@ -340,7 +385,7 @@ export default function TimerPage() {
 
       <Dialog open={finishOpen} onOpenChange={setFinishOpen}>
         <DialogContent mode="sheet" title="Encerrar sessão" description={`${fmtMinutes(elapsed)} de foco serão registrados. Pausas não contam.`}>
-          <FinishForm onConfirm={finish} onDiscard={discard} busy={busy} />
+          <FinishForm onConfirm={finish} onDiscard={discard} busy={busy} initialType={(timer.study_type as StudyFieldsValue["study_type"]) || "teoria"} />
         </DialogContent>
       </Dialog>
 
@@ -373,10 +418,29 @@ function deviceOf() {
   }
 }
 
-function FinishForm({ onConfirm, onDiscard, busy }: { onConfirm: (note?: string) => void; onDiscard: () => void; busy: boolean }) {
+function FinishForm({
+  onConfirm,
+  onDiscard,
+  busy,
+  initialType,
+}: {
+  onConfirm: (note?: string, study?: StudyFieldsValue) => void;
+  onDiscard: () => void;
+  busy: boolean;
+  initialType: StudyFieldsValue["study_type"];
+}) {
   const [note, setNote] = React.useState("");
+  const [study, setStudy] = React.useState<StudyFieldsValue>({ study_type: initialType, questions_total: null, questions_correct: null });
+  const [error, setError] = React.useState<string | null>(null);
+  const submit = () => {
+    const err = validateStudyFields(study);
+    setError(err);
+    if (!err) onConfirm(note, study);
+  };
   return (
     <div className="flex flex-col gap-3 text-left">
+      <StudyFields compact idPrefix="t-study" value={study} onChange={setStudy} />
+      {error ? <Banner kind="error">{error}</Banner> : null}
       <Field label="O que você estudou (opcional)" htmlFor="f-note">
         <Input id="f-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Vocabulário · lista 12" maxLength={2000} />
       </Field>
@@ -384,7 +448,7 @@ function FinishForm({ onConfirm, onDiscard, busy }: { onConfirm: (note?: string)
         <Button variant="ghost" onClick={onDiscard} disabled={busy}>
           Descartar
         </Button>
-        <Button variant="primary" size="lg" onClick={() => onConfirm(note)} loading={busy}>
+        <Button variant="primary" size="lg" onClick={submit} loading={busy}>
           Registrar
         </Button>
       </DialogActions>
@@ -401,7 +465,7 @@ function ReviewDialog({ session, onDone }: { session: StudySession; onDone: () =
     setBusy(true);
     setError(null);
     try {
-      unwrap(await api.PATCH("/api/v1/sessions/{session_id}", { params: { path: { session_id: session.id } }, body: { duration_seconds: minutes * 60, resolve_review: true, reason: "revisão de sessão longa" } }));
+      unwrap(await api.PATCH("/api/v1/sessions/{session_id}", { params: { path: { session_id: session.id } }, body: { duration_seconds: minutes * 60, resolve_review: true, clear_questions: false, reason: "revisão de sessão longa" } }));
       toast.success(`${minutes} min registrados`);
       onDone();
     } catch (e) {

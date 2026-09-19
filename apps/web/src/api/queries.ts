@@ -83,6 +83,10 @@ export function useInvalidateAll() {
     qc.invalidateQueries({ queryKey: ["sessions"] });
     qc.invalidateQueries({ queryKey: ["calendar"] });
     qc.invalidateQueries({ queryKey: ["reports"] });
+    // revisões, análise e conquistas dependem das sessões
+    qc.invalidateQueries({ queryKey: ["revisions"] });
+    qc.invalidateQueries({ queryKey: ["insights"] });
+    qc.invalidateQueries({ queryKey: ["gamification"] });
   };
 }
 

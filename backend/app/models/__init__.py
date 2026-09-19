@@ -15,6 +15,7 @@ from app.models.content import ImportJob, Material, MaterialTopic, Subject, Topi
 from app.models.notification import Notification, NotificationDelivery, NotificationOutbox
 from app.models.planning import PlannedTask, TaskSeries
 from app.models.session import SessionDayAllocation, SessionInterval, SessionRevision, StudySession
+from app.models.study import MockExam, MockExamSubject, Revision, UserAchievement, XpEvent
 from app.models.system import (
     AiUsage,
     AppSetting,
@@ -72,4 +73,9 @@ __all__ = [
     "PushSubscription",
     "User",
     "UserPreferences",
+    "MockExam",
+    "MockExamSubject",
+    "Revision",
+    "UserAchievement",
+    "XpEvent",
 ]

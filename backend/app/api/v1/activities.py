@@ -110,6 +110,8 @@ def create_activity(
         color=payload.color,
         icon=payload.icon,
     )
+    act.weekly_questions_goal = payload.weekly_questions_goal
+    act.weekly_pages_goal = payload.weekly_pages_goal
     audit(
         db,
         actor_id=user.id,
@@ -140,7 +142,9 @@ def update_activity(
     data = payload.model_dump(exclude_unset=True)
     clear_end = data.pop("clear_end_date", False)
     for k, v in data.items():
-        if v is not None:
+        if k in ("weekly_questions_goal", "weekly_pages_goal"):
+            setattr(act, k, v or None)  # 0 ou vazio remove a meta semanal
+        elif v is not None:
             setattr(act, k, v)
     if clear_end:
         act.end_date = None

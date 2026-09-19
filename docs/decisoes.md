@@ -65,6 +65,17 @@ Registro vivo das decisões tomadas durante a implementação. Cada item indica 
 - **Código interno:** o Completo manteve o código `pro`, para não afetar assinaturas nem integrações; o novo plano é `essencial`.
 - **Nova logo do responsável:** ícone de cronômetro com livro e barras, em versão escura e clara, com fundo sólido. Ela substitui o símbolo "Trilho" do material de design original no site, no app e nos ícones de instalação. Os tamanhos web são gerados por `estudatta-site/scripts/gerar-logos.sh` a partir dos PNGs originais. O glifo tracejado dos estados vazios do app ainda usa as formas do símbolo antigo.
 
+## 2026-09-18 — Recursos inspirados no estudei.com.br, gamificação e o Tatá
+
+- **Pedido do responsável:** melhorar o produto tomando o estudei.com.br como referência, montar conquistas e criar um mascote animado que faça companhia nas sessões. Detalhes em `docs/estudo-e-gamificacao.md`.
+- **O que veio da referência:** tipos de sessão (teoria, questões, revisão, leitura, aula, simulado, prática, outro), questões e acertos por sessão, revisões espaçadas (1, 7 e 30 dias, configuráveis), simulados com desempenho por matéria, peso e dificuldade das matérias, "próxima matéria sugerida", edital coberto e metas semanais de questões e páginas.
+- **O que ficou de fora:** banco de questões, editais prontos, e-books e mentoria. Exigem conteúdo próprio e licenças, e o Estudatta continua sendo o organizador do estudo da pessoa.
+- **Sem ranking entre pessoas:** a referência tem competição. Aqui a gamificação compara a pessoa só com ela mesma, por privacidade e para não transformar constância em pressão.
+- **Conquistas nunca são retiradas:** apagar uma sessão reduz o XP de estudo, mas medalhas e bônus já creditados ficam. O XP de estudo é recalculado dos dados; bônus ficam em `xp_events`, com chave única, então nada é creditado duas vezes.
+- **Mascote substitui a regra "sem mascote" do design original:** o Tatá é um cronômetro com o marcador do livro como cauda, derivado da nova logo. Pode ser desligado em Preferências (conta) e ter as falas silenciadas (aparelho). Com movimento reduzido, fica parado. As falas não culpam e não inventam números.
+- **Revisão concluída por sessão:** uma sessão do tipo Revisão na mesma matéria ou tópico conclui a revisão pendente e agenda a próxima etapa; também dá para concluir, pular ou reagendar à mão.
+- **Recursos de estudo em todos os planos:** revisões, simulados, conquistas e o Tatá não viram recurso pago.
+
 ## Pendências que dependem exclusivamente do responsável
 
 - **[pendente do responsável]** Validar os preços sugeridos (R$ 9,90 e R$ 19,90) e os tetos de IA após o primeiro mês com dados reais de uso.

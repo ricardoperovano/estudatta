@@ -44,11 +44,12 @@ function ruleLine(rule: GoalRule): string {
   return `${daily} · ${summarizeDays(rule)} · limite ${fmtMinutes(rule.daily_limit_minutes * 60)}`;
 }
 
-/** Aba Configurações: meta com vigência, pausas, fuso, status, perdão de pendência (prévia + confirmação) e histórico. */
+/** Aba Configurações: meta com vigência, metas semanais extras (questões/páginas), pausas, fuso, status, perdão de pendência (prévia + confirmação) e histórico. */
 export function ActivitySettingsTab({ activity, pendingSeconds }: { activity: ActivityDetail; pendingSeconds: number }) {
   return (
     <div className="flex flex-col gap-[14px]">
       <GoalSection activity={activity} />
+      <ExtraGoalsSection key={`${activity.weekly_questions_goal ?? ""}-${activity.weekly_pages_goal ?? ""}`} activity={activity} />
       <PausesSection activity={activity} />
       <ForgiveSection activity={activity} pendingSeconds={pendingSeconds} />
       <DetailsSection activity={activity} />
@@ -365,6 +366,56 @@ function DetailsSection({ activity }: { activity: ActivityDetail }) {
         </Field>
         <Button type="submit" variant="secondary" size="lg" className="self-start" disabled={!dirty} loading={update.isPending}>
           Salvar alterações
+        </Button>
+      </form>
+    </SettingsSection>
+  );
+}
+
+/** Metas semanais de questões e páginas: opcionais; vazio = sem meta (envia 0 para limpar). */
+function ExtraGoalsSection({ activity }: { activity: ActivityDetail }) {
+  const update = useUpdateActivity(activity.id);
+  const initQ = activity.weekly_questions_goal ? String(activity.weekly_questions_goal) : "";
+  const initP = activity.weekly_pages_goal ? String(activity.weekly_pages_goal) : "";
+  const [questions, setQuestions] = React.useState(initQ);
+  const [pages, setPages] = React.useState(initP);
+  const [error, setError] = React.useState<string | null>(null);
+  const dirty = questions.trim() !== initQ || pages.trim() !== initP;
+
+  const parse = (v: string): number | "bad" => {
+    if (!v.trim()) return 0;
+    const n = Number(v);
+    return Number.isInteger(n) && n >= 0 && n <= 10000 ? n : "bad";
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    const q = parse(questions);
+    const pg = parse(pages);
+    if (q === "bad" || pg === "bad") return setError("Use números inteiros entre 0 e 10.000 — ou deixe em branco para ficar sem meta.");
+    try {
+      await update.mutateAsync({ weekly_questions_goal: q, weekly_pages_goal: pg, clear_end_date: false });
+      toast.success("Metas semanais salvas");
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  };
+
+  return (
+    <SettingsSection title="Metas semanais extras" hint="Opcionais e separadas do tempo. Em branco = sem meta.">
+      <form onSubmit={submit} className="flex flex-col gap-[14px]">
+        {error ? <Banner kind="error">{error}</Banner> : null}
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Questões por semana" htmlFor="xg-questions">
+            <Input id="xg-questions" type="number" inputMode="numeric" min={0} max={10000} step={1} placeholder="sem meta" className="tnum" value={questions} onChange={(e) => setQuestions(e.target.value)} />
+          </Field>
+          <Field label="Páginas por semana" htmlFor="xg-pages">
+            <Input id="xg-pages" type="number" inputMode="numeric" min={0} max={10000} step={1} placeholder="sem meta" className="tnum" value={pages} onChange={(e) => setPages(e.target.value)} />
+          </Field>
+        </div>
+        <Button type="submit" variant="secondary" size="lg" className="self-start" disabled={!dirty} loading={update.isPending}>
+          Salvar metas
         </Button>
       </form>
     </SettingsSection>

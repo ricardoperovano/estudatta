@@ -110,6 +110,7 @@ def start_session(
     client_uuid: uuid.UUID | None = None,
     device_id: str | None = None,
     started_at: datetime | None = None,
+    study_type: str | None = None,
 ) -> tuple[StudySession, bool]:
     """Inicia a sessão. Retorna (sessão, criada_agora). Garante uma única sessão ativa por usuário."""
     if act.status != "active":
@@ -152,6 +153,7 @@ def start_session(
         timezone=act.timezone,
         note=note,
         pomodoro_config=pomodoro_config,
+        study_type=study_type if study_type in STUDY_TYPES else "teoria",
         client_uuid=client_uuid,
         device_id=device_id,
     )
@@ -316,6 +318,49 @@ def reallocate_days(db: Session, sess: StudySession) -> dict[date, int]:
     return alloc
 
 
+STUDY_TYPES = ("teoria", "questoes", "revisao", "leitura", "aula", "simulado", "pratica", "outro")
+MAX_QUESTIONS = 5000
+
+
+def apply_study_fields(
+    sess: StudySession,
+    *,
+    study_type: str | None = None,
+    questions_total: int | None = None,
+    questions_correct: int | None = None,
+    clear_questions: bool = False,
+) -> None:
+    """Tipo de estudo e questões: validados aqui para timer, manual, edição e sincronização."""
+    if study_type is not None:
+        if study_type not in STUDY_TYPES:
+            raise ValidationFailed("Tipo de estudo inválido.", code="bad_study_type")
+        sess.study_type = study_type
+    if clear_questions:
+        sess.questions_total = None
+        sess.questions_correct = None
+    if questions_total is not None or questions_correct is not None:
+        total = questions_total if questions_total is not None else (sess.questions_total or 0)
+        correct = (
+            questions_correct if questions_correct is not None else (sess.questions_correct or 0)
+        )
+        if total < 0 or correct < 0 or total > MAX_QUESTIONS:
+            raise ValidationFailed("Número de questões fora do limite.", code="bad_questions")
+        if correct > total:
+            raise ValidationFailed(
+                "Os acertos não podem passar do total de questões.", code="bad_questions"
+            )
+        sess.questions_total = total
+        sess.questions_correct = correct
+
+
+def _after_recorded(db: Session, user: User, sess: StudySession) -> None:
+    """Revisões espaçadas e gamificação depois de uma sessão válida (import tardio evita ciclo)."""
+    from app.services import gamification, revisions
+
+    revisions.on_session_recorded(db, user, sess)
+    gamification.evaluate(db, user)
+
+
 def _snapshot(sess: StudySession) -> dict:
     return {
         "status": sess.status,
@@ -330,6 +375,9 @@ def _snapshot(sess: StudySession) -> dict:
         "note": sess.note,
         "page_from": sess.page_from,
         "page_to": sess.page_to,
+        "study_type": sess.study_type,
+        "questions_total": sess.questions_total,
+        "questions_correct": sess.questions_correct,
         "needs_review": sess.needs_review,
         "counts_toward_goal": sess.counts_toward_goal,
     }
@@ -370,6 +418,9 @@ def finish_session(
     topic_id=None,
     confirmed_duration_seconds: int | None = None,
     expected_version: int | None = None,
+    study_type: str | None = None,
+    questions_total: int | None = None,
+    questions_correct: int | None = None,
 ) -> StudySession:
     _check_version(sess, expected_version)
     if sess.status == "finished":
@@ -393,6 +444,12 @@ def finish_session(
         sess.subject_id = subject_id
     if topic_id is not None:
         sess.topic_id = topic_id
+    apply_study_fields(
+        sess,
+        study_type=study_type,
+        questions_total=questions_total,
+        questions_correct=questions_correct,
+    )
     total = merged_focus_seconds(focus_intervals(sess))
     longest = max((int((e - s).total_seconds()) for s, e in focus_intervals(sess)), default=0)
     if confirmed_duration_seconds is not None:
@@ -424,6 +481,8 @@ def finish_session(
     reallocate_days(db, sess)
     _revision(db, sess, user, "create", before, _snapshot(sess), None)
     db.flush()
+    if not sess.needs_review:
+        _after_recorded(db, user, sess)
     db.refresh(sess)
     return sess
 
@@ -488,6 +547,9 @@ def manual_session(
     page_to: int | None = None,
     client_uuid: uuid.UUID | None = None,
     device_id: str | None = None,
+    study_type: str | None = None,
+    questions_total: int | None = None,
+    questions_correct: int | None = None,
 ) -> tuple[StudySession, bool]:
     """Lançamento manual: por duração+data (sem horário) ou com horário (vira sessão com intervalo)."""
     if duration_seconds <= 0 or duration_seconds > MAX_MANUAL_SECONDS:
@@ -540,6 +602,12 @@ def manual_session(
         device_id=device_id,
         duration_seconds=int(duration_seconds),
     )
+    apply_study_fields(
+        sess,
+        study_type=study_type,
+        questions_total=questions_total,
+        questions_correct=questions_correct,
+    )
     if start_time is not None:
         start = local_datetime_to_utc(local_date, start_time, act.timezone)
         end = start + timedelta(seconds=duration_seconds)
@@ -574,6 +642,7 @@ def manual_session(
     cancel_pending(
         db, user_id=user.id, kind="follow_up", activity_id=act.id, reason="manual_logged"
     )
+    _after_recorded(db, user, sess)
     return sess, True
 
 
@@ -594,6 +663,10 @@ def update_session(
     reason: str | None = None,
     expected_version: int | None = None,
     resolve_review: bool = False,
+    study_type: str | None = None,
+    questions_total: int | None = None,
+    questions_correct: int | None = None,
+    clear_questions: bool = False,
 ) -> StudySession:
     """Edição retroativa com trilha de mudanças; recalcula a atribuição por dia."""
     _check_version(sess, expected_version)
@@ -614,6 +687,13 @@ def update_session(
         sess.page_from = page_from
     if page_to is not None:
         sess.page_to = page_to
+    apply_study_fields(
+        sess,
+        study_type=study_type,
+        questions_total=questions_total,
+        questions_correct=questions_correct,
+        clear_questions=clear_questions,
+    )
     if duration_seconds is not None or local_date is not None or start_time is not None:
         dur = int(
             duration_seconds if duration_seconds is not None else (sess.duration_seconds or 0)
@@ -673,6 +753,8 @@ def update_session(
         db, sess, user, "review" if resolve_review else "update", before, _snapshot(sess), reason
     )
     db.flush()
+    if not sess.needs_review:
+        _after_recorded(db, user, sess)
     return sess
 
 

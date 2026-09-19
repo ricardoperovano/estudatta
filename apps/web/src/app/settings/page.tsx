@@ -8,7 +8,9 @@ import { settingsKeys, usePreferences, useUpdatePreferences, type Preferences, t
 import { InstallPrompt } from "@/components/app/install-prompt";
 import { AccountSection, DataSection } from "@/components/app/settings-account";
 import { RemindersSection, SettingsRow, SettingsSection } from "@/components/app/settings-reminders";
-import { Banner, Button, Card, Dialog, DialogContent, DurationStepper, Seg, Spinner, Tag, toast } from "@/components/ui";
+import { Banner, Button, Card, Dialog, DialogContent, DurationStepper, Input, Seg, Spinner, Switch, Tag, toast } from "@/components/ui";
+import { TataSvg } from "@/components/mascot/TataSvg";
+import { setTataMuted, useTataPrefs } from "@/components/mascot/use-tata";
 import { isStandalone } from "@/lib/device";
 import { fmtDateTimeShort } from "@/lib/format";
 import { useOnline } from "@/lib/online";
@@ -32,6 +34,8 @@ export default function SettingsPage() {
           <RemindersSection online={online} />
           <AppearanceSection online={online} />
           <DefaultSessionSection online={online} />
+          <StudyCompanionSection online={online} />
+          <RevisionsSection online={online} />
         </div>
         <div className="flex flex-col gap-8">
           <AccountSection online={online} />
@@ -152,6 +156,96 @@ function DefaultSessionSection({ online }: { online: boolean }) {
           </Card>
         </>
       )}
+    </SettingsSection>
+  );
+}
+
+// --- Tatá e revisões ---------------------------------------------------------------------------
+
+function StudyCompanionSection({ online }: { online: boolean }) {
+  const prefs = usePreferences();
+  const patch = usePatchPreferences();
+  const { muted } = useTataPrefs();
+  const enabled = prefs.data?.mascot_enabled ?? true;
+  return (
+    <SettingsSection title="Tatá, o companheiro de estudo">
+      <Card className="flex-row items-center gap-4 p-[14px] text-[14px]">
+        <TataSvg mood={enabled ? "wave" : "sleep"} size={64} />
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
+          <SettingsRow label="Mostrar o Tatá" hint="Aparece no cronômetro, no Hoje e nas conquistas. Vale para todos os aparelhos." htmlFor="pref-tata">
+            <Switch id="pref-tata" checked={enabled} disabled={!online || prefs.isPending} onCheckedChange={(v) => patch({ mascot_enabled: v })} />
+          </SettingsRow>
+          <SettingsRow label="Falas do Tatá" hint="Silenciar vale só neste aparelho. O tom segue o dos lembretes." htmlFor="pref-tata-falas">
+            <Switch id="pref-tata-falas" checked={!muted} disabled={!enabled} onCheckedChange={(v) => setTataMuted(!v)} />
+          </SettingsRow>
+        </div>
+      </Card>
+    </SettingsSection>
+  );
+}
+
+const INTERVAL_PRESETS: { value: string; label: string; days: number[] }[] = [
+  { value: "1,7,30", label: "1 · 7 · 30 dias", days: [1, 7, 30] },
+  { value: "1,3,7,15,30", label: "1 · 3 · 7 · 15 · 30", days: [1, 3, 7, 15, 30] },
+  { value: "2,7,21,60", label: "2 · 7 · 21 · 60", days: [2, 7, 21, 60] },
+];
+
+function RevisionsSection({ online }: { online: boolean }) {
+  const prefs = usePreferences();
+  const patch = usePatchPreferences();
+  const enabled = prefs.data?.revisions_enabled ?? true;
+  const current = (prefs.data?.revision_intervals ?? [1, 7, 30]).join(",");
+  const preset = INTERVAL_PRESETS.find((p) => p.value === current);
+  const [custom, setCustom] = React.useState<string | null>(null);
+  const text = custom ?? current.split(",").join(", ");
+  const saveCustom = () => {
+    if (custom === null) return;
+    const days = custom
+      .split(/[^0-9]+/)
+      .filter(Boolean)
+      .map(Number);
+    const ok = days.length >= 1 && days.length <= 6 && days.every((d) => d >= 1 && d <= 365) && days.every((d, i) => i === 0 || d > days[i - 1]);
+    if (!ok) {
+      toast("error", "Intervalos inválidos", "Use de 1 a 6 números crescentes entre 1 e 365, como 1, 7, 30.");
+      return;
+    }
+    setCustom(null);
+    patch({ revision_intervals: days });
+  };
+  return (
+    <SettingsSection title="Revisões espaçadas">
+      <Card className="gap-3 p-[14px] text-[14px]">
+        <SettingsRow label="Agendar revisões" hint="Depois de uma sessão de teoria, aula, leitura ou prática com matéria, o Estudatta agenda as revisões." htmlFor="pref-rev">
+          <Switch id="pref-rev" checked={enabled} disabled={!online || prefs.isPending} onCheckedChange={(v) => patch({ revisions_enabled: v })} />
+        </SettingsRow>
+        {enabled ? (
+          <>
+            <Seg<string>
+              label="Intervalos"
+              block
+              size="sm"
+              value={preset?.value ?? "custom"}
+              onChange={(v) => {
+                const p = INTERVAL_PRESETS.find((x) => x.value === v);
+                if (p && online) patch({ revision_intervals: p.days });
+              }}
+              options={[...INTERVAL_PRESETS.map((p) => ({ value: p.value, label: p.label, disabled: !online })), ...(preset ? [] : [{ value: "custom", label: "Personalizado" }])]}
+            />
+            <div className="flex items-end gap-2">
+              <label className="flex flex-1 flex-col gap-1 text-[12px] text-neutral-400" htmlFor="pref-rev-custom">
+                Dias depois do estudo, separados por vírgula
+                <Input id="pref-rev-custom" inputMode="numeric" value={text} disabled={!online} onChange={(e) => setCustom(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveCustom()} />
+              </label>
+              <Button variant="secondary" disabled={!online || custom === null} onClick={saveCustom}>
+                Salvar
+              </Button>
+            </div>
+            <p className="m-0 text-[12px] text-neutral-400">
+              Uma sessão do tipo Revisão na mesma matéria conclui a revisão do dia e agenda a próxima. <Link to="/app/revisoes">Ver revisões</Link>
+            </p>
+          </>
+        ) : null}
+      </Card>
     </SettingsSection>
   );
 }

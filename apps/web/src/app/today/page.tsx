@@ -8,8 +8,11 @@ import { fmtDayLong, fmtDayShort, fmtMinutes, fmtMinutesShort, fmtTime } from "@
 import { useOnline } from "@/lib/online";
 import { useSyncStore } from "@/offline/sync";
 import { ManualEntrySheet } from "./manual-entry";
+import { RevisionsToday } from "@/components/app/revisions-today";
+import { StudyInsightsCard } from "@/components/app/study-insights-card";
 import { useTimerStore, elapsedSeconds } from "@/app/timer/store";
 import { cn } from "@/lib/utils";
+import { TodayTata } from "@/components/mascot/today-tata";
 import type { TodayCard, AgendaItem } from "@/api/types";
 
 /** Tela Hoje: um próximo passo executável por objetivo, "Começar sessão" em destaque e "Registrar tempo". */
@@ -58,6 +61,7 @@ export default function TodayPage() {
   const dateLong = fmtDayLong(data.date);
   const cards = data.cards;
   const first = cards[0];
+  const studyActs = cards.filter((c) => c.activity.tracking_mode !== "checklist").map((c) => ({ id: c.activity.id, title: c.activity.title }));
   const activeTimer = timer && (timer.status === "active" || timer.status === "paused") ? timer : null;
 
   return (
@@ -95,6 +99,8 @@ export default function TodayPage() {
         </div>
       </header>
 
+      <TodayTata cards={cards} inSession={!!activeTimer} hour={new Date().getHours()} />
+
       {offline ? <Banner kind="offline">Saldo provisório: mostrando o último plano sincronizado{savedAt ? ` às ${fmtTime(savedAt)}` : ""}.</Banner> : null}
 
       {activeTimer ? (
@@ -129,6 +135,8 @@ export default function TodayPage() {
           {cards.map((c) => (
             <ActivityTodayCard key={c.activity.id} card={c} onManual={() => setManualFor(c)} onStart={() => nav(`/app/sessao?objetivo=${c.activity.id}`)} hideActionsOnDesktop={c === first} />
           ))}
+          <RevisionsToday />
+          {studyActs.length > 0 ? <StudyInsightsCard activityId={studyActs[0].id} activities={studyActs} hideWhenEmpty /> : null}
         </div>
         <Agenda items={data.agenda} cards={cards} />
       </div>

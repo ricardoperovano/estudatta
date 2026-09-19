@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router";
-import { CalendarBlank, ChartBar, Clock, ListBullets, Gear, Bell, CreditCard } from "@phosphor-icons/react";
+import { CalendarBlank, ChartBar, Clock, ListBullets, Gear, Bell, CreditCard, Trophy, ArrowsClockwise } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { Logo, Symbol } from "./brand";
 import { useSyncStore } from "@/offline/sync";
@@ -13,6 +13,12 @@ const items = [
   { to: "/app/plano", label: "Plano", labelLong: "Plano da semana", icon: CalendarBlank },
   { to: "/app/objetivos", label: "Objetivos", icon: ListBullets },
   { to: "/app/relatorio", label: "Relatório", icon: ChartBar },
+];
+
+/** Só na lateral; no celular ficam acessíveis pelo Hoje (cartões de revisão e de conquistas). */
+const extra = [
+  { to: "/app/revisoes", label: "Revisões", icon: ArrowsClockwise },
+  { to: "/app/conquistas", label: "Conquistas", icon: Trophy },
 ];
 
 /** Navegação inferior 64px no celular: 4 itens (Hoje · Plano · Objetivos · Relatório). */
@@ -66,6 +72,12 @@ export function Sidebar() {
         <NavLink key={to} to={to} end={end} className={({ isActive }) => linkCls(isActive)} title={labelLong || label}>
           <Icon size={24} aria-hidden className="shrink-0 desktop:hidden" />
           <span className="hidden desktop:inline">{labelLong || label}</span>
+        </NavLink>
+      ))}
+      {extra.map(({ to, label, icon: Icon }) => (
+        <NavLink key={to} to={to} className={({ isActive }) => linkCls(isActive)} title={label}>
+          <Icon size={24} aria-hidden className="shrink-0 desktop:hidden" />
+          <span className="hidden desktop:inline">{label}</span>
         </NavLink>
       ))}
       <div className="mt-auto flex flex-col gap-1">

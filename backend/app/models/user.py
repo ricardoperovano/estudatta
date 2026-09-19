@@ -89,6 +89,15 @@ class UserPreferences(Timestamps, Base):
     pomodoro_break_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
     analytics_consent: Mapped[bool | None] = mapped_column(Boolean)
     reduced_motion: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    revisions_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+    revision_intervals: Mapped[list] = mapped_column(
+        JSONType, nullable=False, default=lambda: [1, 7, 30], server_default="[1, 7, 30]"
+    )
+    mascot_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
     extra: Mapped[dict] = mapped_column(JSONType, nullable=False, default=dict)
 
     user: Mapped[User] = relationship(back_populates="preferences")

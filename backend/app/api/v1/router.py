@@ -19,6 +19,7 @@ from app.api.v1 import (
     public,
     reports,
     sessions,
+    study,
     sync,
 )
 
@@ -39,6 +40,7 @@ api_router.include_router(files.router)
 api_router.include_router(imports.router)
 api_router.include_router(notifications.router)
 api_router.include_router(sync.router)
+api_router.include_router(study.router)
 api_router.include_router(billing.router)
 api_router.include_router(ai.router)
 api_router.include_router(admin.router)
