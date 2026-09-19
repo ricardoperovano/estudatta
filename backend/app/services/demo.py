@@ -119,12 +119,15 @@ def _get_or_create_activity(db: Session, user: User, start: date) -> tuple[Activ
         select(Activity).where(Activity.user_id == user.id, Activity.title == "Inglês")
     ).scalar_one_or_none()
     if act is not None:
+        if act.category == "ingles" or act.language is None:
+            act.category, act.language = "idioma", "en"  # demo criado antes da categoria Idiomas
         return act, False
     act = activity_service.create_activity(
         db,
         user,
         title="Inglês",
-        category="ingles",
+        category="idioma",
+        language="en",
         desired_outcome="Conversar com segurança em uma viagem",
         start_date=start,
         active_days=ACTIVE_DAYS,

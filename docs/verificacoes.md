@@ -8,7 +8,7 @@ Executadas em 18/09/2026, na máquina de desenvolvimento (CachyOS, Docker 29, No
 |---|---|---|
 | Lint | `ruff check app tests` | sem problemas |
 | Formatação | `ruff format --check app tests` | 131 arquivos ok |
-| Testes (pytest, SQLite) | `pytest tests -q` | **185 passaram**, 0 falharam (inclui revisões, simulados, análise, gamificação e o seed de demonstração) |
+| Testes (pytest, SQLite) | `pytest tests -q` | **189 passaram**, 0 falharam (inclui revisões, simulados, análise, gamificação, idiomas e o seed de demonstração) |
 | Migrações em Postgres 16 vazio | `alembic upgrade head` + `alembic check` | aplicadas; modelos e migração sem divergência |
 | Ida e volta de migração | `alembic downgrade base` + `upgrade head` | ok |
 | API real | `GET /api/v1/health/ready` | `{"database":"ok","redis":"ok"}` |

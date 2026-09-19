@@ -82,12 +82,28 @@ def assert_can_activate(db: Session, user: User, *, excluding: uuid.UUID | None 
         )
 
 
+def normalize_category(category: str, language: str | None) -> tuple[str, str | None]:
+    """ "ingles" (legado) vira idioma + inglês; idioma sem idioma escolhido é inglês;
+    as demais categorias não guardam idioma."""
+    from app.core.languages import DEFAULT_LANGUAGE, LANGUAGES
+
+    if category == "ingles":
+        return "idioma", language or DEFAULT_LANGUAGE
+    if category == "idioma":
+        lang = language or DEFAULT_LANGUAGE
+        if lang not in LANGUAGES:
+            raise ValidationFailed("Idioma não reconhecido.", code="invalid_language")
+        return "idioma", lang
+    return category, None
+
+
 def create_activity(
     db: Session,
     user: User,
     *,
     title: str,
     category: str,
+    language: str | None = None,
     tracking_mode: str = "time",
     description: str | None = None,
     desired_outcome: str | None = None,
@@ -104,6 +120,7 @@ def create_activity(
     color: str | None = None,
     icon: str | None = None,
 ) -> Activity:
+    category, language = normalize_category(category, language)
     tz = timezone or user.timezone
     if not valid_timezone(tz):
         raise ValidationFailed("Fuso horário inválido.", code="invalid_timezone")
@@ -122,6 +139,7 @@ def create_activity(
         title=title.strip()[:120],
         description=description,
         category=category,
+        language=language,
         desired_outcome=desired_outcome,
         tracking_mode=tracking_mode,
         start_date=start,

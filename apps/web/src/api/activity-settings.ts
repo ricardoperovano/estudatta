@@ -1,4 +1,5 @@
 /** Configurações do objetivo: regras de meta, pausas, fuso, status, perdão de pendência e planos de recuperação. */
+import { languageShortName } from "@/lib/languages";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, unwrap } from "./client";
 import { keys, useInvalidateAll } from "./queries";
@@ -157,7 +158,7 @@ export function useSummary(period: "day" | "week" | "month", date: string | null
 }
 
 export const CATEGORY_LABELS: Record<string, string> = {
-  ingles: "inglês",
+  ingles: "idioma", // legado: o servidor grava como idioma + inglês
   idioma: "idioma",
   concurso: "concurso",
   faculdade: "faculdade",
@@ -171,8 +172,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export const CATEGORY_OPTIONS: { value: ActivityUpdate["category"] & string; label: string }[] = [
-  { value: "ingles", label: "Inglês" },
-  { value: "idioma", label: "Outro idioma" },
+  { value: "idioma", label: "Idiomas" },
   { value: "concurso", label: "Concurso" },
   { value: "faculdade", label: "Faculdade" },
   { value: "certificacao", label: "Certificação" },
@@ -205,6 +205,8 @@ export const TIMEZONE_OPTIONS = [
   "Asia/Tokyo",
 ];
 
-export function categoryLabel(category: string): string {
-  return CATEGORY_LABELS[category] ?? category;
+export function categoryLabel(category: string, language?: string | null): string {
+  const base = CATEGORY_LABELS[category] ?? category;
+  const lang = category === "idioma" || category === "ingles" ? languageShortName(language ?? "en") : null;
+  return lang ? `${base} · ${lang.toLocaleLowerCase("pt-BR")}` : base;
 }

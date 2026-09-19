@@ -6,8 +6,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from app.core.languages import LANGUAGE_CODES
 from app.schemas.common import ORMModel
 
+# "ingles" continua aceito (clientes antigos) e é gravado como idioma + "en"
 Category = Literal[
     "ingles",
     "idioma",
@@ -22,6 +24,8 @@ Category = Literal[
     "personalizado",
 ]
 
+LanguageCode = Literal[LANGUAGE_CODES]  # type: ignore[valid-type]
+
 
 class GoalRuleIn(BaseModel):
     minutes_by_weekday: dict[str, int] | None = None
@@ -35,6 +39,7 @@ class GoalRuleIn(BaseModel):
 class ActivityCreate(BaseModel):
     title: str = Field(min_length=1, max_length=120)
     category: Category = "outro_estudo"
+    language: LanguageCode | None = None  # categoria idioma; padrão inglês
     tracking_mode: Literal["time", "checklist", "mixed"] = "time"
     description: str | None = Field(default=None, max_length=2000)
     desired_outcome: str | None = Field(default=None, max_length=300)
@@ -54,6 +59,7 @@ class ActivityCreate(BaseModel):
 class ActivityUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=120)
     category: Category | None = None
+    language: LanguageCode | None = None
     description: str | None = Field(default=None, max_length=2000)
     desired_outcome: str | None = Field(default=None, max_length=300)
     end_date: date | None = None
@@ -112,6 +118,8 @@ class ActivityOut(ORMModel):
     title: str
     description: str | None
     category: str
+    language: str | None = None
+    language_name: str | None = None
     desired_outcome: str | None
     color: str | None
     icon: str | None

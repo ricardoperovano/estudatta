@@ -89,7 +89,7 @@ export default function ActivityDetailPage() {
       </Link>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-[14px]">
-          <span className="kicker-accent">Objetivo · {categoryLabel(act.category)}</span>
+          <span className="kicker-accent">Objetivo · {categoryLabel(act.category, act.language)}</span>
           <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">{act.title}</h1>
         </div>
         {act.status === "active" ? (

@@ -1,3 +1,5 @@
+import { LanguageSelect } from "./language-select";
+import { DEFAULT_LANGUAGE, type LanguageCode } from "@/lib/languages";
 import * as React from "react";
 import { Link, useNavigate } from "react-router";
 import { Banner, Button, Card, DayPicker, DurationStepper, Field, Input, RadioGroup, RadioItem, Select, Switch, Tag, toast } from "@/components/ui";
@@ -318,18 +320,19 @@ function ForgiveSection({ activity, pendingSeconds }: { activity: ActivityDetail
 function DetailsSection({ activity }: { activity: ActivityDetail }) {
   const update = useUpdateActivity(activity.id);
   const [title, setTitle] = React.useState(activity.title);
-  const [category, setCategory] = React.useState(activity.category);
+  const [category, setCategory] = React.useState(activity.category === "ingles" ? "idioma" : activity.category);
+  const [language, setLanguage] = React.useState<LanguageCode>(((activity.language as LanguageCode | null) ?? DEFAULT_LANGUAGE));
   const [end, setEnd] = React.useState(activity.end_date ?? "");
   const [policy, setPolicy] = React.useState<Policy>(activity.recovery_policy as Policy);
   const [error, setError] = React.useState<string | null>(null);
-  const dirty = title.trim() !== activity.title || category !== activity.category || end !== (activity.end_date ?? "") || policy !== activity.recovery_policy;
+  const dirty = title.trim() !== activity.title || category !== activity.category || (category === "idioma" && language !== activity.language) || end !== (activity.end_date ?? "") || policy !== activity.recovery_policy;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     if (!title.trim()) return setError("Dê um nome ao objetivo.");
     try {
-      await update.mutateAsync({ title: title.trim(), category: category as ActivityUpdate["category"], end_date: end || null, clear_end_date: !end && !!activity.end_date, recovery_policy: policy });
+      await update.mutateAsync({ title: title.trim(), category: category as ActivityUpdate["category"], language: category === "idioma" ? language : null, end_date: end || null, clear_end_date: !end && !!activity.end_date, recovery_policy: policy });
       toast.success("Objetivo atualizado");
     } catch (err) {
       setError(errorMessage(err));
@@ -353,6 +356,11 @@ function DetailsSection({ activity }: { activity: ActivityDetail }) {
               ))}
             </Select>
           </Field>
+          {category === "idioma" ? (
+            <Field label="Idioma" htmlFor="d-language">
+              <LanguageSelect id="d-language" value={language} onChange={setLanguage} />
+            </Field>
+          ) : null}
           <Field label="Prazo (opcional)" htmlFor="d-end">
             <Input id="d-end" type="date" min={activity.start_date} value={end} onChange={(e) => setEnd(e.target.value)} />
           </Field>

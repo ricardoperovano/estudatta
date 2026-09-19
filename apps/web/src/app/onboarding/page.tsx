@@ -1,3 +1,5 @@
+import { LanguageSelect } from "@/components/app/language-select";
+import { DEFAULT_LANGUAGE, languageShortName, type LanguageCode } from "@/lib/languages";
 import * as React from "react";
 import { useNavigate } from "react-router";
 import { ArrowRight } from "@phosphor-icons/react";
@@ -10,14 +12,14 @@ import { detectTimezone } from "@/lib/device";
 import { addDaysIso, todayIso } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-type Category = "ingles" | "idioma" | "concurso" | "outro_estudo" | "leitura" | "pratica" | "personalizado";
+type Category = "idioma" | "concurso" | "outro_estudo" | "leitura" | "pratica" | "personalizado";
 const categories: { value: Category; label: string; sample: string }[] = [
-  { value: "ingles", label: "Inglês ou outro idioma", sample: "Inglês" },
+  { value: "idioma", label: "Idiomas (inglês, espanhol, Libras…)", sample: "Inglês" },
   { value: "concurso", label: "Concurso", sample: "Concurso" },
   { value: "outro_estudo", label: "Outro estudo", sample: "Faculdade" },
   { value: "pratica", label: "Atividade ou rotina", sample: "Violão" },
 ];
-const kickerOf: Record<Category, string> = { ingles: "Inglês", idioma: "Idioma", concurso: "Concurso", outro_estudo: "Estudo", leitura: "Leitura", pratica: "Prática", personalizado: "Atividade" };
+const kickerOf: Record<Category, string> = { idioma: "Idiomas", concurso: "Concurso", outro_estudo: "Estudo", leitura: "Leitura", pratica: "Prática", personalizado: "Atividade" };
 
 /**
  * Onboarding em 4 etapas curtas (progresso 2px): o que acompanhar → nome e resultado →
@@ -31,6 +33,7 @@ export default function OnboardingPage() {
   const [step, setStep] = React.useState(0);
   const [category, setCategory] = React.useState<Category | null>(null);
   const [title, setTitle] = React.useState("");
+  const [language, setLanguage] = React.useState<LanguageCode>(DEFAULT_LANGUAGE);
   const [outcome, setOutcome] = React.useState("");
   const [deadline, setDeadline] = React.useState("");
   const [minutes, setMinutes] = React.useState(60);
@@ -48,8 +51,9 @@ export default function OnboardingPage() {
     setError(null);
     try {
       await create.mutateAsync({
-        title: (title || (category ? categories.find((c) => c.value === category)?.sample : "") || "Estudo").trim(),
+        title: (title || (category === "idioma" ? languageShortName(language) : category ? categories.find((c) => c.value === category)?.sample : "") || "Estudo").trim(),
         category: category || "outro_estudo",
+        language: category === "idioma" ? language : null,
         tracking_mode: category === "pratica" && !skipDetails ? "time" : "time",
         desired_outcome: outcome || null,
         start_date: start,
@@ -135,9 +139,14 @@ export default function OnboardingPage() {
 
         {step === 1 ? (
           <>
-            <h1 className="text-[25px] leading-[1.15]">Dê um nome ao objetivo</h1>
+            <h1 className="text-[25px] leading-[1.15]">{category === "idioma" ? "Qual idioma?" : "Dê um nome ao objetivo"}</h1>
+            {category === "idioma" ? (
+              <Field label="Idioma" htmlFor="ob-language" hint="Mais de 90 idiomas. O nome do objetivo acompanha a escolha, e você pode mudar.">
+                <LanguageSelect id="ob-language" value={language} onChange={setLanguage} />
+              </Field>
+            ) : null}
             <Field label="Nome" htmlFor="ob-title">
-              <Input id="ob-title" autoFocus placeholder={categories.find((c) => c.value === category)?.sample} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />
+              <Input id="ob-title" autoFocus={category !== "idioma"} placeholder={category === "idioma" ? (languageShortName(language) ?? "") : categories.find((c) => c.value === category)?.sample} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />
             </Field>
             <Field label="Resultado desejado (opcional)" htmlFor="ob-outcome" hint="Ex.: conversar com segurança, passar na prova, terminar o livro.">
               <Input id="ob-outcome" value={outcome} onChange={(e) => setOutcome(e.target.value)} maxLength={300} />

@@ -2462,6 +2462,8 @@ export interface components {
              * @enum {string}
              */
             category: "ingles" | "idioma" | "concurso" | "faculdade" | "certificacao" | "curso" | "outro_estudo" | "leitura" | "pratica" | "rotina" | "personalizado";
+            /** Language */
+            language?: ("en" | "es" | "fr" | "de" | "it" | "ja" | "zh" | "ko" | "ru" | "ar" | "bzs" | "pt" | "af" | "sq" | "am" | "hy" | "az" | "eu" | "bn" | "be" | "my" | "bs" | "bg" | "yue" | "ca" | "kk" | "si" | "hr" | "ht" | "ku" | "da" | "sk" | "sl" | "eo" | "et" | "fi" | "gd" | "gl" | "cy" | "ka" | "el" | "gn" | "gu" | "ha" | "haw" | "he" | "hi" | "nl" | "hu" | "ig" | "yi" | "id" | "yo" | "ga" | "is" | "km" | "lo" | "la" | "lv" | "ase" | "lt" | "lb" | "mk" | "ms" | "mt" | "mi" | "mr" | "mn" | "nah" | "ne" | "no" | "ps" | "pa" | "fa" | "pl" | "qu" | "ro" | "sr" | "so" | "sw" | "sv" | "tl" | "th" | "ta" | "cs" | "te" | "tr" | "uk" | "ur" | "uz" | "vi" | "xh" | "zu" | "und") | null;
             /**
              * Tracking Mode
              * @default time
@@ -2513,6 +2515,10 @@ export interface components {
             description: string | null;
             /** Category */
             category: string;
+            /** Language */
+            language?: string | null;
+            /** Language Name */
+            language_name?: string | null;
             /** Desired Outcome */
             desired_outcome: string | null;
             /** Color */
@@ -2572,6 +2578,10 @@ export interface components {
             description: string | null;
             /** Category */
             category: string;
+            /** Language */
+            language?: string | null;
+            /** Language Name */
+            language_name?: string | null;
             /** Desired Outcome */
             desired_outcome: string | null;
             /** Color */
@@ -2618,6 +2628,8 @@ export interface components {
             title?: string | null;
             /** Category */
             category?: ("ingles" | "idioma" | "concurso" | "faculdade" | "certificacao" | "curso" | "outro_estudo" | "leitura" | "pratica" | "rotina" | "personalizado") | null;
+            /** Language */
+            language?: ("en" | "es" | "fr" | "de" | "it" | "ja" | "zh" | "ko" | "ru" | "ar" | "bzs" | "pt" | "af" | "sq" | "am" | "hy" | "az" | "eu" | "bn" | "be" | "my" | "bs" | "bg" | "yue" | "ca" | "kk" | "si" | "hr" | "ht" | "ku" | "da" | "sk" | "sl" | "eo" | "et" | "fi" | "gd" | "gl" | "cy" | "ka" | "el" | "gn" | "gu" | "ha" | "haw" | "he" | "hi" | "nl" | "hu" | "ig" | "yi" | "id" | "yo" | "ga" | "is" | "km" | "lo" | "la" | "lv" | "ase" | "lt" | "lb" | "mk" | "ms" | "mt" | "mi" | "mr" | "mn" | "nah" | "ne" | "no" | "ps" | "pa" | "fa" | "pl" | "qu" | "ro" | "sr" | "so" | "sw" | "sv" | "tl" | "th" | "ta" | "cs" | "te" | "tr" | "uk" | "ur" | "uz" | "vi" | "xh" | "zu" | "und") | null;
             /** Description */
             description?: string | null;
             /** Desired Outcome */

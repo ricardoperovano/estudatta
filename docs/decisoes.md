@@ -76,6 +76,13 @@ Registro vivo das decisões tomadas durante a implementação. Cada item indica 
 - **Revisão concluída por sessão:** uma sessão do tipo Revisão na mesma matéria ou tópico conclui a revisão pendente e agenda a próxima etapa; também dá para concluir, pular ou reagendar à mão.
 - **Recursos de estudo em todos os planos:** revisões, simulados, conquistas e o Tatá não viram recurso pago.
 
+## 2026-09-19 — "Inglês" vira "Idiomas"
+
+- **Pedido do responsável:** a opção de estudo de inglês passa a ser de idiomas em geral, com inglês como padrão e o máximo de idiomas.
+- **Categoria única "idioma" com campo `language`:** 94 idiomas (códigos ISO 639, nomes em português), com os mais procurados no topo, Libras e ASL incluídas e "Outro idioma" (`und`) para o que faltar. A lista fica em `backend/app/core/languages.py`, e a API expõe os códigos como enum, então o app não compila se faltar nome para algum.
+- **Compatibilidade:** `ingles` continua aceito na API (clientes antigos, fila offline) e é gravado como idioma + inglês. A migração converteu os objetivos existentes de "Inglês" para idioma + inglês. Os antigos "Outro idioma" não diziam qual idioma e ficaram como "Outro idioma" até a pessoa escolher.
+- **Nome do objetivo:** ao escolher o idioma, o nome é preenchido com o nome do idioma se estiver vazio (ou ainda for o do idioma anterior). A pessoa pode trocar.
+
 ## Pendências que dependem exclusivamente do responsável
 
 - **[pendente do responsável]** Validar os preços sugeridos (R$ 9,90 e R$ 19,90) e os tetos de IA após o primeiro mês com dados reais de uso.

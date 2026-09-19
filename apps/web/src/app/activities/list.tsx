@@ -137,7 +137,7 @@ export default function ActivitiesListPage() {
                 progress={target > 0 ? logged / target : 0}
                 progressLabel={a.tracking_mode === "checklist" && target === 0 ? "sem meta de tempo" : `${fmtMinutes(logged)} de ${fmtMinutes(target)}`}
                 pendingSeconds={card?.summary?.pending_prior ?? 0}
-                status={card?.pause ? { label: "pausa planejada", tone: "neutral" } : !card ? { label: categoryLabel(a.category), tone: "neutral" } : undefined}
+                status={card?.pause ? { label: "pausa planejada", tone: "neutral" } : !card ? { label: categoryLabel(a.category, a.language), tone: "neutral" } : undefined}
                 meta={meta || undefined}
               />
             );

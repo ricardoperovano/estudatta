@@ -1,3 +1,5 @@
+import { LanguageSelect } from "@/components/app/language-select";
+import { DEFAULT_LANGUAGE, languageShortName, type LanguageCode } from "@/lib/languages";
 import * as React from "react";
 import { Link, useNavigate } from "react-router";
 import { CaretDown, CaretLeft } from "@phosphor-icons/react";
@@ -22,6 +24,7 @@ export default function NewActivityPage() {
   const create = useCreateActivity();
   const [title, setTitle] = React.useState("");
   const [category, setCategory] = React.useState<Body["category"]>("outro_estudo");
+  const [language, setLanguage] = React.useState<LanguageCode>(DEFAULT_LANGUAGE);
   const [mode, setMode] = React.useState<Mode>("time");
   const [minutes, setMinutes] = React.useState(60);
   const [days, setDays] = React.useState<number[]>([0, 1, 2, 3, 4]);
@@ -57,6 +60,7 @@ export default function NewActivityPage() {
       const created = await create.mutateAsync({
         title: title.trim(),
         category,
+        language: category === "idioma" ? language : null,
         tracking_mode: mode,
         description: description.trim() || null,
         desired_outcome: outcome.trim() || null,
@@ -105,11 +109,20 @@ export default function NewActivityPage() {
       {error ? <Banner kind="error">{error}</Banner> : null}
 
       <Field label="Nome" htmlFor="a-title" error={errors.title}>
-        <Input id="a-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Inglês, concurso, violão…" maxLength={120} invalid={!!errors.title} autoFocus />
+        <Input id="a-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Inglês, espanhol, concurso, violão…" maxLength={120} invalid={!!errors.title} autoFocus />
       </Field>
 
       <Field label="Categoria" htmlFor="a-category">
-        <Select id="a-category" value={category} onChange={(e) => setCategory(e.target.value as Body["category"])}>
+        <Select
+          id="a-category"
+          value={category}
+          onChange={(e) => {
+            const next = e.target.value as Body["category"];
+            setCategory(next);
+            // nome vazio ganha o nome do idioma; a pessoa pode trocar
+            if (next === "idioma" && !title.trim()) setTitle(languageShortName(language) ?? "");
+          }}
+        >
           {CATEGORY_OPTIONS.map((c) => (
             <option key={c.value} value={c.value}>
               {c.label}
@@ -117,6 +130,20 @@ export default function NewActivityPage() {
           ))}
         </Select>
       </Field>
+
+      {category === "idioma" ? (
+        <Field label="Idioma" htmlFor="a-language" hint="Mais de 90 idiomas, incluindo Libras. Se o seu não estiver na lista, escolha “Outro idioma”.">
+          <LanguageSelect
+            id="a-language"
+            value={language}
+            onChange={(v) => {
+              // se o nome ainda é o do idioma anterior, acompanha a troca
+              if (!title.trim() || title === languageShortName(language)) setTitle(languageShortName(v) ?? "");
+              setLanguage(v);
+            }}
+          />
+        </Field>
+      ) : null}
 
       <Field label="Como acompanhar" hint={mode === "time" ? "Meta diária em minutos, com saldo e recuperação." : mode === "checklist" ? "Só tarefas a concluir, sem meta de tempo." : "Meta de tempo e também tarefas a concluir."}>
         <Seg

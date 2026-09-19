@@ -11,7 +11,7 @@ from app.models.base import JSONType, Timestamps, UTCDateTime, UUIDPk
 
 
 class Activity(UUIDPk, Timestamps, Base):
-    """Objetivo/atividade acompanhada (inglês, concurso, leitura, violão, rotina...)."""
+    """Objetivo/atividade acompanhada (idiomas, concurso, leitura, violão, rotina...)."""
 
     __tablename__ = "activities"
 
@@ -21,7 +21,11 @@ class Activity(UUIDPk, Timestamps, Base):
     title: Mapped[str] = mapped_column(String(120), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     category: Mapped[str] = mapped_column(String(32), nullable=False, default="outro_estudo")
-    # ingles | idioma | concurso | faculdade | certificacao | curso | outro_estudo | leitura | pratica | rotina | personalizado
+    # idioma | concurso | faculdade | certificacao | curso | outro_estudo | leitura | pratica | rotina | personalizado
+    # ("ingles" é aceito de clientes antigos e vira idioma + "en")
+    language: Mapped[str | None] = mapped_column(
+        String(8)
+    )  # só em "idioma"; ver app.core.languages
     desired_outcome: Mapped[str | None] = mapped_column(String(300))
     color: Mapped[str | None] = mapped_column(String(16))
     icon: Mapped[str | None] = mapped_column(String(32))
@@ -48,6 +52,12 @@ class Activity(UUIDPk, Timestamps, Base):
     weekly_questions_goal: Mapped[int | None] = mapped_column(Integer)
     weekly_pages_goal: Mapped[int | None] = mapped_column(Integer)
     archived_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+
+    @property
+    def language_name(self) -> str | None:
+        from app.core.languages import language_name
+
+        return language_name(self.language)
 
     goal_rules: Mapped[list[GoalRule]] = relationship(
         back_populates="activity", cascade="all, delete-orphan", order_by="GoalRule.effective_from"

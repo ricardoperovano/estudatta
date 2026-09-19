@@ -94,6 +94,7 @@ def create_activity(
         user,
         title=payload.title,
         category=payload.category,
+        language=payload.language,
         tracking_mode=payload.tracking_mode,
         description=payload.description,
         desired_outcome=payload.desired_outcome,
@@ -141,6 +142,13 @@ def update_activity(
     act = svc.get_activity(db, user, activity_id)
     data = payload.model_dump(exclude_unset=True)
     clear_end = data.pop("clear_end_date", False)
+    if "category" in data or "language" in data:
+        language = data.pop("language", None)
+        category = data.pop("category", None) or ("idioma" if language else act.category)
+        # mudar só o idioma mantém a categoria; trocar de categoria descarta o idioma antigo
+        if language is None and category == act.category:
+            language = act.language
+        act.category, act.language = svc.normalize_category(category, language)
     for k, v in data.items():
         if k in ("weekly_questions_goal", "weekly_pages_goal"):
             setattr(act, k, v or None)  # 0 ou vazio remove a meta semanal

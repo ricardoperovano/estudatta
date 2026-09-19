@@ -19,7 +19,10 @@ async function register(page: Page) {
 
 /** Inglês, 60 min/dia, todos os dias, começando há 3 dias: hoje há pendência de dias anteriores. */
 async function onboarding(page: Page) {
-  await page.getByRole("button", { name: /Inglês ou outro idioma/ }).click();
+  await page.getByRole("button", { name: /Idiomas/ }).click();
+  // Idiomas: inglês é o padrão entre mais de 90 idiomas
+  await expect(page.getByLabel("Idioma")).toHaveValue("en");
+  expect(await page.getByLabel("Idioma").locator("option").count()).toBeGreaterThan(90);
   await page.getByLabel("Nome").fill("Inglês");
   await page.getByRole("button", { name: "Continuar" }).click();
   await expect(page.getByText("Quanto tempo por dia?")).toBeVisible();
