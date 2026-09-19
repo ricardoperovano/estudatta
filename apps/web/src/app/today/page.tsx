@@ -269,6 +269,8 @@ function ActivityTodayCard({ card, onManual, onStart, hideActionsOnDesktop }: { 
           <span className="block text-[12px] text-neutral-400 desktop:text-[13px]">
             {goalDone ? (
               <>{daysLabel}</>
+            ) : s.target === 0 ? (
+              <>Hoje é dia de descanso · {daysLabel}</>
             ) : (
               <>
                 meta base {fmtMinutesShort(s.target)}
@@ -293,7 +295,7 @@ function ActivityTodayCard({ card, onManual, onStart, hideActionsOnDesktop }: { 
         </div>
       ) : (
         <div className="tnum grid grid-cols-2 gap-2 desktop:grid-cols-4 desktop:gap-3">
-          <Stat value={fmtMinutesShort(s.logged)} label="Registrado hoje" tone="accent" desktopValue={<><span>{Math.round(s.logged / 60)}</span> <span className="text-[14px] font-normal text-neutral-400">/ {Math.round(s.target / 60)}</span></>} />
+          <Stat value={fmtMinutesShort(s.logged)} label="Registrado hoje" tone="accent" desktopValue={s.target > 0 ? <><span>{Math.round(s.logged / 60)}</span> <span className="text-[14px] font-normal text-neutral-400">/ {Math.round(s.target / 60)}</span></> : undefined} />
           <Stat value={fmtMinutesShort(s.missing_today)} label="Falta para a meta" desktopLabel="Falta para a meta de hoje" />
           <Stat value={fmtMinutesShort(s.pending_prior)} label="Pendência anterior" desktopLabel="Pendência de dias anteriores" tone={s.pending_prior > 0 ? "pending" : undefined} />
           <Stat value={fmtMinutesShort(s.suggested_recovery)} label="Recuperação sugerida" desktopLabel="Recuperação sugerida hoje" tone={s.suggested_recovery > 0 ? "pending" : undefined} />

@@ -146,6 +146,15 @@
     -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
     mask-image: linear-gradient(to bottom, #000 55%, transparent);
   }
+  /* mesmo fundo suave aplicado direto no contêiner do app (sem camada extra por cima do conteúdo) */
+  .app-backdrop {
+    background:
+      radial-gradient(520px 360px at 100% 0%, color-mix(in srgb, var(--color-accent-900) 90%, transparent), transparent 70%),
+      radial-gradient(420px 320px at 0% 420px, color-mix(in srgb, var(--color-status-info-tint) 60%, transparent), transparent 70%),
+      radial-gradient(440px 320px at 100% 900px, color-mix(in srgb, var(--color-status-warning-tint) 45%, transparent), transparent 70%),
+      var(--color-bg-canvas);
+    background-repeat: no-repeat;
+  }
   /* cartão de destaque (topo da tela Hoje): lavanda suave → superfície, com brilhos nos cantos */
   .hero-soft {
     background:
