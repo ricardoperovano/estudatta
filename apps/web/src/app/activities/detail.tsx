@@ -166,7 +166,7 @@ export default function ActivityDetailPage() {
       ) : null}
 
       <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-[14px]">
-        <TabsList className="overflow-x-auto" data-tour="objetivo-abas">
+        <TabsList data-tour="objetivo-abas">
           <TabsTrigger value="materias">Matérias</TabsTrigger>
           <TabsTrigger value="materiais">Materiais</TabsTrigger>
           <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
