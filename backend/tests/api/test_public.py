@@ -17,7 +17,10 @@ def test_public_catalog_has_suggested_plans_and_prices(client):
     plans = {p["code"]: p for p in body["plans"]}
     assert plans["free"]["prices"] == []
     assert plans["free"]["limits"]["max_active_activities"] == 1
-    assert plans["free"]["limits"]["ai_monthly_actions"] == 0  # IA só nos planos pagos
+    assert (
+        plans["free"]["limits"]["ai_monthly_actions"] == 10
+    )  # Gratuito: poucas conversas com o Tatá
+    assert plans["free"]["limits"]["tata_voice_monthly"] == 20
     assert plans["essencial"]["recommended"] is True and plans["pro"]["recommended"] is False
     price = lambda code: {p["interval"]: p["amount_cents"] for p in plans[code]["prices"]}  # noqa: E731
     assert price("essencial") == {"month": 990, "year": 9480}

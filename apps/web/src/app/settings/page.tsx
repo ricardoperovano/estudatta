@@ -12,6 +12,8 @@ import { RemindersSection, SettingsRow, SettingsSection } from "@/components/app
 import { Banner, Button, Card, DurationStepper, Input, Seg, Spinner, Switch, Tag, toast } from "@/components/ui";
 import { TataSvg } from "@/components/mascot/TataSvg";
 import { setTataMuted, useTataPrefs } from "@/components/mascot/use-tata";
+import { setVoiceMode, speak, useVoiceMode } from "@/components/mascot/voice";
+import { useTataStatus } from "@/api/tata";
 import { fmtDateTimeShort } from "@/lib/format";
 import { useOnline } from "@/lib/online";
 import { readTheme, setTheme, subscribeTheme, type Theme } from "@/lib/theme";
@@ -167,7 +169,10 @@ function StudyCompanionSection({ online }: { online: boolean }) {
   const prefs = usePreferences();
   const patch = usePatchPreferences();
   const { muted } = useTataPrefs();
+  const voiceMode = useVoiceMode();
   const enabled = prefs.data?.mascot_enabled ?? true;
+  const status = useTataStatus(enabled);
+  const st = status.data;
   return (
     <SettingsSection title="Tatá, o companheiro de estudo">
       <Card className="flex-row items-center gap-4 p-[14px] text-[14px]" data-tour="preferencias-tata">
@@ -179,6 +184,32 @@ function StudyCompanionSection({ online }: { online: boolean }) {
           <SettingsRow label="Falas do Tatá" hint="Silenciar vale só neste aparelho. O tom segue o dos lembretes." htmlFor="pref-tata-falas">
             <Switch id="pref-tata-falas" checked={!muted} disabled={!enabled} onCheckedChange={(v) => setTataMuted(!v)} />
           </SettingsRow>
+          <SettingsRow label="Voz do Tatá" hint="Voz natural até a cota do seu plano; depois, a voz do aparelho." htmlFor="pref-tata-voz">
+            <Switch id="pref-tata-voz" checked={voiceMode === "on"} disabled={!enabled || muted} onCheckedChange={(v) => setVoiceMode(v ? "on" : "off")} />
+          </SettingsRow>
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[12px] text-neutral-400">
+            <span className="tnum">
+              {st
+                ? st.voice_limit_month > 0
+                  ? `${st.voice_used_month} de ${st.voice_limit_month} falas com voz natural usadas este mês`
+                  : "Seu plano usa a voz do aparelho."
+                : status.isError
+                  ? "Não deu para consultar a cota de voz agora."
+                  : " "}
+            </span>
+            <Button variant="ghost" size="sm" disabled={!enabled} onClick={() => speak("Oi! Eu sou o Tatá.")}>
+              Testar voz
+            </Button>
+          </div>
+          {st ? (
+            <span className="tnum text-[12px] text-neutral-400">
+              {st.chat_enabled || st.chat_reason === "ai_quota" || st.chat_reason === "ai_monthly_quota"
+                ? `Conversas com IA: ${st.chat_remaining_today} ${st.chat_remaining_today === 1 ? "restante" : "restantes"} hoje${st.chat_remaining_month === null ? "" : ` · ${st.chat_remaining_month} no mês`}`
+                : st.chat_reason === "ai_plan"
+                  ? "Conversas com IA: incluídas nos planos Essencial e Completo."
+                  : "Conversas com IA: indisponíveis neste ambiente."}
+            </span>
+          ) : null}
         </div>
       </Card>
     </SettingsSection>

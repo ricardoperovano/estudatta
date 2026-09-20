@@ -119,6 +119,7 @@ def used_this_month(db: Session, user_id: uuid.UUID) -> int:
             AiUsage.created_at >= start,
             AiUsage.created_at < end,
             AiUsage.status.in_(COUNTED_STATUSES),
+            AiUsage.action != "tata_voice",
         )
     )
     return int(db.execute(q).scalar_one())
@@ -133,6 +134,7 @@ def used_today(db: Session, user_id: uuid.UUID | None) -> int:
             AiUsage.created_at >= start,
             AiUsage.created_at < end,
             AiUsage.status.in_(COUNTED_STATUSES),
+            AiUsage.action != "tata_voice",
         )
     )
     if user_id is not None:
@@ -222,7 +224,7 @@ def _check_available(db: Session, user: User, action: str, input_chars: int) -> 
     if limit <= 0 or monthly == 0:
         _record(db, user, action, "quota", input_chars=input_chars, error_code="ai_plan")
         raise PlanLimit(
-            "A IA para organizar está nos planos Essencial e Completo. Você pode importar e organizar o conteúdo manualmente.",
+            "Seu plano não inclui ações de IA. Você pode importar e organizar o conteúdo manualmente.",
             code="ai_plan",
         )
     if monthly is not None:

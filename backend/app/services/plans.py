@@ -21,6 +21,7 @@ from app.models.billing import Plan, PromoGrant, Subscription
 #   materials_storage_mb   espaço para PDFs (None = ilimitado)
 #   ai_daily_actions       ações de IA por dia (0 = sem IA)
 #   ai_monthly_actions     ações de IA por mês civil (None = só o limite diário)
+#   tata_voice_monthly     falas do Tatá com voz natural (ElevenLabs) por mês; depois, voz do aparelho
 #   reports                "basic" = semana · "full" = semana, mês e trimestre
 #   reminders              "basic" = lembrete no horário planejado · "full" = todos + resumo por e-mail
 #   auto_planning          distribuição automática de tarefas na semana
@@ -32,8 +33,9 @@ DEFAULT_FREE_LIMITS = {
     "max_active_activities": 1,
     "max_materials": 20,
     "materials_storage_mb": 100,
-    "ai_daily_actions": 0,
-    "ai_monthly_actions": 0,
+    "ai_daily_actions": 3,
+    "ai_monthly_actions": 10,
+    "tata_voice_monthly": 20,
     "reports": "basic",
     "reminders": "basic",
     "auto_planning": False,
@@ -46,6 +48,7 @@ DEFAULT_ESSENCIAL_LIMITS = {
     "materials_storage_mb": 1024,
     "ai_daily_actions": 10,
     "ai_monthly_actions": 60,
+    "tata_voice_monthly": 300,
     "reports": "full",
     "reminders": "full",
     "auto_planning": True,
@@ -58,6 +61,7 @@ DEFAULT_PRO_LIMITS = {
     "materials_storage_mb": 5120,
     "ai_daily_actions": 30,
     "ai_monthly_actions": 200,
+    "tata_voice_monthly": 1000,
     "reports": "full",
     "reminders": "full",
     "auto_planning": True,
@@ -76,6 +80,7 @@ SUGGESTED_CATALOG: list[dict] = [
             "Plano semanal e lembrete no horário planejado",
             "Relatório da semana",
             "20 materiais (até 100 MB)",
+            "Tatá com IA: 10 conversas por mês e 20 falas com voz natural",
         ],
         "limits": DEFAULT_FREE_LIMITS,
         "recommended": False,
@@ -88,7 +93,8 @@ SUGGESTED_CATALOG: list[dict] = [
         "description": "Para quem acompanha mais de uma frente e quer a IA ajudando a organizar.",
         "features": [
             "Até 3 objetivos ativos",
-            "IA para organizar o conteúdo e o plano: 60 ações por mês",
+            "IA para organizar o conteúdo e conversar com o Tatá: 60 ações por mês",
+            "Tatá com voz natural: 300 falas por mês",
             "Lembretes completos e resumo semanal por e-mail",
             "Relatórios da semana, do mês e do trimestre",
             "Distribuição automática das tarefas na semana",
@@ -105,7 +111,8 @@ SUGGESTED_CATALOG: list[dict] = [
         "description": "Objetivos sem limite, mais IA e mais espaço para PDFs.",
         "features": [
             "Objetivos ativos ilimitados",
-            "IA para organizar o conteúdo e o plano: 200 ações por mês",
+            "IA para organizar o conteúdo e conversar com o Tatá: 200 ações por mês",
+            "Tatá com voz natural: 1.000 falas por mês",
             "Tudo do Essencial",
             "Materiais ilimitados (até 5 GB)",
         ],

@@ -36,6 +36,7 @@ KNOWN_LIMITS: dict[str, tuple] = {
     "max_materials": ("int_or_null", 0),
     "ai_daily_actions": ("int", 0),
     "ai_monthly_actions": ("int_or_null", 0),
+    "tata_voice_monthly": ("int_or_null", 0),
     "auto_planning": ("bool",),
     "reports": ("choice", ("basic", "full")),
     "recovery_distribution": ("bool",),

@@ -40,5 +40,5 @@ export function TodayTata({ cards, inSession, hour, size = 84, className }: { ca
   const { enabled, tone } = useTataPrefs();
   const situation = todaySituation(cards, inSession, hour);
   if (!enabled) return <p className={cn("text-[14px] leading-[1.45] text-neutral-300", className)}>{tataSay(situation, tone, 0)}</p>;
-  return <TataCompanion size={size} scene={{ kind: "today", situation }} className={cn("min-w-0", className)} data-tour="tata" />;
+  return <TataCompanion size={size} chat scene={{ kind: "today", situation }} className={cn("min-w-0", className)} data-tour="tata" />;
 }

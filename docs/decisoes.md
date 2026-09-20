@@ -120,6 +120,12 @@ Registro vivo das decisões tomadas durante a implementação. Cada item indica 
 - **Campanhas:** segmentos calculados dos dados (gratuito, assinantes, promo, cancelados, sem objetivo, inativos 7/30 dias, novos 7 dias). Envio pela mesma fila de e-mail, com `{nome}` e `{cupom}`, botão e teste para o próprio administrador. **Só recebe quem não desligou os e-mails de retorno**; todo e-mail tem descadastro de um clique.
 - **Não implementado:** desconto só nos primeiros N ciclos (exigiria a API de descontos do Asaas), agendamento de campanhas e automações por evento além dos lembretes de retorno já existentes.
 
+## 2026-09-20 — Tatá com IA e voz
+
+- **Pedido do responsável:** o Tatá conversa por IA; o plano gratuito tem poucas interações e, esgotado o crédito de voz, usa o sintetizador; ElevenLabs para a voz; preços mantidos.
+- **Conversa:** cada mensagem é uma ação de IA (mesma cota das outras ações). O modelo só vê um retrato dos dados da pessoa montado no servidor e é instruído a não inventar números nem prometer resultado. Gratuito passa a ter 3 ações/dia e 10/mês.
+- **Voz:** `tata_voice_monthly` (20 / 300 / 1.000). Áudio da ElevenLabs guardado no bucket por hash do texto: frases repetidas não gastam cota. Sem cota ou sem chave, voz do aparelho. Voz desligada por padrão (o iOS exige um toque antes de tocar áudio).
+
 ## Pendências que dependem exclusivamente do responsável
 
 - **[pendente do responsável]** Validar os preços sugeridos (R$ 9,90 e R$ 19,90) e os tetos de IA após o primeiro mês com dados reais de uso.

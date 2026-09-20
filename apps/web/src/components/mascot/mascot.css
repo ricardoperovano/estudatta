@@ -76,3 +76,19 @@
   background: inherit; border-left: 1px solid var(--color-divider, rgba(127,127,127,.25)); border-top: 1px solid var(--color-divider, rgba(127,127,127,.25));
   transform: rotate(45deg);
 }
+
+/* voz: o alto-falante pulsa enquanto o Tatá fala */
+@keyframes tata-voice-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+.tata-voice--speaking svg { animation: tata-voice-pulse 0.9s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .tata-voice--speaking svg { animation: none; }
+}
+
+/* conversa: "digitando" */
+@keyframes tata-typing { 0%, 80%, 100% { opacity: 0.25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-2px); } }
+.tata-typing span { display: inline-block; width: 6px; height: 6px; border-radius: 999px; background: currentColor; animation: tata-typing 1.2s ease-in-out infinite; }
+.tata-typing span:nth-child(2) { animation-delay: 0.15s; }
+.tata-typing span:nth-child(3) { animation-delay: 0.3s; }
+@media (prefers-reduced-motion: reduce) {
+  .tata-typing span { animation: none; opacity: 0.6; }
+}

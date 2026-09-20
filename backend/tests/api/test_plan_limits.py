@@ -17,6 +17,7 @@ from app.models.system import AiUsage
 from app.models.user import User
 from app.services.plans import SUGGESTED_CATALOG, apply_catalog
 from tests.conftest import make_activity, signup
+from tests.fixtures.plans import set_free_plan_limits
 
 API = "/api/v1"
 
@@ -76,6 +77,10 @@ def ai_on(monkeypatch):
 
 def test_ai_status_by_plan_and_monthly_quota(client, ai_on):
     signup(client, email="a@example.com")
+    # Gratuito: poucas ações (3/dia, 10/mês); um plano sem IA responde 402
+    st = client.get(f"{API}/ai/status").json()
+    assert st["reason"] is None and st["plan_limit"] == 3 and st["monthly_limit"] == 10
+    set_free_plan_limits(ai_daily_actions=0, ai_monthly_actions=0)
     st = client.get(f"{API}/ai/status").json()
     assert st["reason"] == "ai_plan" and st["remaining_today"] == 0
     r = client.post(f"{API}/ai/suggest-structure", json={"text": "Gramática\n  Verbos"})

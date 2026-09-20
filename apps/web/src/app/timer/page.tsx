@@ -352,6 +352,7 @@ export default function TimerPage() {
         data-tour="sessao-tata"
         className="mt-auto"
         layout="column"
+        chat
         size={104}
         scene={{ kind: "timer", status: timer.status, elapsed, pausedFor, goalReached }}
       />

@@ -22,6 +22,7 @@ from app.api.v1 import (
     sessions,
     study,
     sync,
+    tata,
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -41,6 +42,7 @@ api_router.include_router(files.router)
 api_router.include_router(imports.router)
 api_router.include_router(notifications.router)
 api_router.include_router(sync.router)
+api_router.include_router(tata.router)
 api_router.include_router(study.router)
 api_router.include_router(billing.router)
 api_router.include_router(ai.router)

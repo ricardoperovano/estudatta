@@ -1841,6 +1841,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tata/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tata Status */
+        get: operations["tata_status_api_v1_tata_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tata/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tata Chat */
+        post: operations["tata_chat_api_v1_tata_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tata/voice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tata Voice
+         * @description MP3 da fala. 402/429/503 com código: o app cai para a voz do aparelho.
+         */
+        post: operations["tata_voice_api_v1_tata_voice_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/revisions": {
         parameters: {
             query?: never;
@@ -3570,6 +3624,21 @@ export interface components {
             /** New Password */
             new_password: string;
         };
+        /** ChatIn */
+        ChatIn: {
+            /** Message */
+            message: string;
+            /** History */
+            history?: components["schemas"]["HistoryItem"][];
+        };
+        /** ChatOut */
+        ChatOut: {
+            /** Reply */
+            reply: string;
+            /** Mood */
+            mood: string;
+            status: components["schemas"]["TataStatusOut"];
+        };
         /** CheckoutIn */
         CheckoutIn: {
             /** Plan Code */
@@ -3968,6 +4037,13 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HistoryItem */
+        HistoryItem: {
+            /** Role */
+            role: string;
+            /** Text */
+            text: string;
         };
         /** ImportConfirm */
         ImportConfirm: {
@@ -6574,6 +6650,23 @@ export interface components {
             /** Expected Version */
             expected_version?: number | null;
         };
+        /** TataStatusOut */
+        TataStatusOut: {
+            /** Chat Enabled */
+            chat_enabled: boolean;
+            /** Chat Reason */
+            chat_reason: string | null;
+            /** Chat Remaining Today */
+            chat_remaining_today: number;
+            /** Chat Remaining Month */
+            chat_remaining_month: number | null;
+            /** Voice Natural */
+            voice_natural: boolean;
+            /** Voice Limit Month */
+            voice_limit_month: number;
+            /** Voice Used Month */
+            voice_used_month: number;
+        };
         /** TimezoneChange */
         TimezoneChange: {
             /** Timezone */
@@ -6835,6 +6928,11 @@ export interface components {
         VerifyEmailRequest: {
             /** Token */
             token: string;
+        };
+        /** VoiceIn */
+        VoiceIn: {
+            /** Text */
+            text: string;
         };
         /** WaitlistIn */
         WaitlistIn: {
@@ -10858,6 +10956,90 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SyncStatusOut"];
+                };
+            };
+        };
+    };
+    tata_status_api_v1_tata_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TataStatusOut"];
+                };
+            };
+        };
+    };
+    tata_chat_api_v1_tata_chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tata_voice_api_v1_tata_voice_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoiceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

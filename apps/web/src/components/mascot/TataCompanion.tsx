@@ -4,13 +4,20 @@
  * (clique/toque) e cochila quando a tela fica parada. Os olhos seguem o ponteiro.
  * Falas curtas num balão (aria-live), que podem ser silenciadas neste aparelho; o mascote
  * inteiro pode ser desligado em Preferências. Com movimento reduzido, fica parado.
+ * Com a voz ligada, cada fala nova é dita (natural ou do aparelho); com `chat`, há o botão
+ * "Conversar", que abre a conversa com o Tatá.
  */
 import * as React from "react";
-import { ChatCircleDots, ChatCircleSlash } from "@phosphor-icons/react";
+import { ChatCircleDots, Eye, EyeSlash, SpeakerHigh, SpeakerSlash } from "@phosphor-icons/react";
+import { useTataStatus } from "@/api/tata";
+import { useTourStore } from "@/components/tour/store";
 import { cn } from "@/lib/utils";
 import { TataSvg, type TataMood } from "./TataSvg";
 import { tataSay, type TataSituation } from "./tata-messages";
 import { setTataMuted, useReducedMotion, useTataPrefs } from "./use-tata";
+import { useTataVoice } from "./voice";
+
+const TataChat = React.lazy(() => import("./tata-chat").then((m) => ({ default: m.TataChat })));
 
 export type CompanionScene =
   | { kind: "timer"; status: "active" | "paused"; elapsed: number; pausedFor: number; goalReached: boolean }
@@ -23,6 +30,8 @@ interface Props {
   /** balão ao lado (row) ou abaixo (column) */
   layout?: "row" | "column";
   className?: string;
+  /** mostra o botão "Conversar" (abre a conversa com o Tatá) */
+  chat?: boolean;
   /** âncora do tour guiado */
   "data-tour"?: string;
 }
@@ -74,9 +83,13 @@ function reactionFor(prev: string | null, next: string, scene: CompanionScene, t
   return null;
 }
 
-export function TataCompanion({ scene, size = 112, layout = "row", className, "data-tour": tour }: Props) {
+export function TataCompanion({ scene, size = 112, layout = "row", className, chat, "data-tour": tour }: Props) {
   const { enabled, muted, tone } = useTataPrefs();
   const reduced = useReducedMotion();
+  const voice = useTataVoice();
+  const tourActive = useTourStore((s) => s.active !== null);
+  const status = useTataStatus(enabled && voice.mode === "on");
+  const [chatOpen, setChatOpen] = React.useState(false);
   const wrapRef = React.useRef<HTMLDivElement>(null);
   const [clock, setClock] = React.useState(() => Date.now());
   const [lastActive, setLastActive] = React.useState(() => Date.now());
@@ -166,6 +179,13 @@ export function TataCompanion({ scene, size = 112, layout = "row", className, "d
   if (active) mood = active.mood;
   const text = muted ? null : (active?.text ?? (dozing ? null : baseText));
 
+  // fala nova → voz (fora do tour e com a conversa fechada, para não falar por cima)
+  const say = voice.say;
+  React.useEffect(() => {
+    if (!text || tourActive || chatOpen) return;
+    say(text);
+  }, [text, tourActive, chatOpen, say]);
+
   const poke = () => {
     setLastActive(Date.now());
     const now = Date.now();
@@ -190,27 +210,68 @@ export function TataCompanion({ scene, size = 112, layout = "row", className, "d
       >
         <TataSvg mood={mood} size={size} look={mood === "focus" || mood === "sleep" ? { x: 0, y: 0 } : look} />
       </button>
-      <div className={cn("flex min-w-0 items-start gap-1", layout === "column" ? "flex-col items-center" : "flex-1")}>
+      <div className={cn("flex min-w-0 flex-col gap-1.5", layout === "column" ? "items-center" : "flex-1 items-start")}>
         <p
           aria-live="polite"
           className={cn(
             "tata-bubble m-0 min-w-0 max-w-[320px] rounded-lg border border-divider bg-surface px-3 py-2 text-left text-[13px] leading-[1.35] text-primary shadow-sm transition-opacity duration-base",
-            layout === "column" ? "tata-bubble--up text-center" : "tata-bubble--left flex-1",
+            layout === "column" ? "tata-bubble--up text-center" : "tata-bubble--left",
             text ? "opacity-100" : "pointer-events-none opacity-0",
           )}
         >
           {text ?? " "}
         </p>
-        <button
-          type="button"
-          onClick={() => setTataMuted(!muted)}
-          className="rounded-md p-1 text-neutral-500 hover:text-primary focus-visible:ring-2 focus-visible:ring-accent"
-          aria-label={muted ? "Mostrar as falas do Tatá" : "Ocultar as falas do Tatá"}
-          title={muted ? "Mostrar as falas do Tatá" : "Ocultar as falas do Tatá"}
-        >
-          {muted ? <ChatCircleSlash size={16} aria-hidden /> : <ChatCircleDots size={16} aria-hidden />}
-        </button>
+        <div className="flex items-center gap-0.5">
+          {chat ? (
+            <button
+              type="button"
+              onClick={() => setChatOpen(true)}
+              data-tour="tata-conversar"
+              className="mr-1 inline-flex min-h-[32px] items-center gap-1.5 rounded-full border border-divider bg-surface px-3 text-[13px] font-medium text-accent transition-colors duration-fast hover:bg-[color-mix(in_srgb,var(--color-action-primary)_10%,transparent)] focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <ChatCircleDots size={16} aria-hidden />
+              Conversar
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => setTataMuted(!muted)}
+            className="rounded-md p-1.5 text-neutral-500 hover:text-primary focus-visible:ring-2 focus-visible:ring-accent"
+            aria-label={muted ? "Mostrar as falas do Tatá" : "Ocultar as falas do Tatá"}
+            aria-pressed={!muted}
+            title={muted ? "Mostrar as falas do Tatá" : "Ocultar as falas do Tatá"}
+          >
+            {muted ? <EyeSlash size={16} aria-hidden /> : <Eye size={16} aria-hidden />}
+          </button>
+          <button
+            type="button"
+            onClick={() => voice.setMode(voice.mode === "on" ? "off" : "on")}
+            disabled={muted}
+            className={cn(
+              "rounded-md p-1.5 hover:text-primary focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-45",
+              voice.mode === "on" ? "text-accent" : "text-neutral-500",
+              voice.speaking && "tata-voice--speaking",
+            )}
+            aria-label={voice.mode === "on" ? "Desligar a voz do Tatá" : "Ligar a voz do Tatá"}
+            aria-pressed={voice.mode === "on"}
+            title={voiceTitle(voice.mode, muted, status.data?.voice_natural)}
+          >
+            {voice.mode === "on" ? <SpeakerHigh size={16} aria-hidden /> : <SpeakerSlash size={16} aria-hidden />}
+          </button>
+        </div>
       </div>
+      {chat && chatOpen ? (
+        <React.Suspense fallback={null}>
+          <TataChat open={chatOpen} onOpenChange={setChatOpen} />
+        </React.Suspense>
+      ) : null}
     </div>
   );
+}
+
+function voiceTitle(mode: "on" | "off", muted: boolean, natural: boolean | undefined): string {
+  if (muted) return "Mostre as falas para ligar a voz";
+  if (mode !== "on") return "Ligar a voz do Tatá";
+  if (natural === undefined) return "Voz do Tatá ligada";
+  return natural ? "Voz do Tatá ligada · voz natural" : "Voz do Tatá ligada · voz do aparelho";
 }

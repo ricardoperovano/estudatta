@@ -46,6 +46,7 @@ export const KNOWN_LIMIT_KEYS = [
   "max_materials",
   "ai_daily_actions",
   "ai_monthly_actions",
+  "tata_voice_monthly",
   "auto_planning",
   "reports",
   "recovery_distribution",

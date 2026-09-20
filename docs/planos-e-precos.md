@@ -10,14 +10,17 @@ Proposta aplicada em 18/09/2026, a pedido do responsável: IA para organizar o e
 | Anual | — | **R$ 94,80** (R$ 7,90/mês) | **R$ 190,80** (R$ 15,90/mês) |
 | Objetivos ativos | 1 | 3 | sem limite |
 | Cronômetro, registro, saldo e recuperação | sim | sim | sim |
-| IA para organizar conteúdo e plano | — | 60 ações/mês, até 10/dia | 200 ações/mês, até 30/dia |
+| IA (organizar conteúdo, plano e conversar com o Tatá) | 10 ações/mês, até 3/dia | 60 ações/mês, até 10/dia | 200 ações/mês, até 30/dia |
+| Tatá com voz natural (ElevenLabs) | 20 falas/mês | 300 falas/mês | 1.000 falas/mês |
 | Lembretes | só o do horário planejado; resumo semanal no app | completos, com resumo por e-mail | completos |
 | Relatórios | semana | semana, mês e trimestre | semana, mês e trimestre |
 | Distribuição automática das tarefas | — | sim | sim |
 | Materiais | 20 itens, 100 MB | 100 itens, 1 GB | sem limite de itens, 5 GB |
 | Histórico e exportação | sempre | sempre | sempre |
 
-Uma "ação de IA" é um pedido explícito: sugerir a estrutura de matérias a partir de um texto ou PDF, sugerir a distribuição do plano, ou redigir o resumo da semana. Nada roda sozinho em segundo plano.
+Uma "ação de IA" é um pedido explícito: uma mensagem na conversa com o Tatá, sugerir a estrutura de matérias a partir de um texto ou PDF, sugerir a distribuição do plano, ou redigir o resumo da semana. Nada roda sozinho em segundo plano.
+
+**Voz do Tatá (20/09/2026):** cada fala com voz natural conta uma vez por texto (frases repetidas vêm do cache no armazenamento, sem custo). Esgotada a cota, o app usa o sintetizador do aparelho, sem custo. Preços dos planos mantidos.
 
 ## Racional
 
@@ -44,6 +47,7 @@ O consumo real fica em `ai_usage` (tokens de entrada e saída por ação) e apar
 | Objetivos ativos | `max_active_activities` | 402 `activity_limit` ao criar ou reativar |
 | Materiais e espaço | `max_materials`, `materials_storage_mb` | 402 `materials_limit` / `storage_quota` no envio |
 | IA | `ai_monthly_actions`, `ai_daily_actions` | 402 `ai_plan`; 429 `ai_monthly_quota` / `ai_quota` |
+| Voz do Tatá | `tata_voice_monthly` | 402 `voice_plan`; 429 `voice_quota`; 503 `voice_disabled` (o app cai para a voz do aparelho) |
 | Relatório do mês e do trimestre | `reports` = `full` | 402 `plan_reports` (a semana continua liberada) |
 | Distribuição automática das tarefas | `auto_planning` | 402 `plan_auto_planning` |
 | Lembretes completos | `reminders` = `full` | o agendador só cria o lembrete do horário planejado; o resumo semanal não vai por e-mail |

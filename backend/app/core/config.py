@@ -108,6 +108,12 @@ class Settings(BaseSettings):
     AI_DAILY_ACTIONS_FREE: int = 0
     AI_DAILY_ACTIONS_PRO: int = 20
     AI_GLOBAL_DAILY_BUDGET_ACTIONS: int = 2000
+    # Voz do Tatá (ElevenLabs). Sem chave, o app usa o sintetizador do próprio aparelho.
+    ELEVENLABS_API_KEY: str | None = None
+    ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"  # troque pela voz escolhida no painel
+    ELEVENLABS_MODEL: str = "eleven_multilingual_v2"
+    TATA_VOICE_MAX_CHARS: int = 600
+    TATA_VOICE_GLOBAL_MONTHLY: int = 20000  # teto do serviço, em falas por mês
 
     # --- Notificações --------------------------------------------------------
     NOTIFICATIONS_MAX_PROACTIVE_PER_DAY: int = 3  # padrão por usuário (editável até o teto)
@@ -156,6 +162,10 @@ class Settings(BaseSettings):
         if self.BILLING_PROVIDER == "mercadopago":
             return bool(self.MERCADOPAGO_ACCESS_TOKEN)
         return False
+
+    @property
+    def voice_available(self) -> bool:
+        return bool(self.ELEVENLABS_API_KEY)
 
     @property
     def ai_available(self) -> bool:
