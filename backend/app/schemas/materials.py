@@ -40,6 +40,8 @@ class MaterialUpdate(BaseModel):
     page_from: int | None = Field(default=None, ge=0, le=100000)
     page_to: int | None = Field(default=None, ge=0, le=100000)
     last_position: str | None = Field(default=None, max_length=120)
+    current_page: int | None = Field(default=None, ge=0, le=100000)  # marcador de página
+    clear_current_page: bool = False
     activity_id: UUID | None = None
     clear_activity: bool = False
 
@@ -76,6 +78,7 @@ class MaterialOut(ORMModel):
     page_from: int | None
     page_to: int | None
     last_position: str | None
+    current_page: int | None = None
     offline_available: bool
     created_at: datetime
     updated_at: datetime | None = None

@@ -37,6 +37,7 @@ class SessionFinish(SessionTransition):
     note: str | None = Field(default=None, max_length=2000)
     page_from: int | None = Field(default=None, ge=0, le=100000)
     page_to: int | None = Field(default=None, ge=0, le=100000)
+    pages_read: int | None = Field(default=None, ge=0, le=5000)  # "li N páginas": avança o marcador
     study_type: StudyTypeLit | None = None
     questions_total: int | None = Field(default=None, ge=0, le=5000)
     questions_correct: int | None = Field(default=None, ge=0, le=5000)
@@ -57,6 +58,7 @@ class SessionManual(BaseModel):
     note: str | None = Field(default=None, max_length=2000)
     page_from: int | None = Field(default=None, ge=0, le=100000)
     page_to: int | None = Field(default=None, ge=0, le=100000)
+    pages_read: int | None = Field(default=None, ge=0, le=5000)  # "li N páginas": avança o marcador
     study_type: StudyTypeLit | None = None
     questions_total: int | None = Field(default=None, ge=0, le=5000)
     questions_correct: int | None = Field(default=None, ge=0, le=5000)
@@ -73,6 +75,7 @@ class SessionUpdate(BaseModel):
     note: str | None = Field(default=None, max_length=2000)
     page_from: int | None = None
     page_to: int | None = None
+    pages_read: int | None = Field(default=None, ge=0, le=5000)  # "li N páginas": avança o marcador
     study_type: StudyTypeLit | None = None
     questions_total: int | None = Field(default=None, ge=0, le=5000)
     questions_correct: int | None = Field(default=None, ge=0, le=5000)

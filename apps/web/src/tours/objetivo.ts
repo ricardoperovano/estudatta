@@ -16,6 +16,12 @@ export const objetivoTour: TourDef = {
       body: "Tempo registrado na semana contra a meta, sessões no mês e o que há para recuperar de dias anteriores.",
     },
     {
+      target: "objetivo-livro-atual",
+      title: "O livro que você está lendo",
+      body: "Diga qual livro é e em que página está. Ao registrar uma sessão, informe quantas páginas leu e o marcador avança sozinho.",
+      optional: true,
+    },
+    {
       target: "seu-estudo",
       title: "Seu estudo",
       body: "Sugere a próxima matéria e mostra quanto do conteúdo você já cobriu. Quando você registrar sessões com matéria, fica mais preciso.",

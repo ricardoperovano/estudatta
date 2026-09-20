@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
 from app.models.base import JSONType, Timestamps, UTCDateTime, UUIDPk
+from app.models.content import Material  # noqa: E402  (relação do material atual)
 
 
 class Activity(UUIDPk, Timestamps, Base):
@@ -51,7 +52,15 @@ class Activity(UUIDPk, Timestamps, Base):
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     weekly_questions_goal: Mapped[int | None] = mapped_column(Integer)
     weekly_pages_goal: Mapped[int | None] = mapped_column(Integer)
+    # material "atual" (o livro que está lendo, o curso, a apostila): a sessão herda e o marcador avança
+    current_material_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("materials.id", ondelete="SET NULL", use_alter=True)
+    )
     archived_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+
+    current_material_ref: Mapped[Material | None] = relationship(
+        foreign_keys=[current_material_id], lazy="selectin"
+    )
 
     @property
     def language_name(self) -> str | None:

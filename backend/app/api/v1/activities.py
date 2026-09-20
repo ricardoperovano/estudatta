@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.core.audit import audit
 from app.core.db import get_db
 from app.core.deps import get_current_user
-from app.core.errors import NotFound
+from app.core.errors import NotFound, ValidationFailed
 from app.models.activity import GoalRule
 from app.models.user import User
 from app.schemas.activities import (
@@ -19,6 +19,7 @@ from app.schemas.activities import (
     ActivityOut,
     ActivityUpdate,
     BalanceOut,
+    CurrentMaterialOut,
     DayBalanceOut,
     ForgiveIn,
     ForgivePreviewOut,
@@ -57,10 +58,29 @@ def _current_rule(act) -> GoalRule | None:
     return next(r for r in act.goal_rules if r.effective_from == chosen.effective_from)
 
 
+def _current_material(act) -> CurrentMaterialOut | None:
+    m = getattr(act, "current_material_ref", None)
+    if m is None or m.archived_at is not None:
+        return None
+    pct = None
+    if m.pages_total and m.current_page is not None:
+        pct = max(0, min(100, round(100 * m.current_page / m.pages_total)))
+    return CurrentMaterialOut(
+        id=m.id,
+        title=m.title,
+        kind=m.kind,
+        current_page=m.current_page,
+        pages_total=m.pages_total,
+        last_position=m.last_position,
+        percent=pct,
+    )
+
+
 def to_out(act) -> ActivityOut:
     o = ActivityOut.model_validate(act)
     r = _current_rule(act)
     o.current_rule = GoalRuleOut.model_validate(r) if r else None
+    o.current_material = _current_material(act)
     return o
 
 
@@ -68,6 +88,7 @@ def to_detail(act) -> ActivityDetailOut:
     o = ActivityDetailOut.model_validate(act)
     r = _current_rule(act)
     o.current_rule = GoalRuleOut.model_validate(r) if r else None
+    o.current_material = _current_material(act)
     o.timezone_history = [
         TimezoneOut.model_validate(t)
         for t in sorted(act.timezone_history, key=lambda t: t.effective_from)
@@ -142,6 +163,21 @@ def update_activity(
     act = svc.get_activity(db, user, activity_id)
     data = payload.model_dump(exclude_unset=True)
     clear_end = data.pop("clear_end_date", False)
+    if data.pop("clear_current_material", False):
+        act.current_material_id = None
+    if "current_material_id" in data:
+        mid = data.pop("current_material_id")
+        if mid is not None:
+            from app.models.content import Material
+
+            m = db.get(Material, mid)
+            if m is None or m.user_id != user.id:
+                raise NotFound("Material não encontrado.", code="material_not_found")
+            if m.activity_id not in (None, act.id):
+                raise ValidationFailed(
+                    "Este material pertence a outro objetivo.", code="bad_material"
+                )
+            act.current_material_id = m.id
     if "category" in data or "language" in data:
         language = data.pop("language", None)
         category = data.pop("category", None) or ("idioma" if language else act.category)

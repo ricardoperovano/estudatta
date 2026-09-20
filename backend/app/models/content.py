@@ -90,6 +90,7 @@ class Material(UUIDPk, Timestamps, Base):
     page_from: Mapped[int | None] = mapped_column(Integer)
     page_to: Mapped[int | None] = mapped_column(Integer)
     last_position: Mapped[str | None] = mapped_column(String(120))  # "p. 46" ou "aula 3, 12:40"
+    current_page: Mapped[int | None] = mapped_column(Integer)  # marcador de página (livros/PDFs)
     offline_available: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     archived_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
 

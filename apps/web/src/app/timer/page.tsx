@@ -1,7 +1,18 @@
 import * as React from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Banner, Button, Dialog, DialogActions, DialogContent, Field, Input, Select, Spinner, Tag } from "@/components/ui";
+import {
+  Banner,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  Field,
+  Input,
+  Select,
+  Spinner,
+  Tag,
+} from "@/components/ui";
 import { useActiveSession, useActivities, useInvalidateAll, useToday, keys } from "@/api/queries";
 import { useUser } from "@/api/session";
 import { api, unwrap, errorMessage, isNetworkError, ApiError } from "@/api/client";
@@ -17,7 +28,19 @@ import { STUDY_TYPES, studyTypeLabel, type StudyType } from "@/api/study";
 import { cn } from "@/lib/utils";
 import { usePageTour } from "@/components/tour/use-tours";
 import { sessaoFocoTour, sessaoInicioTour } from "@/tours/sessao";
-import { StudyFields, studyFieldsPayload, validateStudyFields, type StudyFieldsValue } from "@/components/app/study-fields";
+import {
+  StudyFields,
+  studyFieldsPayload,
+  validateStudyFields,
+  type StudyFieldsValue,
+} from "@/components/app/study-fields";
+import {
+  NoteSuggestions,
+  ReadingPagesField,
+  defaultStudyType,
+  validatePagesRead,
+} from "@/components/app/session-progress";
+import type { Activity } from "@/api/types";
 
 /**
  * Cronômetro: número 72/96px tnum; controles Pausar / Encerrar; "Ajustar tempo ou trocar conteúdo".
@@ -42,7 +65,11 @@ export default function TimerPage() {
   const [finishOpen, setFinishOpen] = React.useState(false);
   const [reviewOpen, setReviewOpen] = React.useState<StudySession | null>(null);
   const [adjustOpen, setAdjustOpen] = React.useState(false);
-  const [conflict, setConflict] = React.useState<{ session_id: string; activity_id: string; device_id: string | null } | null>(null);
+  const [conflict, setConflict] = React.useState<{
+    session_id: string;
+    activity_id: string;
+    device_id: string | null;
+  } | null>(null);
   const [starting, setStarting] = React.useState(false);
   const objetivoParam = params.get("objetivo");
   const tourReady = hydrated && !activities.isPending;
@@ -53,7 +80,17 @@ export default function TimerPage() {
   const topicParam = params.get("topico");
   const tipoParam = params.get("tipo");
   const [activityId, setActivityId] = React.useState<string>(objetivoParam || "");
-  const [studyType, setStudyType] = React.useState<StudyType>(() => STUDY_TYPES.find((t) => t.value === tipoParam)?.value ?? "teoria");
+  const [studyType, setStudyType] = React.useState<StudyType>(
+    () => STUDY_TYPES.find((t) => t.value === tipoParam)?.value ?? "teoria",
+  );
+  // enquanto a pessoa não escolher o tipo, ele segue a categoria do objetivo (leitura → leitura, prática → prática…)
+  const typeTouched = React.useRef(!!STUDY_TYPES.find((t) => t.value === tipoParam));
+  const chosenActivityId = activityId || activities.data?.find((a) => a.status === "active")?.id || "";
+  const chosenCategory = activities.data?.find((a) => a.id === chosenActivityId)?.category;
+  React.useEffect(() => {
+    if (typeTouched.current || !chosenCategory) return;
+    setStudyType(defaultStudyType(chosenCategory));
+  }, [chosenCategory]);
 
   React.useEffect(() => {
     if (user) useTimerStore.getState().load(user.id);
@@ -91,7 +128,11 @@ export default function TimerPage() {
       kind: (serverActive.kind as "timer" | "pomodoro") || "timer",
       status: serverActive.status as "active" | "paused",
       started_at: serverActive.started_at || new Date().toISOString(),
-      intervals: (serverActive.intervals || []).map((i) => ({ kind: i.kind as "focus" | "pause", started_at: i.started_at, ended_at: i.ended_at ?? null })),
+      intervals: (serverActive.intervals || []).map((i) => ({
+        kind: i.kind as "focus" | "pause",
+        started_at: i.started_at,
+        ended_at: i.ended_at ?? null,
+      })),
       version: serverActive.version,
       synced: true,
     });
@@ -102,8 +143,11 @@ export default function TimerPage() {
   }, [hydrated, user, timer, serverActive, fromOtherDevice, adopt]);
 
   const cards = today.data?.data.cards ?? [];
-  const defaultActivityId = activityId || activities.data?.find((a) => a.status === "active")?.id || cards[0]?.activity.id || "";
-  const card = timer ? cards.find((c) => c.activity.id === timer.activity_id) : cards.find((c) => c.activity.id === defaultActivityId);
+  const defaultActivityId =
+    activityId || activities.data?.find((a) => a.status === "active")?.id || cards[0]?.activity.id || "";
+  const card = timer
+    ? cards.find((c) => c.activity.id === timer.activity_id)
+    : cards.find((c) => c.activity.id === defaultActivityId);
   const elapsed = elapsedSeconds(timer, now);
   const goalTarget = card?.summary ? card.summary.next_step_seconds + card.summary.logged : 0;
   const remainingToday = card?.summary ? Math.max(0, card.summary.next_step_seconds - elapsed) : 0;
@@ -138,7 +182,19 @@ export default function TimerPage() {
       synced: false,
     };
     try {
-      const s = unwrap(await api.POST("/api/v1/sessions/start", { body: { activity_id: id, kind: "timer", client_uuid, started_at: startedAt, subject_id: subjectParam, topic_id: topicParam, study_type: studyType } }));
+      const s = unwrap(
+        await api.POST("/api/v1/sessions/start", {
+          body: {
+            activity_id: id,
+            kind: "timer",
+            client_uuid,
+            started_at: startedAt,
+            subject_id: subjectParam,
+            topic_id: topicParam,
+            study_type: studyType,
+          },
+        }),
+      );
       local.session_id = s.id;
       local.version = s.version;
       local.synced = true;
@@ -150,7 +206,20 @@ export default function TimerPage() {
         qc.invalidateQueries({ queryKey: keys.activeSession });
       } else if (isNetworkError(e)) {
         await setTimer(local);
-        await enqueueOp(user.id, "session.start", { activity_id: id, client_uuid, started_at: startedAt, kind: "timer", subject_id: subjectParam, topic_id: topicParam, study_type: studyType }, client_uuid);
+        await enqueueOp(
+          user.id,
+          "session.start",
+          {
+            activity_id: id,
+            client_uuid,
+            started_at: startedAt,
+            kind: "timer",
+            subject_id: subjectParam,
+            topic_id: topicParam,
+            study_type: studyType,
+          },
+          client_uuid,
+        );
         toast.offline("Sessão iniciada neste aparelho", "Vamos sincronizar quando você voltar à internet.");
       } else setError(errorMessage(e));
     } finally {
@@ -175,49 +244,93 @@ export default function TimerPage() {
     const at = new Date().toISOString();
     const intervals = timer.intervals.map((i) => (i.ended_at ? i : { ...i, ended_at: at }));
     intervals.push({ kind: kind === "pause" ? "pause" : "focus", started_at: at, ended_at: null });
-    const next: LocalTimer = { ...timer, status: kind === "pause" ? "paused" : "active", intervals, version: timer.version + 1 };
+    const next: LocalTimer = {
+      ...timer,
+      status: kind === "pause" ? "paused" : "active",
+      intervals,
+      version: timer.version + 1,
+    };
     await setTimer(next);
     try {
       if (timer.session_id) {
-        const s = unwrap(await api.POST(`/api/v1/sessions/{session_id}/${kind}` as "/api/v1/sessions/{session_id}/pause", { params: { path: { session_id: timer.session_id } }, body: { at } }));
+        const s = unwrap(
+          await api.POST(`/api/v1/sessions/{session_id}/${kind}` as "/api/v1/sessions/{session_id}/pause", {
+            params: { path: { session_id: timer.session_id } },
+            body: { at },
+          }),
+        );
         await setTimer({ ...next, version: s.version, synced: true });
       } else {
         await enqueueOp(user.id, `session.${kind}`, { client_uuid: timer.client_uuid, at });
       }
     } catch (e) {
-      if (isNetworkError(e)) await enqueueOp(user.id, `session.${kind}`, { session_id: timer.session_id, client_uuid: timer.client_uuid, at });
+      if (isNetworkError(e))
+        await enqueueOp(user.id, `session.${kind}`, {
+          session_id: timer.session_id,
+          client_uuid: timer.client_uuid,
+          at,
+        });
       else setError(errorMessage(e));
     } finally {
       setBusy(false);
     }
   };
 
-  const finish = async (note?: string, study?: StudyFieldsValue) => {
+  const finish = async (note?: string, study?: StudyFieldsValue, pagesRead?: number | null) => {
     if (!timer || !user) return;
     setBusy(true);
     const at = new Date().toISOString();
     const sp = study ? studyFieldsPayload(study) : null;
-    const extra = sp ? { study_type: sp.study_type, questions_total: sp.questions_total, questions_correct: sp.questions_correct } : {};
+    const extra = {
+      ...(sp
+        ? {
+            study_type: sp.study_type,
+            questions_total: sp.questions_total,
+            questions_correct: sp.questions_correct,
+          }
+        : {}),
+      ...(pagesRead != null ? { pages_read: pagesRead } : {}),
+    };
     try {
       if (timer.session_id) {
-        const s = unwrap(await api.POST("/api/v1/sessions/{session_id}/finish", { params: { path: { session_id: timer.session_id } }, body: { at, note: note || null, ...extra } }));
+        const s = unwrap(
+          await api.POST("/api/v1/sessions/{session_id}/finish", {
+            params: { path: { session_id: timer.session_id } },
+            body: { at, note: note || null, ...extra },
+          }),
+        );
         await clearTimer(user.id);
         invalidate();
         if (s.needs_review) {
           setReviewOpen(s);
           return;
         }
-        toast.success(`${fmtMinutes(s.duration_seconds || 0)} registrados`, s.status === "discarded" ? "Sessão sem tempo válido foi descartada." : "A pendência foi ajustada.");
+        toast.success(
+          `${fmtMinutes(s.duration_seconds || 0)} registrados`,
+          s.status === "discarded" ? "Sessão sem tempo válido foi descartada." : "A pendência foi ajustada.",
+        );
         nav("/app");
       } else {
-        await enqueueOp(user.id, "session.finish", { client_uuid: timer.client_uuid, at, note: note || null, ...extra, intervals: timer.intervals.map((i) => ({ ...i, ended_at: i.ended_at ?? at })) });
+        await enqueueOp(user.id, "session.finish", {
+          client_uuid: timer.client_uuid,
+          at,
+          note: note || null,
+          ...extra,
+          intervals: timer.intervals.map((i) => ({ ...i, ended_at: i.ended_at ?? at })),
+        });
         await clearTimer(user.id);
         toast.offline("Sessão encerrada neste aparelho", "Vamos sincronizar quando você voltar à internet.");
         nav("/app");
       }
     } catch (e) {
       if (isNetworkError(e)) {
-        await enqueueOp(user.id, "session.finish", { session_id: timer.session_id, client_uuid: timer.client_uuid, at, note: note || null, ...extra });
+        await enqueueOp(user.id, "session.finish", {
+          session_id: timer.session_id,
+          client_uuid: timer.client_uuid,
+          at,
+          note: note || null,
+          ...extra,
+        });
         await clearTimer(user.id);
         toast.offline("Sessão encerrada neste aparelho", "Vamos sincronizar quando você voltar à internet.");
         nav("/app");
@@ -232,7 +345,10 @@ export default function TimerPage() {
     if (!timer || !user) return;
     setBusy(true);
     try {
-      if (timer.session_id) await api.POST("/api/v1/sessions/{session_id}/discard", { params: { path: { session_id: timer.session_id } } });
+      if (timer.session_id)
+        await api.POST("/api/v1/sessions/{session_id}/discard", {
+          params: { path: { session_id: timer.session_id } },
+        });
       else await enqueueOp(user.id, "session.discard", { client_uuid: timer.client_uuid });
     } catch {
       /* se falhar offline, o servidor manterá a sessão para revisão */
@@ -300,7 +416,11 @@ export default function TimerPage() {
                 ))}
               </Select>
             </Field>
-            {card?.summary ? <p className="text-[14px] text-neutral-400">{cards.find((c) => c.activity.id === chosen)?.next_step}</p> : null}
+            {card?.summary ? (
+              <p className="text-[14px] text-neutral-400">
+                {cards.find((c) => c.activity.id === chosen)?.next_step}
+              </p>
+            ) : null}
             <fieldset className="flex flex-col gap-2" data-tour="sessao-tipo">
               <legend className="mb-2 text-[13px] text-neutral-300">Tipo de estudo</legend>
               <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Tipo de estudo">
@@ -310,10 +430,15 @@ export default function TimerPage() {
                     type="button"
                     role="radio"
                     aria-checked={studyType === t.value}
-                    onClick={() => setStudyType(t.value)}
+                    onClick={() => {
+                      typeTouched.current = true;
+                      setStudyType(t.value);
+                    }}
                     className={cn(
                       "min-h-[36px] rounded-full border px-3 text-[13px] transition-colors duration-base",
-                      studyType === t.value ? "border-accent bg-accent-900 text-accent" : "border-divider text-neutral-300 hover:text-primary",
+                      studyType === t.value
+                        ? "border-accent bg-accent-900 text-accent"
+                        : "border-divider text-neutral-300 hover:text-primary",
                     )}
                   >
                     {t.label}
@@ -334,9 +459,18 @@ export default function TimerPage() {
   }
 
   // --- estado: em sessão ------------------------------------------------------
-  const label = [timer.activity_title, timer.label, timer.study_type ? studyTypeLabel(timer.study_type) : null].filter(Boolean).join(" · ");
+  const label = [
+    timer.activity_title,
+    timer.label,
+    timer.study_type ? studyTypeLabel(timer.study_type) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   const lastInterval = timer.intervals[timer.intervals.length - 1];
-  const pausedFor = timer.status === "paused" && lastInterval?.kind === "pause" ? Math.max(0, Math.floor((now - Date.parse(lastInterval.started_at)) / 1000)) : 0;
+  const pausedFor =
+    timer.status === "paused" && lastInterval?.kind === "pause"
+      ? Math.max(0, Math.floor((now - Date.parse(lastInterval.started_at)) / 1000))
+      : 0;
   const goalReached = !!card?.summary && card.summary.next_step_seconds > 0 && remainingToday === 0;
   return (
     <div className="glow-center -mx-gutter -mt-[max(56px,calc(24px+env(safe-area-inset-top,0px)))] flex min-h-dvh flex-col items-center gap-4 px-4 pb-6 pt-[max(56px,calc(24px+env(safe-area-inset-top,0px)))] text-center max-xs:-mx-3 desktop:-mx-12 desktop:-mt-10 desktop:min-h-dvh desktop:pt-10">
@@ -346,8 +480,16 @@ export default function TimerPage() {
         </Button>
         <Tag variant="neutral">{label}</Tag>
       </div>
-      {error ? <Banner kind="error" className="w-full max-w-[560px] text-left">{error}</Banner> : null}
-      {!timer.synced ? <Banner kind="offline" className="w-full max-w-[560px] text-left">Sessão salva neste aparelho. Vamos sincronizar quando você voltar à internet.</Banner> : null}
+      {error ? (
+        <Banner kind="error" className="w-full max-w-[560px] text-left">
+          {error}
+        </Banner>
+      ) : null}
+      {!timer.synced ? (
+        <Banner kind="offline" className="w-full max-w-[560px] text-left">
+          Sessão salva neste aparelho. Vamos sincronizar quando você voltar à internet.
+        </Banner>
+      ) : null}
       <TataCompanion
         data-tour="sessao-tata"
         className="mt-auto"
@@ -358,30 +500,63 @@ export default function TimerPage() {
       />
       <div className="flex flex-col items-center gap-[10px]" data-tour="sessao-relogio">
         <span className="kicker text-neutral-400">{timer.status === "active" ? "Em sessão" : "Pausada"}</span>
-        <span className="tnum text-[72px] font-semibold leading-none tracking-[-0.02em] desktop:text-[96px]" aria-live="off">
+        <span
+          className="tnum text-[72px] font-semibold leading-none tracking-[-0.02em] desktop:text-[96px]"
+          aria-live="off"
+        >
           {fmtClock(elapsed)}
         </span>
         {card?.summary && card.summary.next_step_seconds > 0 ? (
           <span className="tnum text-[14px] text-neutral-300">
-            {remainingToday > 0 ? `Faltam ${fmtRemaining(remainingToday)} para os ${fmtMinutes(card.summary.next_step_seconds)} de hoje` : "Meta de hoje alcançada nesta sessão"}
+            {remainingToday > 0
+              ? `Faltam ${fmtRemaining(remainingToday)} para os ${fmtMinutes(card.summary.next_step_seconds)} de hoje`
+              : "Meta de hoje alcançada nesta sessão"}
           </span>
         ) : null}
-        <div className="mt-1.5 h-1 w-[240px] overflow-hidden rounded-[2px] bg-neutral-800" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="Progresso da meta de hoje">
-          <div className="h-full bg-accent transition-[width] duration-slow" style={{ width: `${progress * 100}%` }} />
+        <div
+          className="mt-1.5 h-1 w-[240px] overflow-hidden rounded-[2px] bg-neutral-800"
+          role="progressbar"
+          aria-valuenow={Math.round(progress * 100)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Progresso da meta de hoje"
+        >
+          <div
+            className="h-full bg-accent transition-[width] duration-slow"
+            style={{ width: `${progress * 100}%` }}
+          />
         </div>
       </div>
       <div className="mt-auto flex w-full max-w-[560px] flex-col gap-3" data-tour="sessao-controles">
         <div className="flex gap-[10px]">
           {timer.status === "active" ? (
-            <Button variant="secondary" size="xl" className="flex-1" onClick={() => transition("pause")} loading={busy}>
+            <Button
+              variant="secondary"
+              size="xl"
+              className="flex-1"
+              onClick={() => transition("pause")}
+              loading={busy}
+            >
               Pausar
             </Button>
           ) : (
-            <Button variant="secondary" size="xl" className="flex-1" onClick={() => transition("resume")} loading={busy}>
+            <Button
+              variant="secondary"
+              size="xl"
+              className="flex-1"
+              onClick={() => transition("resume")}
+              loading={busy}
+            >
               Retomar
             </Button>
           )}
-          <Button variant="primary" size="xl" className="flex-1" onClick={() => setFinishOpen(true)} disabled={busy}>
+          <Button
+            variant="primary"
+            size="xl"
+            className="flex-1"
+            onClick={() => setFinishOpen(true)}
+            disabled={busy}
+          >
             Encerrar
           </Button>
         </div>
@@ -391,28 +566,60 @@ export default function TimerPage() {
       </div>
 
       <Dialog open={finishOpen} onOpenChange={setFinishOpen}>
-        <DialogContent mode="sheet" title="Encerrar sessão" description={`${fmtMinutes(elapsed)} de foco serão registrados. Pausas não contam.`}>
-          <FinishForm onConfirm={finish} onDiscard={discard} busy={busy} initialType={(timer.study_type as StudyFieldsValue["study_type"]) || "teoria"} />
+        <DialogContent
+          mode="sheet"
+          title="Encerrar sessão"
+          description={`${fmtMinutes(elapsed)} de foco serão registrados. Pausas não contam.`}
+        >
+          <FinishForm
+            onConfirm={finish}
+            onDiscard={discard}
+            busy={busy}
+            initialType={(timer.study_type as StudyFieldsValue["study_type"]) || "teoria"}
+            activity={activities.data?.find((a) => a.id === timer.activity_id) ?? null}
+          />
         </DialogContent>
       </Dialog>
 
       <Dialog open={adjustOpen} onOpenChange={setAdjustOpen}>
-        <DialogContent mode="sheet" title="Ajustar sessão" description="Você pode encerrar agora e corrigir a duração, ou descartar.">
+        <DialogContent
+          mode="sheet"
+          title="Ajustar sessão"
+          description="Você pode encerrar agora e corrigir a duração, ou descartar."
+        >
           <div className="flex flex-col gap-2 text-left text-[14px] text-neutral-300">
-            <p>Trocar o conteúdo: ao encerrar, informe o que estudou na observação. A edição completa (matéria, tópico, páginas) fica no histórico de sessões.</p>
+            <p>
+              Trocar o conteúdo: ao encerrar, informe o que estudou na observação. A edição completa (matéria,
+              tópico, páginas) fica no histórico de sessões.
+            </p>
           </div>
           <DialogActions>
             <Button variant="ghost" onClick={discard} disabled={busy}>
               Descartar sessão
             </Button>
-            <Button variant="primary" onClick={() => { setAdjustOpen(false); setFinishOpen(true); }}>
+            <Button
+              variant="primary"
+              onClick={() => {
+                setAdjustOpen(false);
+                setFinishOpen(true);
+              }}
+            >
               Encerrar e ajustar
             </Button>
           </DialogActions>
         </DialogContent>
       </Dialog>
 
-      {reviewOpen ? <ReviewDialog session={reviewOpen} onDone={() => { setReviewOpen(null); invalidate(); nav("/app"); }} /> : null}
+      {reviewOpen ? (
+        <ReviewDialog
+          session={reviewOpen}
+          onDone={() => {
+            setReviewOpen(null);
+            invalidate();
+            nav("/app");
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -425,32 +632,58 @@ function deviceOf() {
   }
 }
 
+/** Encerrar: tipo (+ questões), páginas lidas em leitura (o marcador do livro avança) e observação com sugestões. */
 function FinishForm({
   onConfirm,
   onDiscard,
   busy,
   initialType,
+  activity,
 }: {
-  onConfirm: (note?: string, study?: StudyFieldsValue) => void;
+  onConfirm: (note?: string, study?: StudyFieldsValue, pagesRead?: number | null) => void;
   onDiscard: () => void;
   busy: boolean;
   initialType: StudyFieldsValue["study_type"];
+  activity: Activity | null;
 }) {
+  const reading = activity?.category === "leitura";
   const [note, setNote] = React.useState("");
-  const [study, setStudy] = React.useState<StudyFieldsValue>({ study_type: initialType, questions_total: null, questions_correct: null });
+  const [pagesRead, setPagesRead] = React.useState<number | null>(null);
+  const [study, setStudy] = React.useState<StudyFieldsValue>({
+    study_type: initialType,
+    questions_total: null,
+    questions_correct: null,
+  });
   const [error, setError] = React.useState<string | null>(null);
   const submit = () => {
-    const err = validateStudyFields(study);
+    const err = validateStudyFields(study) ?? (reading ? validatePagesRead(pagesRead) : null);
     setError(err);
-    if (!err) onConfirm(note, study);
+    if (!err) onConfirm(note, study, reading ? pagesRead : null);
   };
   return (
     <div className="flex flex-col gap-3 text-left">
+      {reading && activity ? (
+        <ReadingPagesField
+          activityId={activity.id}
+          material={activity.current_material}
+          value={pagesRead}
+          onChange={setPagesRead}
+          idPrefix="t-read"
+          autoFocus
+        />
+      ) : null}
       <StudyFields compact idPrefix="t-study" value={study} onChange={setStudy} />
       {error ? <Banner kind="error">{error}</Banner> : null}
       <Field label="O que você estudou (opcional)" htmlFor="f-note">
-        <Input id="f-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Vocabulário · lista 12" maxLength={2000} />
+        <Input
+          id="f-note"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder={reading ? "Capítulo 3 · até a p. 58" : "Vocabulário · lista 12"}
+          maxLength={2000}
+        />
       </Field>
+      <NoteSuggestions category={activity?.category} note={note} onPick={setNote} />
       <DialogActions>
         <Button variant="ghost" onClick={onDiscard} disabled={busy}>
           Descartar
@@ -465,14 +698,26 @@ function FinishForm({
 
 /** Sessão longa esquecida: pede revisão da duração antes de contar no saldo. Nada é apagado. */
 function ReviewDialog({ session, onDone }: { session: StudySession; onDone: () => void }) {
-  const [minutes, setMinutes] = React.useState(Math.min(240, Math.round((session.duration_seconds || 0) / 60)));
+  const [minutes, setMinutes] = React.useState(
+    Math.min(240, Math.round((session.duration_seconds || 0) / 60)),
+  );
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const confirm = async () => {
     setBusy(true);
     setError(null);
     try {
-      unwrap(await api.PATCH("/api/v1/sessions/{session_id}", { params: { path: { session_id: session.id } }, body: { duration_seconds: minutes * 60, resolve_review: true, clear_questions: false, reason: "revisão de sessão longa" } }));
+      unwrap(
+        await api.PATCH("/api/v1/sessions/{session_id}", {
+          params: { path: { session_id: session.id } },
+          body: {
+            duration_seconds: minutes * 60,
+            resolve_review: true,
+            clear_questions: false,
+            reason: "revisão de sessão longa",
+          },
+        }),
+      );
       toast.success(`${minutes} min registrados`);
       onDone();
     } catch (e) {
@@ -483,10 +728,24 @@ function ReviewDialog({ session, onDone }: { session: StudySession; onDone: () =
   };
   return (
     <Dialog open onOpenChange={(o) => !o && onDone()}>
-      <DialogContent title="Confirme a duração" description={`O cronômetro ficou aberto por ${fmtMinutes(session.duration_seconds || 0)}. Quanto desse tempo foi estudo de verdade?`}>
+      <DialogContent
+        title="Confirme a duração"
+        description={`O cronômetro ficou aberto por ${fmtMinutes(session.duration_seconds || 0)}. Quanto desse tempo foi estudo de verdade?`}
+      >
         {error ? <Banner kind="error">{error}</Banner> : null}
-        <Field label="Minutos de estudo" htmlFor="rv-min" hint="A sessão só entra no saldo depois desta confirmação. Nada foi apagado.">
-          <Input id="rv-min" type="number" min={1} max={960} value={minutes} onChange={(e) => setMinutes(Number(e.target.value) || 0)} />
+        <Field
+          label="Minutos de estudo"
+          htmlFor="rv-min"
+          hint="A sessão só entra no saldo depois desta confirmação. Nada foi apagado."
+        >
+          <Input
+            id="rv-min"
+            type="number"
+            min={1}
+            max={960}
+            value={minutes}
+            onChange={(e) => setMinutes(Number(e.target.value) || 0)}
+          />
         </Field>
         <DialogActions>
           <Button variant="ghost" onClick={onDone}>

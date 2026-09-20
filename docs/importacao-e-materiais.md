@@ -79,6 +79,20 @@ A proposta registra `stats.ocr` e `stats.pages_total`.
   2.048 MB. Estouro → 402 `materials_limit` / `storage_quota`.
 - Vínculo material ↔ tópico com intervalo de páginas (`POST /materials/{id}/topics`).
 
+### Marcador de página (livro atual)
+- `materials.current_page` é o marcador; `activities.current_material_id` aponta o material "em
+  andamento" do objetivo (`PATCH /activities/{id}` com `current_material_id` ou
+  `clear_current_material`; `ActivityOut.current_material` traz título, página, total e `percent`).
+- Ao registrar/encerrar/editar uma sessão, `pages_read` ("li 8 páginas") gera `page_from/page_to`
+  a partir do marcador e o move (X → X+8); um `page_to` explícito também move. Sessão sem
+  `material_id` herda o material atual do objetivo. O marcador nunca passa de `pages_total`;
+  `last_position` vira "p. N". Só sessões `finished` sem `needs_review` mexem no marcador.
+- `PATCH /materials/{id}`: `current_page` (0..pages_total) ou `clear_current_page`.
+- No app: cartão "Lendo agora" no objetivo de leitura (aba Materiais nas outras categorias),
+  campo "Quantas páginas você leu?" ao registrar tempo e ao encerrar o cronômetro; nas demais
+  categorias, chips de sugestão para o conteúdo e tipo de estudo padrão pela categoria
+  (`session-progress.tsx`).
+
 ## Segurança
 - Tipo do arquivo verificado pelo conteúdo (`%PDF-`), não pela extensão nem pelo
   `Content-Type` declarado.

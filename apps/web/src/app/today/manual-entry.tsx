@@ -8,10 +8,38 @@ import { useUser } from "@/api/session";
 import { toast } from "@/components/ui/toast";
 import { uuid } from "@/lib/utils";
 import type { TodayCard } from "@/api/types";
-import { EMPTY_STUDY_FIELDS, StudyFields, studyFieldsPayload, validateStudyFields, type StudyFieldsValue } from "@/components/app/study-fields";
+import {
+  EMPTY_STUDY_FIELDS,
+  StudyFields,
+  studyFieldsPayload,
+  validateStudyFields,
+  type StudyFieldsValue,
+} from "@/components/app/study-fields";
+import {
+  NoteSuggestions,
+  ReadingPagesField,
+  defaultStudyType,
+  validatePagesRead,
+} from "@/components/app/session-progress";
 
-/** Folha "Registrar tempo": presets 15/30/45/60/Outro, tipo de estudo (+ questões/acertos), quando, conteúdo, páginas. */
-export function ManualEntrySheet({ card, cards, open, onOpenChange, defaultDate }: { card: TodayCard; cards: TodayCard[]; open: boolean; onOpenChange: (o: boolean) => void; defaultDate?: string }) {
+/**
+ * Folha "Registrar tempo": presets 15/30/45/60/Outro, tipo de estudo (+ questões/acertos), quando, conteúdo,
+ * páginas. Em leitura pergunta quantas páginas foram lidas (o marcador do livro avança); nas demais
+ * categorias sugere o que preencher.
+ */
+export function ManualEntrySheet({
+  card,
+  cards,
+  open,
+  onOpenChange,
+  defaultDate,
+}: {
+  card: TodayCard;
+  cards: TodayCard[];
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  defaultDate?: string;
+}) {
   const user = useUser();
   const manual = useManualSession();
   const [activityId, setActivityId] = React.useState(card.activity.id);
@@ -21,7 +49,13 @@ export function ManualEntrySheet({ card, cards, open, onOpenChange, defaultDate 
   const [time, setTime] = React.useState("");
   const [note, setNote] = React.useState("");
   const [pages, setPages] = React.useState("");
-  const [study, setStudy] = React.useState<StudyFieldsValue>(EMPTY_STUDY_FIELDS);
+  const [pagesRead, setPagesRead] = React.useState<number | null>(null);
+  const [study, setStudy] = React.useState<StudyFieldsValue>(() => ({
+    ...EMPTY_STUDY_FIELDS,
+    study_type: defaultStudyType(card.activity.category),
+  }));
+  const current = cards.find((c) => c.activity.id === activityId)?.activity ?? card.activity;
+  const reading = current.category === "leitura";
   const [error, setError] = React.useState<string | null>(null);
 
   const minutes = preset === "outro" ? Number(custom) || 0 : Number(preset);
@@ -33,13 +67,16 @@ export function ManualEntrySheet({ card, cards, open, onOpenChange, defaultDate 
       setError("Informe uma duração de pelo menos 1 minuto.");
       return;
     }
-    const studyError = validateStudyFields(study);
+    const studyError = validateStudyFields(study) ?? (reading ? validatePagesRead(pagesRead) : null);
     if (studyError) {
       setError(studyError);
       return;
     }
     const { study_type, questions_total, questions_correct } = studyFieldsPayload(study);
-    const [pf, pt] = pages.replace(/[^\d–-]/g, "").split(/[–-]/).map((x) => (x ? Number(x) : undefined));
+    const [pf, pt] = pages
+      .replace(/[^\d–-]/g, "")
+      .split(/[–-]/)
+      .map((x) => (x ? Number(x) : undefined));
     const body = {
       activity_id: activityId,
       duration_seconds: minutes * 60,
@@ -48,6 +85,7 @@ export function ManualEntrySheet({ card, cards, open, onOpenChange, defaultDate 
       note: note || null,
       page_from: pf ?? null,
       page_to: pt ?? null,
+      pages_read: reading ? pagesRead : null,
       // o schema gerado pode ainda não listar todos os tipos (ex.: "simulado"); o servidor valida
       study_type: study_type as ManualBody["study_type"],
       questions_total,
@@ -71,12 +109,24 @@ export function ManualEntrySheet({ card, cards, open, onOpenChange, defaultDate 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent mode="sheet" title="Registrar tempo" description="Você estudou e esqueceu de registrar? Adicione agora — a pendência se ajusta.">
+      <DialogContent
+        mode="sheet"
+        title="Registrar tempo"
+        description="Você estudou e esqueceu de registrar? Adicione agora — a pendência se ajusta."
+      >
         <form onSubmit={submit} className="flex flex-col gap-[14px]">
           {error ? <Banner kind="error">{error}</Banner> : null}
           {cards.length > 1 ? (
             <Field label="Objetivo" htmlFor="m-activity">
-              <Select id="m-activity" value={activityId} onChange={(e) => setActivityId(e.target.value)}>
+              <Select
+                id="m-activity"
+                value={activityId}
+                onChange={(e) => {
+                  setActivityId(e.target.value);
+                  const cat = cards.find((c) => c.activity.id === e.target.value)?.activity.category;
+                  setStudy((v) => ({ ...v, study_type: defaultStudyType(cat) }));
+                }}
+              >
                 {cards.map((c) => (
                   <option key={c.activity.id} value={c.activity.id}>
                     {c.activity.title}
@@ -101,24 +151,61 @@ export function ManualEntrySheet({ card, cards, open, onOpenChange, defaultDate 
           />
           {preset === "outro" ? (
             <Field label="Minutos" htmlFor="m-custom">
-              <Input id="m-custom" type="number" inputMode="numeric" min={1} max={960} value={custom} onChange={(e) => setCustom(e.target.value)} />
+              <Input
+                id="m-custom"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={960}
+                value={custom}
+                onChange={(e) => setCustom(e.target.value)}
+              />
             </Field>
           ) : null}
           <StudyFields idPrefix="m-study" value={study} onChange={setStudy} />
           <div className="grid grid-cols-2 gap-2">
             <Field label="Quando" htmlFor="m-date">
-              <Input id="m-date" type="date" max={todayIso()} value={date} onChange={(e) => setDate(e.target.value)} />
+              <Input
+                id="m-date"
+                type="date"
+                max={todayIso()}
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
             </Field>
             <Field label="Horário (opcional)" htmlFor="m-time">
               <Input id="m-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
             </Field>
           </div>
+          {reading ? (
+            <ReadingPagesField
+              activityId={current.id}
+              material={current.current_material}
+              value={pagesRead}
+              onChange={setPagesRead}
+              idPrefix="m-read"
+            />
+          ) : null}
           <Field label="Conteúdo (opcional)" htmlFor="m-note">
-            <Input id="m-note" placeholder="Vocabulário · lista 12" value={note} onChange={(e) => setNote(e.target.value)} maxLength={2000} />
+            <Input
+              id="m-note"
+              placeholder={reading ? "Capítulo 3 · até a p. 58" : "Vocabulário · lista 12"}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              maxLength={2000}
+            />
           </Field>
-          <Field label="Páginas (opcional)" htmlFor="m-pages">
-            <Input id="m-pages" placeholder="p. 40–46" value={pages} onChange={(e) => setPages(e.target.value)} />
-          </Field>
+          <NoteSuggestions category={current.category} note={note} onPick={setNote} />
+          {reading ? null : (
+            <Field label="Páginas (opcional)" htmlFor="m-pages">
+              <Input
+                id="m-pages"
+                placeholder="p. 40–46"
+                value={pages}
+                onChange={(e) => setPages(e.target.value)}
+              />
+            </Field>
+          )}
           <Button type="submit" size="xl" block loading={manual.isPending}>
             Salvar {minutes > 0 ? `${minutes} min` : ""}
           </Button>

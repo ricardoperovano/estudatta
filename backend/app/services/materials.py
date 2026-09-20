@@ -51,6 +51,8 @@ def update_material(
     page_from: int | None = None,
     page_to: int | None = None,
     last_position: str | None = None,
+    current_page: int | None = None,
+    clear_current_page: bool = False,
     activity_id: uuid.UUID | None = None,
     clear_activity: bool = False,
 ) -> Material:
@@ -66,6 +68,13 @@ def update_material(
         raise ValidationFailed("Página final antes da inicial.", code="bad_pages")
     if last_position is not None:
         m.last_position = last_position.strip()[:120] or None
+    if clear_current_page:
+        m.current_page = None
+    elif current_page is not None:
+        if current_page < 0 or (m.pages_total and current_page > m.pages_total):
+            raise ValidationFailed("Página fora do total do material.", code="bad_page")
+        m.current_page = current_page
+        m.last_position = f"p. {current_page}"
     if activity_id is not None:
         m.activity_id = activity_id
     if clear_activity:

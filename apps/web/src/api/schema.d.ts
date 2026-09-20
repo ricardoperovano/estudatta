@@ -2923,7 +2923,8 @@ export interface components {
             /** Weekly Questions Goal */
             weekly_questions_goal?: number | null;
             /** Weekly Pages Goal */
-            weekly_pages_goal?: number | null;
+            weekly_pages_goal: number | null;
+            current_material?: components["schemas"]["CurrentMaterialOut"] | null;
             /**
              * Created At
              * Format: date-time
@@ -2986,7 +2987,8 @@ export interface components {
             /** Weekly Questions Goal */
             weekly_questions_goal?: number | null;
             /** Weekly Pages Goal */
-            weekly_pages_goal?: number | null;
+            weekly_pages_goal: number | null;
+            current_material?: components["schemas"]["CurrentMaterialOut"] | null;
             /**
              * Created At
              * Format: date-time
@@ -3029,6 +3031,13 @@ export interface components {
             weekly_questions_goal?: number | null;
             /** Weekly Pages Goal */
             weekly_pages_goal?: number | null;
+            /** Current Material Id */
+            current_material_id?: string | null;
+            /**
+             * Clear Current Material
+             * @default false
+             */
+            clear_current_material: boolean;
             /** Tracking Mode */
             tracking_mode?: ("time" | "checklist" | "mixed") | null;
             /** Sort Order */
@@ -3837,6 +3846,26 @@ export interface components {
             /** Percent Done */
             percent_done: number;
         };
+        /** CurrentMaterialOut */
+        CurrentMaterialOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Kind */
+            kind: string;
+            /** Current Page */
+            current_page: number | null;
+            /** Pages Total */
+            pages_total: number | null;
+            /** Last Position */
+            last_position: string | null;
+            /** Percent */
+            percent: number | null;
+        };
         /** DayBalanceOut */
         DayBalanceOut: {
             /**
@@ -4246,6 +4275,8 @@ export interface components {
             page_to: number | null;
             /** Last Position */
             last_position: string | null;
+            /** Current Page */
+            current_page?: number | null;
             /** Offline Available */
             offline_available: boolean;
             /**
@@ -4304,6 +4335,8 @@ export interface components {
             page_to: number | null;
             /** Last Position */
             last_position: string | null;
+            /** Current Page */
+            current_page?: number | null;
             /** Offline Available */
             offline_available: boolean;
             /**
@@ -4379,6 +4412,13 @@ export interface components {
             page_to?: number | null;
             /** Last Position */
             last_position?: string | null;
+            /** Current Page */
+            current_page?: number | null;
+            /**
+             * Clear Current Page
+             * @default false
+             */
+            clear_current_page: boolean;
             /** Activity Id */
             activity_id?: string | null;
             /**
@@ -5875,6 +5915,8 @@ export interface components {
             page_from?: number | null;
             /** Page To */
             page_to?: number | null;
+            /** Pages Read */
+            pages_read?: number | null;
             /** Study Type */
             study_type?: ("teoria" | "questoes" | "revisao" | "leitura" | "aula" | "simulado" | "pratica" | "outro") | null;
             /** Questions Total */
@@ -5918,6 +5960,8 @@ export interface components {
             page_from?: number | null;
             /** Page To */
             page_to?: number | null;
+            /** Pages Read */
+            pages_read?: number | null;
             /** Study Type */
             study_type?: ("teoria" | "questoes" | "revisao" | "leitura" | "aula" | "simulado" | "pratica" | "outro") | null;
             /** Questions Total */
@@ -6095,6 +6139,8 @@ export interface components {
             page_from?: number | null;
             /** Page To */
             page_to?: number | null;
+            /** Pages Read */
+            pages_read?: number | null;
             /** Study Type */
             study_type?: ("teoria" | "questoes" | "revisao" | "leitura" | "aula" | "simulado" | "pratica" | "outro") | null;
             /** Questions Total */

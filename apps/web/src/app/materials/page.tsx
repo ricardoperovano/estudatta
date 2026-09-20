@@ -13,13 +13,36 @@ import {
   type Material,
   type MaterialDetail,
 } from "@/api/content";
-import { materialKindLabel, materialPagesLabel, useDeleteMaterial, useMaterialDetail, useUpdateMaterial, useUploadMaterial, viewerUrl } from "@/api/materials";
+import {
+  materialKindLabel,
+  materialPagesLabel,
+  useDeleteMaterial,
+  useMaterialDetail,
+  useUpdateMaterial,
+  useUploadMaterial,
+  viewerUrl,
+} from "@/api/materials";
 import { useActivities } from "@/api/queries";
 import { usePublicConfig } from "@/api/session";
 import type { Activity } from "@/api/types";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { ImportErrorCard } from "@/components/app/import-error-card";
-import { Banner, Button, Card, Dialog, DialogActions, DialogContent, Field, Input, Seg, Select, Spinner, Tag, Textarea, toast } from "@/components/ui";
+import {
+  Banner,
+  Button,
+  Card,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  Field,
+  Input,
+  Seg,
+  Select,
+  Spinner,
+  Tag,
+  Textarea,
+  toast,
+} from "@/components/ui";
 import { useOnline } from "@/lib/online";
 import { usePageTour } from "@/components/tour/use-tours";
 import { NoMaterials } from "@/components/empty/no-materials";
@@ -43,9 +66,14 @@ function parsePage(v: string): number | null | undefined {
 /** Mesma redação do servidor, para o erro ser igual com ou sem envio. */
 function checkPdf(file: File, maxMb: number): { message: string; code: string } | null {
   const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-  if (!isPdf) return { message: "O arquivo não é um PDF válido. Envie um PDF ou adicione só o link.", code: "not_pdf" };
+  if (!isPdf)
+    return { message: "O arquivo não é um PDF válido. Envie um PDF ou adicione só o link.", code: "not_pdf" };
   if (file.size === 0) return { message: "Arquivo vazio.", code: "empty_file" };
-  if (file.size > maxMb * 1024 * 1024) return { message: `O arquivo tem ${Math.round(file.size / 1024 / 1024)} MB; o limite é ${maxMb} MB.`, code: "file_too_large" };
+  if (file.size > maxMb * 1024 * 1024)
+    return {
+      message: `O arquivo tem ${Math.round(file.size / 1024 / 1024)} MB; o limite é ${maxMb} MB.`,
+      code: "file_too_large",
+    };
   return null;
 }
 
@@ -89,7 +117,12 @@ export default function MaterialsPage() {
           toast("success", "Material adicionado", m.title);
           setOpenId(m.id);
         },
-        onError: (e) => setFailure({ fileName: file.name, message: errorMessage(e), code: e instanceof ApiError ? e.code : null }),
+        onError: (e) =>
+          setFailure({
+            fileName: file.name,
+            message: errorMessage(e),
+            code: e instanceof ApiError ? e.code : null,
+          }),
         onSettled: () => setUploadingName(null),
       },
     );
@@ -101,12 +134,22 @@ export default function MaterialsPage() {
     <div className="flex flex-col gap-[14px]">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">Materiais</h1>
-        <Button variant="primary" size="lg" onClick={() => setAdd({ kind: "pdf" })} data-tour="materiais-adicionar">
+        <Button
+          variant="primary"
+          size="lg"
+          onClick={() => setAdd({ kind: "pdf" })}
+          data-tour="materiais-adicionar"
+        >
           <Plus size={16} aria-hidden /> Adicionar material
         </Button>
       </header>
 
-      {!online ? <Banner kind="offline">Sem conexão: adicionar, editar e abrir materiais precisa de internet. A lista mostra o que já estava carregado.</Banner> : null}
+      {!online ? (
+        <Banner kind="offline">
+          Sem conexão: adicionar, editar e abrir materiais precisa de internet. A lista mostra o que já estava
+          carregado.
+        </Banner>
+      ) : null}
 
       <input
         ref={retryInput}
@@ -138,8 +181,17 @@ export default function MaterialsPage() {
       ) : null}
 
       {activities.data && activities.data.length > 1 ? (
-        <Field label="Objetivo" htmlFor="materials-filter" className="desktop:max-w-[320px]" data-tour="materiais-filtro">
-          <Select id="materials-filter" value={activityFilter ?? ""} onChange={(e) => setFilter(e.target.value)}>
+        <Field
+          label="Objetivo"
+          htmlFor="materials-filter"
+          className="desktop:max-w-[320px]"
+          data-tour="materiais-filtro"
+        >
+          <Select
+            id="materials-filter"
+            value={activityFilter ?? ""}
+            onChange={(e) => setFilter(e.target.value)}
+          >
             <option value="">Todos os objetivos</option>
             {activities.data.map((a) => (
               <option key={a.id} value={a.id}>
@@ -182,7 +234,11 @@ export default function MaterialsPage() {
         <ul className="grid gap-[14px] tablet:grid-cols-2 desktop:grid-cols-3" data-tour="materiais-lista">
           {materials.data.map((m) => (
             <li key={m.id}>
-              <MaterialCard material={m} activityTitle={activityTitle(m.activity_id)} onOpen={() => setOpenId(m.id)} />
+              <MaterialCard
+                material={m}
+                activityTitle={activityTitle(m.activity_id)}
+                onOpen={() => setOpenId(m.id)}
+              />
             </li>
           ))}
         </ul>
@@ -210,17 +266,42 @@ export default function MaterialsPage() {
         />
       ) : null}
 
-      {openId ? <MaterialSheet id={openId} activities={activities.data ?? []} online={online} onClose={() => setOpenId(null)} /> : null}
+      {openId ? (
+        <MaterialSheet
+          id={openId}
+          activities={activities.data ?? []}
+          online={online}
+          onClose={() => setOpenId(null)}
+        />
+      ) : null}
     </div>
   );
 }
 
-function MaterialCard({ material: m, activityTitle, onOpen }: { material: Material; activityTitle: string | null; onOpen: () => void }) {
+function MaterialCard({
+  material: m,
+  activityTitle,
+  onOpen,
+}: {
+  material: Material;
+  activityTitle: string | null;
+  onOpen: () => void;
+}) {
   const pages = materialPagesLabel(m);
   const n = (m.topics ?? []).length;
-  const sub = [activityTitle, n === 0 ? "sem tópicos vinculados" : `${n} ${n === 1 ? "tópico vinculado" : "tópicos vinculados"}`].filter(Boolean).join(" · ");
+  const sub = [
+    activityTitle,
+    n === 0 ? "sem tópicos vinculados" : `${n} ${n === 1 ? "tópico vinculado" : "tópicos vinculados"}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   return (
-    <button type="button" onClick={onOpen} className="block w-full cursor-pointer rounded-md text-left" aria-label={`Abrir ${m.title}`}>
+    <button
+      type="button"
+      onClick={onOpen}
+      className="block w-full cursor-pointer rounded-md text-left"
+      aria-label={`Abrir ${m.title}`}
+    >
       <Card className="gap-1 px-[14px] py-3 text-[14px] transition-colors duration-base hover:shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <span className="min-w-0 truncate">
@@ -233,7 +314,9 @@ function MaterialCard({ material: m, activityTitle, onOpen }: { material: Materi
           ) : null}
         </div>
         <span className="text-[12px] text-neutral-400">{sub}</span>
-        {m.last_position ? <span className="text-[12px] text-neutral-400">Parei em: {m.last_position}</span> : null}
+        {m.last_position ? (
+          <span className="text-[12px] text-neutral-400">Parei em: {m.last_position}</span>
+        ) : null}
       </Card>
     </button>
   );
@@ -253,15 +336,33 @@ interface AddProps {
   onCreated: (m: MaterialDetail) => void;
 }
 
-function AddMaterialSheet({ initialKind, initialTitle, activities, defaultActivityId, maxMb, online, onClose, onPdf, onCreated }: AddProps) {
+function AddMaterialSheet({
+  initialKind,
+  initialTitle,
+  activities,
+  defaultActivityId,
+  maxMb,
+  online,
+  onClose,
+  onPdf,
+  onCreated,
+}: AddProps) {
   const [kind, setKind] = React.useState<AddKind>(initialKind);
   const [title, setTitle] = React.useState(initialTitle);
-  const [activityId, setActivityId] = React.useState(defaultActivityId ?? (activities.length === 1 ? activities[0].id : ""));
+  const [activityId, setActivityId] = React.useState(
+    defaultActivityId ?? (activities.length === 1 ? activities[0].id : ""),
+  );
   const [file, setFile] = React.useState<File | null>(null);
   const [url, setUrl] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [pagesTotal, setPagesTotal] = React.useState("");
-  const [errors, setErrors] = React.useState<{ title?: string; url?: string; file?: string; pages?: string; form?: string }>({});
+  const [errors, setErrors] = React.useState<{
+    title?: string;
+    url?: string;
+    file?: string;
+    pages?: string;
+    form?: string;
+  }>({});
   const createLink = useCreateLinkMaterial(activityId || null);
   const createPhysical = useCreatePhysicalMaterial(activityId || null);
   const busy = createLink.isPending || createPhysical.isPending;
@@ -281,7 +382,12 @@ function AddMaterialSheet({ initialKind, initialTitle, activities, defaultActivi
       setErrors(next);
       if (Object.keys(next).length) return;
       createLink.mutate(
-        { title: title.trim(), url: url.trim(), description: description.trim() || null, activity_id: activityId || null },
+        {
+          title: title.trim(),
+          url: url.trim(),
+          description: description.trim() || null,
+          activity_id: activityId || null,
+        },
         {
           onSuccess: (m) => {
             toast("success", "Material adicionado", m.title);
@@ -289,7 +395,8 @@ function AddMaterialSheet({ initialKind, initialTitle, activities, defaultActivi
           },
           onError: (err) => {
             // local_path / bad_url: a explicação do servidor vai no próprio campo
-            if (err instanceof ApiError && (err.code === "local_path" || err.code === "bad_url")) setErrors({ url: err.message });
+            if (err instanceof ApiError && (err.code === "local_path" || err.code === "bad_url"))
+              setErrors({ url: err.message });
             else setErrors({ form: errorMessage(err) });
           },
         },
@@ -301,7 +408,12 @@ function AddMaterialSheet({ initialKind, initialTitle, activities, defaultActivi
     setErrors(next);
     if (Object.keys(next).length) return;
     createPhysical.mutate(
-      { title: title.trim(), description: description.trim() || null, pages_total: total ?? null, activity_id: activityId || null },
+      {
+        title: title.trim(),
+        description: description.trim() || null,
+        pages_total: total ?? null,
+        activity_id: activityId || null,
+      },
       {
         onSuccess: (m) => {
           toast("success", "Material adicionado", m.title);
@@ -333,36 +445,97 @@ function AddMaterialSheet({ initialKind, initialTitle, activities, defaultActivi
           />
 
           {kind === "pdf" ? (
-            <Field label="Arquivo PDF" htmlFor="material-file" error={errors.file} hint={`Até ${maxMb} MB. O arquivo fica guardado só na sua conta.`}>
-              <Input id="material-file" type="file" accept="application/pdf,.pdf" invalid={!!errors.file} className="py-[9px]" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+            <Field
+              label="Arquivo PDF"
+              htmlFor="material-file"
+              error={errors.file}
+              hint={`Até ${maxMb} MB. O arquivo fica guardado só na sua conta.`}
+            >
+              <Input
+                id="material-file"
+                type="file"
+                accept="application/pdf,.pdf"
+                invalid={!!errors.file}
+                className="py-[9px]"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
             </Field>
           ) : null}
 
-          <Field label={kind === "pdf" ? "Nome (opcional)" : "Nome"} htmlFor="material-title" error={errors.title} hint={kind === "pdf" ? "Sem nome, usamos o nome do arquivo." : undefined}>
-            <Input id="material-title" value={title} maxLength={200} invalid={!!errors.title} onChange={(e) => setTitle(e.target.value)} placeholder={kind === "physical" ? "Ex.: English Grammar in Use" : undefined} />
+          <Field
+            label={kind === "pdf" ? "Nome (opcional)" : "Nome"}
+            htmlFor="material-title"
+            error={errors.title}
+            hint={kind === "pdf" ? "Sem nome, usamos o nome do arquivo." : undefined}
+          >
+            <Input
+              id="material-title"
+              value={title}
+              maxLength={200}
+              invalid={!!errors.title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={kind === "physical" ? "Ex.: English Grammar in Use" : undefined}
+            />
           </Field>
 
           {kind === "link" ? (
-            <Field label="Link" htmlFor="material-url" error={errors.url} hint="Precisa começar com https:// para abrir em qualquer aparelho.">
-              <Input id="material-url" type="url" inputMode="url" value={url} maxLength={2100} invalid={!!errors.url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" autoCapitalize="none" autoCorrect="off" />
+            <Field
+              label="Link"
+              htmlFor="material-url"
+              error={errors.url}
+              hint="Precisa começar com https:// para abrir em qualquer aparelho."
+            >
+              <Input
+                id="material-url"
+                type="url"
+                inputMode="url"
+                value={url}
+                maxLength={2100}
+                invalid={!!errors.url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://"
+                autoCapitalize="none"
+                autoCorrect="off"
+              />
             </Field>
           ) : null}
 
           {kind === "physical" ? (
             <Field label="Total de páginas (opcional)" htmlFor="material-pages" error={errors.pages}>
-              <Input id="material-pages" inputMode="numeric" value={pagesTotal} invalid={!!errors.pages} onChange={(e) => setPagesTotal(e.target.value)} className="tnum" />
+              <Input
+                id="material-pages"
+                inputMode="numeric"
+                value={pagesTotal}
+                invalid={!!errors.pages}
+                onChange={(e) => setPagesTotal(e.target.value)}
+                className="tnum"
+              />
             </Field>
           ) : null}
 
           {kind !== "pdf" ? (
             <Field label="Anotação (opcional)" htmlFor="material-desc">
-              <Textarea id="material-desc" value={description} maxLength={2000} onChange={(e) => setDescription(e.target.value)} className="min-h-[64px]" />
+              <Textarea
+                id="material-desc"
+                value={description}
+                maxLength={2000}
+                onChange={(e) => setDescription(e.target.value)}
+                className="min-h-[64px]"
+              />
             </Field>
           ) : null}
 
           {activities.length ? (
-            <Field label="Objetivo" htmlFor="material-activity" hint="Vincular a um objetivo permite ligar o material aos tópicos dele.">
-              <Select id="material-activity" value={activityId} onChange={(e) => setActivityId(e.target.value)}>
+            <Field
+              label="Objetivo"
+              htmlFor="material-activity"
+              hint="Vincular a um objetivo permite ligar o material aos tópicos dele."
+            >
+              <Select
+                id="material-activity"
+                value={activityId}
+                onChange={(e) => setActivityId(e.target.value)}
+              >
                 <option value="">Sem objetivo</option>
                 {activities.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -392,14 +565,29 @@ function AddMaterialSheet({ initialKind, initialTitle, activities, defaultActivi
 
 // --- Detalhe: leitor, edição, tópicos, exclusão ---------------------------------------------
 
-function MaterialSheet({ id, activities, online, onClose }: { id: string; activities: Activity[]; online: boolean; onClose: () => void }) {
+function MaterialSheet({
+  id,
+  activities,
+  online,
+  onClose,
+}: {
+  id: string;
+  activities: Activity[];
+  online: boolean;
+  onClose: () => void;
+}) {
   const detail = useMaterialDetail(id);
   const [viewerNonce, setViewerNonce] = React.useState(0);
   const [reloading, setReloading] = React.useState(false);
   const m = detail.data;
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent mode="sheet" title={m?.title ?? "Material"} description={m ? materialSubtitle(m) : undefined} className="tablet:w-[min(920px,calc(100%-32px))]">
+      <DialogContent
+        mode="sheet"
+        title={m?.title ?? "Material"}
+        description={m ? materialSubtitle(m) : undefined}
+        className="tablet:w-[min(920px,calc(100%-32px))]"
+      >
         {detail.isPending ? (
           <div className="flex justify-center py-12" role="status">
             <Spinner className="h-6 w-6" label="Abrindo material" />
@@ -432,7 +620,13 @@ function MaterialSheet({ id, activities, online, onClose }: { id: string; activi
                 }}
               />
             ) : null}
-            <MaterialBody key={`${m.id}:${m.updated_at ?? ""}`} material={m} activities={activities} online={online} onDeleted={onClose} />
+            <MaterialBody
+              key={`${m.id}:${m.updated_at ?? ""}`}
+              material={m}
+              activities={activities}
+              online={online}
+              onDeleted={onClose}
+            />
           </>
         )}
         <DialogActions>
@@ -446,10 +640,17 @@ function MaterialSheet({ id, activities, online, onClose }: { id: string; activi
 }
 
 function materialSubtitle(m: MaterialDetail): string {
-  const parts = [materialKindLabel(m.kind) === "PDF" ? "PDF" : materialKindLabel(m.kind) === "link" ? "Link" : "Material físico"];
+  const parts = [
+    materialKindLabel(m.kind) === "PDF"
+      ? "PDF"
+      : materialKindLabel(m.kind) === "link"
+        ? "Link"
+        : "Material físico",
+  ];
   const pages = materialPagesLabel(m);
   if (pages) parts.push(pages);
-  if (m.size_bytes) parts.push(`${(m.size_bytes / 1024 / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB`);
+  if (m.size_bytes)
+    parts.push(`${(m.size_bytes / 1024 / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB`);
   return parts.join(" · ");
 }
 
@@ -464,12 +665,31 @@ interface BodyProps {
  * Leitor de PDF. O endereço é fixado na montagem: salvar ou vincular tópicos renova o link no
  * servidor, mas não deve recarregar o PDF no meio da leitura. "Recarregar leitor" remonta.
  */
-function PdfViewer({ material: m, online, onReload, reloading }: { material: MaterialDetail; online: boolean; onReload: () => void; reloading: boolean }) {
+function PdfViewer({
+  material: m,
+  online,
+  onReload,
+  reloading,
+}: {
+  material: MaterialDetail;
+  online: boolean;
+  onReload: () => void;
+  reloading: boolean;
+}) {
   const [src] = React.useState(() => viewerUrl(m.download_url));
-  if (!src) return <Banner kind="error">O arquivo deste material não está disponível agora. Seus vínculos e anotações continuam salvos.</Banner>;
+  if (!src)
+    return (
+      <Banner kind="error">
+        O arquivo deste material não está disponível agora. Seus vínculos e anotações continuam salvos.
+      </Banner>
+    );
   return (
     <div className="flex flex-col gap-2">
-      <iframe src={src} title={`Leitor: ${m.title}`} className="h-[52dvh] w-full rounded-md border border-divider bg-canvas desktop:h-[60dvh]" />
+      <iframe
+        src={src}
+        title={`Leitor: ${m.title}`}
+        className="h-[52dvh] w-full rounded-md border border-divider bg-canvas desktop:h-[60dvh]"
+      />
       <div className="flex flex-wrap items-center gap-2">
         <Button asChild variant="primary" size="lg">
           <a href={src} download={m.file_name ?? "material.pdf"}>
@@ -481,13 +701,23 @@ function PdfViewer({ material: m, online, onReload, reloading }: { material: Mat
             <ArrowSquareOut size={16} aria-hidden /> Abrir em nova aba
           </a>
         </Button>
-        <Button variant="ghost-muted" size="lg" className="px-3" loading={reloading} disabled={!online} onClick={onReload}>
+        <Button
+          variant="ghost-muted"
+          size="lg"
+          className="px-3"
+          loading={reloading}
+          disabled={!online}
+          onClick={onReload}
+        >
           Recarregar leitor
         </Button>
       </div>
       <p className="text-[12px] text-neutral-400">
         Se o PDF não aparecer aqui, abra em nova aba. Por segurança, o acesso ao arquivo expira
-        {m.download_expires_in ? ` em ${Math.max(1, Math.round(m.download_expires_in / 60))} min` : " depois de um tempo"}; “Recarregar leitor” renova.
+        {m.download_expires_in
+          ? ` em ${Math.max(1, Math.round(m.download_expires_in / 60))} min`
+          : " depois de um tempo"}
+        ; “Recarregar leitor” renova.
       </p>
     </div>
   );
@@ -501,6 +731,7 @@ function MaterialBody({ material: m, activities, online, onDeleted }: BodyProps)
   const [pageFrom, setPageFrom] = React.useState(m.page_from != null ? String(m.page_from) : "");
   const [pageTo, setPageTo] = React.useState(m.page_to != null ? String(m.page_to) : "");
   const [lastPosition, setLastPosition] = React.useState(m.last_position ?? "");
+  const [currentPage, setCurrentPage] = React.useState(m.current_page != null ? String(m.current_page) : "");
   const [activityId, setActivityId] = React.useState(m.activity_id ?? "");
   const [error, setError] = React.useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = React.useState(false);
@@ -511,6 +742,7 @@ function MaterialBody({ material: m, activities, online, onDeleted }: BodyProps)
     pageFrom !== (m.page_from != null ? String(m.page_from) : "") ||
     pageTo !== (m.page_to != null ? String(m.page_to) : "") ||
     lastPosition !== (m.last_position ?? "") ||
+    currentPage !== (m.current_page != null ? String(m.current_page) : "") ||
     activityId !== (m.activity_id ?? "");
 
   const save = (e: React.FormEvent) => {
@@ -520,6 +752,10 @@ function MaterialBody({ material: m, activities, online, onDeleted }: BodyProps)
     if (!title.trim()) return setError("O material precisa de um nome.");
     if (from === undefined || to === undefined) return setError("Páginas: use só números.");
     if (from != null && to != null && to < from) return setError("A página final vem antes da inicial.");
+    const cur = parsePage(currentPage);
+    if (cur === undefined) return setError("Página atual: use só números.");
+    if (cur != null && m.pages_total && cur > m.pages_total)
+      return setError("A página atual não pode passar do total de páginas.");
     setError(null);
     update.mutate(
       {
@@ -530,6 +766,8 @@ function MaterialBody({ material: m, activities, online, onDeleted }: BodyProps)
           page_from: from,
           page_to: to,
           last_position: lastPosition,
+          current_page: cur ?? null,
+          clear_current_page: cur == null && m.current_page != null,
           activity_id: activityId || null,
           clear_activity: !activityId && !!m.activity_id,
         },
@@ -563,20 +801,66 @@ function MaterialBody({ material: m, activities, online, onDeleted }: BodyProps)
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Página inicial" htmlFor="m-from">
-            <Input id="m-from" inputMode="numeric" className="tnum" value={pageFrom} onChange={(e) => setPageFrom(e.target.value)} />
+            <Input
+              id="m-from"
+              inputMode="numeric"
+              className="tnum"
+              value={pageFrom}
+              onChange={(e) => setPageFrom(e.target.value)}
+            />
           </Field>
           <Field label="Página final" htmlFor="m-to">
-            <Input id="m-to" inputMode="numeric" className="tnum" value={pageTo} onChange={(e) => setPageTo(e.target.value)} />
+            <Input
+              id="m-to"
+              inputMode="numeric"
+              className="tnum"
+              value={pageTo}
+              onChange={(e) => setPageTo(e.target.value)}
+            />
           </Field>
         </div>
-        <Field label="Onde parei" htmlFor="m-pos" hint="Ex.: p. 142, unidade 12, aula 7.">
-          <Input id="m-pos" value={lastPosition} maxLength={120} onChange={(e) => setLastPosition(e.target.value)} />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field
+            label="Página atual"
+            htmlFor="m-cur"
+            hint="Marcador: avança quando você registra páginas lidas."
+          >
+            <Input
+              id="m-cur"
+              inputMode="numeric"
+              className="tnum"
+              value={currentPage}
+              onChange={(e) => setCurrentPage(e.target.value)}
+            />
+          </Field>
+          <Field label="Onde parei" htmlFor="m-pos" hint="Ex.: unidade 12, aula 7.">
+            <Input
+              id="m-pos"
+              value={lastPosition}
+              maxLength={120}
+              onChange={(e) => setLastPosition(e.target.value)}
+            />
+          </Field>
+        </div>
         <Field label="Anotação" htmlFor="m-desc">
-          <Textarea id="m-desc" value={description} maxLength={2000} onChange={(e) => setDescription(e.target.value)} className="min-h-[64px]" />
+          <Textarea
+            id="m-desc"
+            value={description}
+            maxLength={2000}
+            onChange={(e) => setDescription(e.target.value)}
+            className="min-h-[64px]"
+          />
         </Field>
         {activities.length ? (
-          <Field label="Objetivo" htmlFor="m-activity" hint={(m.topics ?? []).length && activityId !== (m.activity_id ?? "") ? "Os tópicos já vinculados continuam vinculados." : undefined}>
+          <Field
+            label="Objetivo"
+            htmlFor="m-activity"
+            hint={
+              (m.topics ?? []).length && activityId !== (m.activity_id ?? "")
+                ? "Os tópicos já vinculados continuam vinculados."
+                : undefined
+            }
+          >
             <Select id="m-activity" value={activityId} onChange={(e) => setActivityId(e.target.value)}>
               <option value="">Sem objetivo</option>
               {activities.map((a) => (
@@ -589,10 +873,22 @@ function MaterialBody({ material: m, activities, online, onDeleted }: BodyProps)
         ) : null}
         {error ? <Banner kind="error">{error}</Banner> : null}
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <Button type="button" variant="danger" size="lg" disabled={!online} onClick={() => setConfirmDelete(true)}>
+          <Button
+            type="button"
+            variant="danger"
+            size="lg"
+            disabled={!online}
+            onClick={() => setConfirmDelete(true)}
+          >
             <Trash size={16} aria-hidden /> Excluir material
           </Button>
-          <Button type="submit" variant="primary" size="lg" loading={update.isPending} disabled={!dirty || !online}>
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            loading={update.isPending}
+            disabled={!dirty || !online}
+          >
             Salvar alterações
           </Button>
         </div>
@@ -637,6 +933,10 @@ function TopicLinks({ material: m, online }: { material: MaterialDetail; online:
     const from = nums[0] ?? null;
     const to = nums[1] ?? null;
     if (from != null && to != null && to < from) return setError("A página final vem antes da inicial.");
+    const cur = parsePage(currentPage);
+    if (cur === undefined) return setError("Página atual: use só números.");
+    if (cur != null && m.pages_total && cur > m.pages_total)
+      return setError("A página atual não pode passar do total de páginas.");
     setError(null);
     link.mutate(
       { materialId: m.id, body: { topic_id: topicId, page_from: from, page_to: to } },
@@ -672,7 +972,12 @@ function TopicLinks({ material: m, online }: { material: MaterialDetail; online:
                   size="icon"
                   aria-label={`Desvincular ${t.topic_title ?? "tópico"}`}
                   disabled={!online || unlink.isPending}
-                  onClick={() => unlink.mutate({ materialId: m.id, topicId: t.topic_id }, { onError: (e) => toast("error", "Não foi possível desvincular", errorMessage(e)) })}
+                  onClick={() =>
+                    unlink.mutate(
+                      { materialId: m.id, topicId: t.topic_id },
+                      { onError: (e) => toast("error", "Não foi possível desvincular", errorMessage(e)) },
+                    )
+                  }
                 >
                   <X size={16} aria-hidden />
                 </Button>
@@ -683,7 +988,9 @@ function TopicLinks({ material: m, online }: { material: MaterialDetail; online:
       )}
 
       {!m.activity_id ? (
-        <span className="text-[13px] text-neutral-400">Para vincular a tópicos, escolha um objetivo em Detalhes e salve.</span>
+        <span className="text-[13px] text-neutral-400">
+          Para vincular a tópicos, escolha um objetivo em Detalhes e salve.
+        </span>
       ) : subjects.isPending ? (
         <Spinner label="Carregando tópicos" />
       ) : subjects.isError ? (
@@ -700,7 +1007,10 @@ function TopicLinks({ material: m, online }: { material: MaterialDetail; online:
       ) : subjects.data.every((s) => (s.topics ?? []).length === 0) ? (
         <span className="text-[13px] text-neutral-400">
           Este objetivo ainda não tem tópicos.{" "}
-          <Link to={`/app/objetivos/${m.activity_id}`} className="text-accent underline-offset-2 hover:underline">
+          <Link
+            to={`/app/objetivos/${m.activity_id}`}
+            className="text-accent underline-offset-2 hover:underline"
+          >
             Abrir objetivo
           </Link>
         </span>
@@ -721,7 +1031,13 @@ function TopicLinks({ material: m, online }: { material: MaterialDetail; online:
             </Select>
           </Field>
           <Field label="Páginas" htmlFor="m-topic-pages">
-            <Input id="m-topic-pages" className="tnum" value={pages} onChange={(e) => setPages(e.target.value)} placeholder="12–30" />
+            <Input
+              id="m-topic-pages"
+              className="tnum"
+              value={pages}
+              onChange={(e) => setPages(e.target.value)}
+              placeholder="12–30"
+            />
           </Field>
           <Button variant="primary" size="lg" loading={link.isPending} disabled={!online} onClick={addLink}>
             Vincular

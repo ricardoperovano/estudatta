@@ -71,6 +71,8 @@ class ActivityUpdate(BaseModel):
     icon: str | None = None
     weekly_questions_goal: int | None = Field(default=None, ge=0, le=10000)
     weekly_pages_goal: int | None = Field(default=None, ge=0, le=10000)
+    current_material_id: UUID | None = None  # o livro/curso/apostila "de agora"
+    clear_current_material: bool = False
     tracking_mode: Literal["time", "checklist", "mixed"] | None = None
     sort_order: int | None = None
 
@@ -108,6 +110,16 @@ class PauseOut(ORMModel):
     silence_reminders: bool
 
 
+class CurrentMaterialOut(BaseModel):
+    id: UUID
+    title: str
+    kind: str
+    current_page: int | None
+    pages_total: int | None
+    last_position: str | None
+    percent: int | None
+
+
 class TimezoneOut(ORMModel):
     effective_from: date
     timezone: str
@@ -133,7 +145,8 @@ class ActivityOut(ORMModel):
     availability: dict
     sort_order: int
     weekly_questions_goal: int | None = None
-    weekly_pages_goal: int | None = None
+    weekly_pages_goal: int | None
+    current_material: CurrentMaterialOut | None = None
     created_at: datetime
     current_rule: GoalRuleOut | None = None
 

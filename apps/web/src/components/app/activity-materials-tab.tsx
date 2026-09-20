@@ -1,14 +1,43 @@
 import * as React from "react";
 import { Link } from "react-router";
 import { ArrowSquareOut, X } from "@phosphor-icons/react";
-import { Banner, Button, Card, Dialog, DialogContent, EmptyState, Field, Input, Select, Spinner, Tag, toast } from "@/components/ui";
+import {
+  Banner,
+  Button,
+  Card,
+  Dialog,
+  DialogContent,
+  EmptyState,
+  Field,
+  Input,
+  Select,
+  Spinner,
+  Tag,
+  toast,
+} from "@/components/ui";
 import { errorMessage } from "@/api/client";
-import { fetchMaterialDetail, flattenTopics, useLinkMaterialTopic, useMaterials, useSubjects, useUnlinkMaterialTopic, type Material } from "@/api/content";
+import {
+  fetchMaterialDetail,
+  flattenTopics,
+  useLinkMaterialTopic,
+  useMaterials,
+  useSubjects,
+  useUnlinkMaterialTopic,
+  type Material,
+} from "@/api/content";
 import { useOnline } from "@/lib/online";
+import type { ActivityDetail } from "@/api/types";
+import { CurrentMaterialCard } from "./current-material-card";
 import { fmtPages, materialKindLabel, parsePages } from "./week-utils";
 
 /** Aba Materiais do objetivo: lista, abrir (URL assinada), vincular a tópico com páginas e atalhos. */
-export function ActivityMaterialsTab({ activityId }: { activityId: string }) {
+export function ActivityMaterialsTab({
+  activityId,
+  activity,
+}: {
+  activityId: string;
+  activity?: ActivityDetail;
+}) {
   const online = useOnline();
   const materials = useMaterials(activityId);
   const unlink = useUnlinkMaterialTopic(activityId);
@@ -28,7 +57,10 @@ export function ActivityMaterialsTab({ activityId }: { activityId: string }) {
       const target = detail.download_url || detail.url;
       if (!target) {
         tab?.close();
-        toast.info("Este material não tem arquivo para abrir", m.kind === "physical" ? "É um material físico: use as páginas como referência." : undefined);
+        toast.info(
+          "Este material não tem arquivo para abrir",
+          m.kind === "physical" ? "É um material físico: use as páginas como referência." : undefined,
+        );
         return;
       }
       if (tab) tab.location.href = target;
@@ -61,16 +93,34 @@ export function ActivityMaterialsTab({ activityId }: { activityId: string }) {
   }
   if (materials.isError) {
     return (
-      <Banner kind={online ? "error" : "offline"} actions={<Button size="sm" variant="secondary" onClick={() => materials.refetch()}>Tentar de novo</Button>}>
-        {online ? "Não foi possível carregar os materiais." : "Sem conexão: os materiais aparecem quando você voltar à internet."}
+      <Banner
+        kind={online ? "error" : "offline"}
+        actions={
+          <Button size="sm" variant="secondary" onClick={() => materials.refetch()}>
+            Tentar de novo
+          </Button>
+        }
+      >
+        {online
+          ? "Não foi possível carregar os materiais."
+          : "Sem conexão: os materiais aparecem quando você voltar à internet."}
       </Banner>
     );
   }
 
   return (
     <div className="flex flex-col gap-[6px] text-[14px]">
+      {/* em leitura o livro atual já fica no topo da página */}
+      {activity &&
+      activity.category !== "leitura" &&
+      (materials.data.length > 0 || activity.current_material) ? (
+        <CurrentMaterialCard activity={activity} className="mb-2" />
+      ) : null}
       {materials.data.length === 0 ? (
-        <EmptyState title="Nenhum material neste objetivo." description="Adicione PDFs, links ou livros e vincule cada um ao tópico, com as páginas." />
+        <EmptyState
+          title="Nenhum material neste objetivo."
+          description="Adicione PDFs, links ou livros e vincule cada um ao tópico, com as páginas."
+        />
       ) : (
         materials.data.map((m) => (
           <Card key={m.id} className="gap-2 p-3">
@@ -78,11 +128,23 @@ export function ActivityMaterialsTab({ activityId }: { activityId: string }) {
               <div className="flex min-w-0 flex-col">
                 <span className="truncate font-medium">{m.title}</span>
                 <span className="tnum text-[12px] text-neutral-400">
-                  {[materialKindLabel(m.kind, m.url), m.pages_total ? `${m.pages_total} páginas` : null, m.last_position ? `parou em ${m.last_position}` : null].filter(Boolean).join(" · ")}
+                  {[
+                    materialKindLabel(m.kind, m.url),
+                    m.pages_total ? `${m.pages_total} páginas` : null,
+                    m.last_position ? `parou em ${m.last_position}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </span>
               </div>
               {m.kind !== "physical" ? (
-                <Button variant="ghost" size="sm" className="min-h-[44px] shrink-0 px-2" loading={opening === m.id} onClick={() => void open(m)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="min-h-[44px] shrink-0 px-2"
+                  loading={opening === m.id}
+                  onClick={() => void open(m)}
+                >
                   Abrir <ArrowSquareOut size={14} aria-hidden />
                 </Button>
               ) : null}
@@ -93,7 +155,9 @@ export function ActivityMaterialsTab({ activityId }: { activityId: string }) {
                   <div key={t.topic_id} className="flex items-center justify-between gap-2">
                     <span className="min-w-0 truncate">{t.topic_title ?? "Tópico"}</span>
                     <span className="flex shrink-0 items-center gap-1">
-                      {fmtPages(t.page_from, t.page_to) ? <Tag variant="neutral">{fmtPages(t.page_from, t.page_to)}</Tag> : null}
+                      {fmtPages(t.page_from, t.page_to) ? (
+                        <Tag variant="neutral">{fmtPages(t.page_from, t.page_to)}</Tag>
+                      ) : null}
                       <button
                         type="button"
                         className="grid h-8 w-8 place-items-center rounded-md text-neutral-500 hover:text-primary"
@@ -124,28 +188,49 @@ export function ActivityMaterialsTab({ activityId }: { activityId: string }) {
         ))
       )}
       <div className="mt-2">{shortcuts}</div>
-      {linkFor ? <LinkTopicSheet key={linkFor.id} activityId={activityId} material={linkFor} onOpenChange={(o) => !o && setLinkFor(null)} /> : null}
+      {linkFor ? (
+        <LinkTopicSheet
+          key={linkFor.id}
+          activityId={activityId}
+          material={linkFor}
+          onOpenChange={(o) => !o && setLinkFor(null)}
+        />
+      ) : null}
     </div>
   );
 }
 
-function LinkTopicSheet({ activityId, material, onOpenChange }: { activityId: string; material: Material; onOpenChange: (o: boolean) => void }) {
+function LinkTopicSheet({
+  activityId,
+  material,
+  onOpenChange,
+}: {
+  activityId: string;
+  material: Material;
+  onOpenChange: (o: boolean) => void;
+}) {
   const subjects = useSubjects(activityId);
   const link = useLinkMaterialTopic(activityId);
   const [topicId, setTopicId] = React.useState("");
   const [pages, setPages] = React.useState("");
   const [note, setNote] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
-  const groups = (subjects.data ?? []).map((s) => ({ subject: s, topics: flattenTopics(s.topics) })).filter((g) => g.topics.length > 0);
+  const groups = (subjects.data ?? [])
+    .map((s) => ({ subject: s, topics: flattenTopics(s.topics) }))
+    .filter((g) => g.topics.length > 0);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     if (!topicId) return setError("Escolha o tópico.");
     const [from, to] = parsePages(pages);
-    if (from != null && to != null && to < from) return setError("A página final precisa ser maior que a inicial.");
+    if (from != null && to != null && to < from)
+      return setError("A página final precisa ser maior que a inicial.");
     try {
-      await link.mutateAsync({ materialId: material.id, body: { topic_id: topicId, page_from: from, page_to: to, note: note.trim() || null } });
+      await link.mutateAsync({
+        materialId: material.id,
+        body: { topic_id: topicId, page_from: from, page_to: to, note: note.trim() || null },
+      });
       toast.success("Material vinculado ao tópico");
       onOpenChange(false);
     } catch (err) {
@@ -163,7 +248,10 @@ function LinkTopicSheet({ activityId, material, onOpenChange }: { activityId: st
               <Spinner />
             </div>
           ) : groups.length === 0 ? (
-            <Banner kind="info">Este objetivo ainda não tem tópicos. Crie matérias e tópicos na aba Matérias para vincular materiais.</Banner>
+            <Banner kind="info">
+              Este objetivo ainda não tem tópicos. Crie matérias e tópicos na aba Matérias para vincular
+              materiais.
+            </Banner>
           ) : (
             <>
               <Field label="Tópico" htmlFor="lk-topic">
@@ -182,10 +270,21 @@ function LinkTopicSheet({ activityId, material, onOpenChange }: { activityId: st
                 </Select>
               </Field>
               <Field label="Páginas (opcional)" htmlFor="lk-pages">
-                <Input id="lk-pages" placeholder="p. 12–34" value={pages} onChange={(e) => setPages(e.target.value)} />
+                <Input
+                  id="lk-pages"
+                  placeholder="p. 12–34"
+                  value={pages}
+                  onChange={(e) => setPages(e.target.value)}
+                />
               </Field>
               <Field label="Observação (opcional)" htmlFor="lk-note">
-                <Input id="lk-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="Capítulo 3, exercícios ímpares" />
+                <Input
+                  id="lk-note"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  maxLength={500}
+                  placeholder="Capítulo 3, exercícios ímpares"
+                />
               </Field>
               <Button type="submit" size="xl" block loading={link.isPending}>
                 Vincular

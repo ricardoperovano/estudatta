@@ -1,13 +1,25 @@
 import * as React from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router";
 import { ArrowsClockwise, CaretLeft, ChartLineUp } from "@phosphor-icons/react";
-import { Banner, Bar, Button, EmptyState, Spinner, Tabs, TabsContent, TabsList, TabsTrigger, Tag } from "@/components/ui";
+import {
+  Banner,
+  Bar,
+  Button,
+  EmptyState,
+  Spinner,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Tag,
+} from "@/components/ui";
 import { ApiError } from "@/api/client";
 import { useActivity, useBalance } from "@/api/queries";
 import { categoryLabel, useSummary } from "@/api/activity-settings";
 import { ActivityMaterialsTab } from "@/components/app/activity-materials-tab";
 import { ActivitySettingsTab } from "@/components/app/activity-settings-tab";
 import { ActivityTasksTab } from "@/components/app/activity-tasks-tab";
+import { CurrentMaterialCard } from "@/components/app/current-material-card";
 import { StudyInsightsCard } from "@/components/app/study-insights-card";
 import { SubjectTree } from "@/components/app/subject-tree";
 import { weekTargetSeconds } from "@/components/app/week-utils";
@@ -61,7 +73,13 @@ export default function ActivityDetailPage() {
     return (
       <EmptyState
         title={notFound ? "Objetivo não encontrado." : "Não foi possível carregar o objetivo."}
-        description={notFound ? "Ele pode ter sido excluído." : online ? "Tente de novo em instantes." : "Sem conexão: o objetivo aparece quando você voltar à internet."}
+        description={
+          notFound
+            ? "Ele pode ter sido excluído."
+            : online
+              ? "Tente de novo em instantes."
+              : "Sem conexão: o objetivo aparece quando você voltar à internet."
+        }
         action={
           notFound ? (
             <Button asChild>
@@ -87,13 +105,18 @@ export default function ActivityDetailPage() {
 
   return (
     <div className="flex flex-col gap-[14px]">
-      <Link to="/app/objetivos" className="inline-flex min-h-[32px] items-center gap-1 self-start text-[13px] text-neutral-400 no-underline hover:text-primary desktop:hidden">
+      <Link
+        to="/app/objetivos"
+        className="inline-flex min-h-[32px] items-center gap-1 self-start text-[13px] text-neutral-400 no-underline hover:text-primary desktop:hidden"
+      >
         <CaretLeft size={14} aria-hidden /> Objetivos
       </Link>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-[14px]">
           <span className="kicker-accent">Objetivo · {categoryLabel(act.category, act.language)}</span>
-          <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">{act.title}</h1>
+          <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">
+            {act.title}
+          </h1>
         </div>
         {act.status === "active" ? (
           <div className="hidden gap-2 desktop:flex">
@@ -120,18 +143,49 @@ export default function ActivityDetailPage() {
       ) : null}
 
       {balance.isError || week.isError ? (
-        <Banner kind={online ? "error" : "offline"} actions={<Button size="sm" variant="secondary" onClick={() => { void balance.refetch(); void week.refetch(); void month.refetch(); }}>Tentar de novo</Button>}>
-          {online ? "Não foi possível carregar o saldo deste objetivo." : "Sem conexão: o saldo aparece quando você voltar à internet."}
+        <Banner
+          kind={online ? "error" : "offline"}
+          actions={
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                void balance.refetch();
+                void week.refetch();
+                void month.refetch();
+              }}
+            >
+              Tentar de novo
+            </Button>
+          }
+        >
+          {online
+            ? "Não foi possível carregar o saldo deste objetivo."
+            : "Sem conexão: o saldo aparece quando você voltar à internet."}
         </Banner>
       ) : null}
 
       <div className="flex flex-col gap-[14px]" data-tour="objetivo-numeros">
         <div className="tnum flex gap-4 desktop:gap-8">
-          <Figure value={week.data ? fmtMinutes(weekLogged) : dash} label={hasTime ? `esta semana / ${fmtMinutes(weekTarget)}` : "esta semana"} />
-          <Figure value={month.data ? String(month.data.sessions_count) : dash} label={month.data?.sessions_count === 1 ? "sessão no mês" : "sessões no mês"} />
-          <Figure value={balance.data ? fmtMinutes(pending) : dash} label="a recuperar" pending={pending > 0} />
+          <Figure
+            value={week.data ? fmtMinutes(weekLogged) : dash}
+            label={hasTime ? `esta semana / ${fmtMinutes(weekTarget)}` : "esta semana"}
+          />
+          <Figure
+            value={month.data ? String(month.data.sessions_count) : dash}
+            label={month.data?.sessions_count === 1 ? "sessão no mês" : "sessões no mês"}
+          />
+          <Figure
+            value={balance.data ? fmtMinutes(pending) : dash}
+            label="a recuperar"
+            pending={pending > 0}
+          />
         </div>
-        <Bar value={weekTarget > 0 ? weekLogged / weekTarget : 0} height={6} label={`${fmtMinutes(weekLogged)} de ${fmtMinutes(weekTarget)} nesta semana`} />
+        <Bar
+          value={weekTarget > 0 ? weekLogged / weekTarget : 0}
+          height={6}
+          label={`${fmtMinutes(weekLogged)} de ${fmtMinutes(weekTarget)} nesta semana`}
+        />
       </div>
 
       {act.status === "active" ? (
@@ -149,6 +203,7 @@ export default function ActivityDetailPage() {
 
       {hasTime ? (
         <div className="flex max-w-[760px] flex-col gap-2">
+          {act.category === "leitura" ? <CurrentMaterialCard activity={act} /> : null}
           <StudyInsightsCard activityId={act.id} />
           <div className="flex flex-wrap gap-2 self-start" data-tour="objetivo-atalhos">
             <Button asChild variant="secondary" size="lg">
@@ -176,7 +231,7 @@ export default function ActivityDetailPage() {
           <SubjectTree activityId={act.id} />
         </TabsContent>
         <TabsContent value="materiais" className="max-w-[760px] outline-none">
-          <ActivityMaterialsTab activityId={act.id} />
+          <ActivityMaterialsTab activityId={act.id} activity={act} />
         </TabsContent>
         <TabsContent value="tarefas" className="max-w-[760px] outline-none">
           <ActivityTasksTab activity={act} />
@@ -192,7 +247,9 @@ export default function ActivityDetailPage() {
 function Figure({ value, label, pending }: { value: React.ReactNode; label: string; pending?: boolean }) {
   return (
     <div>
-      <span className={cn("block text-[20px] font-medium desktop:text-[24px]", pending && "text-pending")}>{value}</span>
+      <span className={cn("block text-[20px] font-medium desktop:text-[24px]", pending && "text-pending")}>
+        {value}
+      </span>
       <span className="text-[12px] text-neutral-400">{label}</span>
     </div>
   );

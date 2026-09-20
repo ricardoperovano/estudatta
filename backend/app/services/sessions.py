@@ -353,6 +353,28 @@ def apply_study_fields(
         sess.questions_correct = correct
 
 
+def apply_pages(db: Session, act: Activity, sess: StudySession, pages_read: int | None) -> None:
+    """Marcador de página. Sem material na sessão, usa o material atual do objetivo.
+    `pages_read` (ex.: "li 8 páginas") vira page_from/page_to a partir do marcador; um `page_to`
+    informado move o marcador para lá. O total de páginas do material limita o marcador."""
+    if sess.material_id is None and act.current_material_id is not None:
+        sess.material_id = act.current_material_id
+    m = db.get(Material, sess.material_id) if sess.material_id else None
+    if pages_read is not None:
+        if pages_read < 0 or pages_read > 5000:
+            raise ValidationFailed("Páginas lidas fora do limite.", code="bad_pages")
+        if pages_read > 0 and sess.page_to is None:
+            start = int((m.current_page if m else None) or 0)
+            sess.page_from = start + 1
+            sess.page_to = start + pages_read
+    if m is not None and sess.page_to is not None and sess.status == "finished":
+        page = int(sess.page_to)
+        if m.pages_total and page > m.pages_total:
+            page = m.pages_total
+        m.current_page = page
+        m.last_position = f"p. {page}"
+
+
 def _after_recorded(db: Session, user: User, sess: StudySession) -> None:
     """Revisões espaçadas e gamificação depois de uma sessão válida (import tardio evita ciclo)."""
     from app.services import gamification, revisions
@@ -414,6 +436,7 @@ def finish_session(
     note: str | None = None,
     page_from: int | None = None,
     page_to: int | None = None,
+    pages_read: int | None = None,
     subject_id=None,
     topic_id=None,
     confirmed_duration_seconds: int | None = None,
@@ -482,6 +505,7 @@ def finish_session(
     _revision(db, sess, user, "create", before, _snapshot(sess), None)
     db.flush()
     if not sess.needs_review:
+        apply_pages(db, db.get(Activity, sess.activity_id), sess, pages_read)
         _after_recorded(db, user, sess)
     db.refresh(sess)
     return sess
@@ -545,6 +569,7 @@ def manual_session(
     note: str | None = None,
     page_from: int | None = None,
     page_to: int | None = None,
+    pages_read: int | None = None,
     client_uuid: uuid.UUID | None = None,
     device_id: str | None = None,
     study_type: str | None = None,
@@ -642,6 +667,7 @@ def manual_session(
     cancel_pending(
         db, user_id=user.id, kind="follow_up", activity_id=act.id, reason="manual_logged"
     )
+    apply_pages(db, act, sess, pages_read)
     _after_recorded(db, user, sess)
     return sess, True
 
@@ -660,6 +686,7 @@ def update_session(
     note: str | None = None,
     page_from: int | None = None,
     page_to: int | None = None,
+    pages_read: int | None = None,
     reason: str | None = None,
     expected_version: int | None = None,
     resolve_review: bool = False,
@@ -754,7 +781,8 @@ def update_session(
     )
     db.flush()
     if not sess.needs_review:
-        _after_recorded(db, user, sess)
+        apply_pages(db, act, sess, pages_read)
+    _after_recorded(db, user, sess)
     return sess
 
 
