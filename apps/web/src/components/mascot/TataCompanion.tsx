@@ -159,8 +159,6 @@ export function TataCompanion({ scene, size = 112, layout = "row", className, ch
     if (!dozing) setReaction({ mood: "wave", text: tataSay("wake", tone, n), until: clock + 4000 });
   }
 
-  if (!enabled) return null;
-
   const active = reaction && reaction.until > clock ? reaction : null;
   let mood: TataMood;
   let baseText: string | null = null;
@@ -185,6 +183,8 @@ export function TataCompanion({ scene, size = 112, layout = "row", className, ch
     if (!text || tourActive || chatOpen) return;
     say(text);
   }, [text, tourActive, chatOpen, say]);
+
+  if (!enabled) return null;
 
   const poke = () => {
     setLastActive(Date.now());

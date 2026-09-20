@@ -200,11 +200,26 @@ async function playBlob(blob: Blob, mySeq: number): Promise<boolean> {
 }
 
 /** Fala o texto: voz natural quando dá, senão a do aparelho. Interrompe o que estava falando. */
+// Só a aba visível fala; ao começar, avisa as outras abas para silenciarem (duas abas do app
+// abertas falavam ao mesmo tempo).
+const TAB_ID = Math.random().toString(36).slice(2);
+const channel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("estudatta-tata-voice") : null;
+channel?.addEventListener("message", (e: MessageEvent) => {
+  if (e.data?.type === "speaking" && e.data.tab !== TAB_ID) stop();
+});
+if (typeof document !== "undefined") {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") stop();
+  });
+}
+
 export async function speak(text: string): Promise<void> {
   const t = normalizeSpeech(text);
   if (!t || typeof window === "undefined") return;
+  if (document.visibilityState === "hidden") return;
   const mySeq = ++seq;
   stopPlayback();
+  channel?.postMessage({ type: "speaking", tab: TAB_ID });
   try {
     if (canUseNatural()) {
       let blob = cache.get(t) ?? null;

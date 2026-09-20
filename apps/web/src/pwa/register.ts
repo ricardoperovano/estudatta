@@ -58,8 +58,25 @@ export function registerServiceWorker() {
   let pendingTimer: number | null = null;
 
   const reload = () => window.location.reload();
-  /** versão nova esperando: manda ativar; ao assumir a página ("controlling"), recarrega */
-  const apply = () => wb.messageSkipWaiting();
+  /** Clique em "Atualizar agora": ativa a versão nova e recarrega, sem esperar momento seguro.
+   *  Se a versão nova já assumiu a página, recarrega direto. */
+  const apply = () => {
+    void navigator.serviceWorker.getRegistration().then((reg) => {
+      const waiting = reg?.waiting;
+      if (!waiting) return reload();
+      let done = false;
+      const go = () => {
+        if (done) return;
+        done = true;
+        reload();
+      };
+      navigator.serviceWorker.addEventListener("controllerchange", go, { once: true });
+      waiting.postMessage({ type: "SKIP_WAITING" });
+      window.setTimeout(go, 4000); // se o navegador não avisar, recarrega mesmo assim
+    });
+  };
+  /** caminho automático: só ativa; o recarregamento vem no "controlling" em momento seguro */
+  const autoApply = () => wb.messageSkipWaiting();
   const whenSafe = (fn: () => void) => {
     if (safeToReload()) return fn();
     if (pendingTimer !== null) return;
@@ -75,7 +92,7 @@ export function registerServiceWorker() {
 
   wb.addEventListener("waiting", () => {
     set({ updateReady: true, apply });
-    whenSafe(apply);
+    whenSafe(autoApply);
   });
   // a versão nova assumiu esta página (após skipWaiting, ou sozinha quando não havia aba
   // controlada): os arquivos em memória são os antigos, então recarrega em momento seguro

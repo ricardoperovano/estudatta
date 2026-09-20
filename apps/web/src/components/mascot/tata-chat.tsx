@@ -11,53 +11,17 @@ import { tataChatReasonText, useTataChat, useTataStatus, type TataHistoryItem } 
 import { PlanUpsell } from "@/components/app/plan-upsell";
 import { Button, Dialog, DialogContent, Input } from "@/components/ui";
 import { useOnline } from "@/lib/online";
-import { cn } from "@/lib/utils";
+import { cn, uuid } from "@/lib/utils";
 import { TataSvg, type TataMood } from "./TataSvg";
+import { QUICK_QUESTIONS, creditsLine, readStored, writeStored, type ChatMessage } from "./tata-chat-state";
 import { useTataVoice } from "./voice";
 
-export interface ChatMessage {
-  id: string;
-  role: "user" | "tata";
-  text: string;
-  mood?: TataMood;
-}
-
-const STORE_KEY = "estudatta.tata.chat";
-const KEEP = 20;
 const HISTORY = 8;
 const MAX_CHARS = 1000;
 const MOODS: readonly TataMood[] = ["idle", "cheer", "encourage", "think", "love", "focus"];
 
-export const QUICK_QUESTIONS = ["Como está meu dia?", "O que eu estudo agora?", "Tenho revisões hoje?", "Estou sem ânimo", "Como funciona a recuperação?"];
-
-function readStored(): ChatMessage[] {
-  try {
-    const raw = sessionStorage.getItem(STORE_KEY);
-    if (!raw) return [];
-    const list = JSON.parse(raw) as ChatMessage[];
-    return Array.isArray(list) ? list.filter((m) => m && (m.role === "user" || m.role === "tata") && typeof m.text === "string").slice(-KEEP) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeStored(list: ChatMessage[]) {
-  try {
-    if (list.length) sessionStorage.setItem(STORE_KEY, JSON.stringify(list.slice(-KEEP)));
-    else sessionStorage.removeItem(STORE_KEY);
-  } catch {
-    /* sem armazenamento: vale só enquanto a folha estiver aberta */
-  }
-}
-
 function asMood(m: string | undefined): TataMood {
   return (MOODS as readonly string[]).includes(m ?? "") ? (m as TataMood) : "idle";
-}
-
-/** Linha com as conversas restantes (hoje · mês). */
-export function creditsLine(remainingToday: number, remainingMonth: number | null): string {
-  const today = `${remainingToday} ${remainingToday === 1 ? "conversa restante" : "conversas restantes"} hoje`;
-  return remainingMonth === null ? today : `${today} · ${remainingMonth} no mês`;
 }
 
 function errorToReason(e: unknown): string | null {
@@ -78,8 +42,8 @@ export function TataChat({ open, onOpenChange }: { open: boolean; onOpenChange: 
   const listRef = React.useRef<HTMLDivElement>(null);
 
   const lastTata = [...messages].reverse().find((m) => m.role === "tata");
-  const mood: TataMood = chat.isPending ? "think" : (lastTata?.mood ?? (messages.length ? "idle" : "wave"));
   const reason = status.data && !status.data.chat_enabled ? status.data.chat_reason : null;
+  const mood: TataMood = chat.isPending ? "think" : (lastTata?.mood ?? (reason ? "sleep" : messages.length ? "idle" : "wave"));
   const reasonText = tataChatReasonText(reason);
   const upsell = reason === "ai_plan" || reason === "ai_quota" || reason === "ai_monthly_quota";
   const canSend = online && !chat.isPending && !reason && draft.trim().length > 0 && draft.length <= MAX_CHARS;
@@ -94,7 +58,7 @@ export function TataChat({ open, onOpenChange }: { open: boolean; onOpenChange: 
     const text = raw.trim();
     if (!text || chat.isPending || !online || reason) return;
     const history: TataHistoryItem[] = messages.slice(-HISTORY).map((m) => ({ role: m.role, text: m.text }));
-    const next = [...messages, { id: `${Date.now()}-u`, role: "user" as const, text }];
+    const next = [...messages, { id: uuid(), role: "user" as const, text }];
     setMessages(next);
     writeStored(next);
     setDraft("");
@@ -103,7 +67,7 @@ export function TataChat({ open, onOpenChange }: { open: boolean; onOpenChange: 
       { message: text, history },
       {
         onSuccess: (data) => {
-          const reply: ChatMessage = { id: `${Date.now()}-t`, role: "tata", text: data.reply, mood: asMood(data.mood) };
+          const reply: ChatMessage = { id: uuid(), role: "tata", text: data.reply, mood: asMood(data.mood) };
           setMessages((cur) => {
             const list = [...cur, reply];
             writeStored(list);
@@ -203,7 +167,7 @@ export function TataChat({ open, onOpenChange }: { open: boolean; onOpenChange: 
               </p>
             ) : null}
             {reasonText ? (
-              <div className="mt-auto flex flex-col items-center gap-2 pt-2 text-center">
+              <div className={cn("flex flex-col items-center gap-2 text-center", messages.length ? "mt-auto pt-2" : "my-auto")}>
                 <p className="m-0 text-[14px] text-neutral-300">{reasonText}</p>
                 {upsell ? <PlanUpsell compact text="Mais conversas com o Tatá nos planos Essencial e Completo." className="justify-center" /> : null}
               </div>
