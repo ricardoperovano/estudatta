@@ -148,17 +148,26 @@ function speakWithDevice(text: string, mySeq: number): void {
   const say = () => {
     if (mySeq !== seq) return;
     try {
-      synth.cancel();
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = "pt-BR";
       u.rate = 1.0;
       u.pitch = 1.05;
       const v = pickVoice(getVoices());
+      // com a voz escolhida o idioma vem dela; definir os dois faz o Chrome no Linux
+      // (speech-dispatcher) falar duas vezes em alguns sistemas
       if (v) u.voice = v;
+      else u.lang = "pt-BR";
       u.onstart = () => mySeq === seq && setSpeaking(true);
       u.onend = () => mySeq === seq && setSpeaking(false);
       u.onerror = () => mySeq === seq && setSpeaking(false);
-      synth.speak(u);
+      // cancelar e falar no mesmo instante também sobrepõe vozes no Linux: cancela só se há
+      // algo tocando e espera o motor esvaziar antes de falar
+      const start = () => mySeq === seq && synth.speak(u);
+      if (synth.speaking || synth.pending) {
+        synth.cancel();
+        window.setTimeout(start, 120);
+      } else {
+        start();
+      }
     } catch {
       setSpeaking(false);
     }
