@@ -51,7 +51,7 @@ export function AuthLayout({
           </a>
           <div className="mt-2 flex items-end gap-3">
             <TataSvg mood={mood} size={84} title="Tatá, o mascote do Estudatta" className="shrink-0 rise-in" />
-            <p className="tata-bubble tata-bubble--left m-0 mb-4 flex-1 rounded-lg border border-divider bg-surface px-3 py-2 text-[13px] leading-[1.35] text-primary shadow-sm">
+            <p className="tata-bubble tata-bubble--left m-0 mb-4 min-w-0 flex-1 rounded-lg border border-divider bg-surface px-3 py-2 text-[13px] leading-[1.35] text-primary shadow-sm">
               {greeting ?? "Oi! Que bom te ver. Seu plano de hoje está esperando."}
             </p>
           </div>
