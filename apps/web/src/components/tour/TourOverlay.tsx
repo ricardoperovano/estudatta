@@ -101,24 +101,33 @@ export function TourOverlay() {
     if (key) markSeen.mutate(key);
   }, [close, markSeen]);
 
+  // um único ouvinte enquanto o tour está ativo (lê o passo atual no store, então trocar de passo
+  // não deixa nenhum instante sem ouvinte: Esc sempre fecha)
+  const { mutate: markSeenMutate } = markSeen;
   React.useEffect(() => {
     if (!def) return;
+    const end = () => {
+      const key = useTourStore.getState().close();
+      if (key) markSeenMutate(key);
+    };
     const onKey = (e: KeyboardEvent) => {
+      const st = useTourStore.getState();
+      const total = st.active?.steps.length ?? 0;
       if (e.key === "Escape") {
         e.preventDefault();
-        finish();
+        end();
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
-        if (index < steps.length - 1) go(index + 1);
-        else finish();
-      } else if (e.key === "ArrowLeft" && index > 0) {
+        if (st.index < total - 1) st.go(st.index + 1);
+        else end();
+      } else if (e.key === "ArrowLeft" && st.index > 0) {
         e.preventDefault();
-        go(index - 1);
+        st.go(st.index - 1);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [def, index, steps.length, go, finish]);
+  }, [def, markSeenMutate]);
 
   if (!def || !step) return null;
 
