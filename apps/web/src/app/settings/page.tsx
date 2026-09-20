@@ -1,14 +1,15 @@
 import * as React from "react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { CaretRight, Minus, Plus } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { errorMessage } from "@/api/client";
-import { useAuthActions, useUser } from "@/api/session";
+import { useUser } from "@/api/session";
 import { settingsKeys, usePreferences, useUpdatePreferences, type Preferences, type PreferencesUpdate } from "@/api/settings";
 import { InstallPrompt } from "@/components/app/install-prompt";
+import { useLogoutFlow } from "@/components/app/logout";
 import { AccountSection, DataSection } from "@/components/app/settings-account";
 import { RemindersSection, SettingsRow, SettingsSection } from "@/components/app/settings-reminders";
-import { Banner, Button, Card, Dialog, DialogContent, DurationStepper, Input, Seg, Spinner, Switch, Tag, toast } from "@/components/ui";
+import { Banner, Button, Card, DurationStepper, Input, Seg, Spinner, Switch, Tag, toast } from "@/components/ui";
 import { TataSvg } from "@/components/mascot/TataSvg";
 import { setTataMuted, useTataPrefs } from "@/components/mascot/use-tata";
 import { fmtDateTimeShort } from "@/lib/format";
@@ -442,69 +443,14 @@ function MoreSection({ isAdmin }: { isAdmin: boolean }) {
 
 function LogoutSection({ online }: { online: boolean }) {
   const user = useUser();
-  const { logout } = useAuthActions();
-  const nav = useNavigate();
-  const sync = useSyncStore();
-  const [open, setOpen] = React.useState(false);
-  const [busy, setBusy] = React.useState<"sync" | "discard" | "plain" | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
-  const waiting = sync.pending + sync.conflicts;
-
-  const leave = async (kind: "discard" | "plain") => {
-    setBusy(kind);
-    await logout();
-    nav("/entrar", { replace: true });
-  };
-
-  const syncAndLeave = async () => {
-    if (!user) return;
-    setBusy("sync");
-    setError(null);
-    const ok = await syncNow(user.id);
-    const s = useSyncStore.getState();
-    if (ok && s.pending === 0 && s.conflicts === 0) {
-      await logout();
-      nav("/entrar", { replace: true });
-      return;
-    }
-    setBusy(null);
-    setError(
-      s.status === "offline"
-        ? "Sem conexão: não deu para sincronizar agora. Você pode esperar a internet voltar ou sair descartando os registros."
-        : s.conflicts > 0
-          ? "Alguns registros precisam da sua decisão em Sincronização antes de serem enviados."
-          : "Não foi possível sincronizar agora. Nada foi perdido; tente de novo em instantes.",
-    );
-  };
-
+  const { leave, dialog } = useLogoutFlow(online);
   return (
     <section aria-label="Sair" className="flex flex-col gap-2">
-      <Button variant="secondary" size="lg" block loading={busy === "plain"} onClick={() => (waiting > 0 ? setOpen(true) : void leave("plain"))}>
+      <Button variant="secondary" size="lg" block onClick={leave}>
         Sair
       </Button>
       {user ? <p className="break-all text-center text-[12px] text-neutral-400">Conectado como {user.email}</p> : null}
-
-      <Dialog open={open} onOpenChange={(o) => busy === null && setOpen(o)}>
-        <DialogContent
-          mode="sheet"
-          title="Há registros ainda não sincronizados"
-          description={`${waiting} ${waiting === 1 ? "registro feito" : "registros feitos"} neste aparelho ainda não ${waiting === 1 ? "chegou" : "chegaram"} à sua conta. Ao sair, os dados deste aparelho são apagados.`}
-        >
-          {error ? <Banner kind="error">{error}</Banner> : null}
-          <div className="flex flex-col gap-2">
-            <Button variant="primary" size="lg" block loading={busy === "sync"} disabled={!online || busy !== null} onClick={() => void syncAndLeave()}>
-              Sincronizar e sair
-            </Button>
-            <Button variant="danger" size="lg" block loading={busy === "discard"} disabled={busy !== null} onClick={() => void leave("discard")}>
-              Descartar {waiting === 1 ? "o registro" : "os registros"} e sair
-            </Button>
-            <Button variant="ghost-muted" size="lg" block disabled={busy !== null} onClick={() => setOpen(false)}>
-              Continuar conectado
-            </Button>
-          </div>
-          {!online ? <p className="text-[12px] text-neutral-400">Sem conexão: sincronizar só será possível quando a internet voltar.</p> : null}
-        </DialogContent>
-      </Dialog>
+      {dialog}
     </section>
   );
 }

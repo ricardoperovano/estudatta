@@ -49,7 +49,7 @@ export function AccountSection({ online }: { online: boolean }) {
   const user = useUser();
   if (!user) return null;
   return (
-    <SettingsSection title="Conta">
+    <SettingsSection title="Conta" id="conta">
       <ProfileForm key={`${user.name}|${user.timezone}`} name={user.name} timezone={user.timezone} online={online} />
       <EmailCard email={user.email} verified={!!user.email_verified_at} online={online} />
       <SessionsCard online={online} />

@@ -24,6 +24,7 @@ import { useGamification, useRevisionSummary } from "@/api/study";
 import { TataSvg } from "@/components/mascot/TataSvg";
 import { useTataPrefs } from "@/components/mascot/use-tata";
 import { ThemeSwitch } from "./theme-toggle";
+import { Avatar, ProfileMenu } from "./profile-menu";
 
 type Item = { to: string; label: string; labelLong?: string; icon: Icon; end?: boolean };
 
@@ -163,6 +164,16 @@ function CompanionCard() {
   );
 }
 
+function AccountLabel() {
+  const user = useUser();
+  return (
+    <span className="hidden min-w-0 flex-1 flex-col desktop:flex">
+      <span className="truncate text-[13px] font-medium text-primary">{user?.name || "Sua conta"}</span>
+      <span className="truncate text-[11px] text-neutral-500">{user?.email}</span>
+    </span>
+  );
+}
+
 function SyncChip() {
   const sync = useSyncStore();
   const online = useOnline();
@@ -219,6 +230,19 @@ export function Sidebar() {
           />
           <NavItem item={{ to: "/app/preferencias", label: "Preferências", icon: Gear }} active={pathname.startsWith("/app/preferencias")} />
           <NavItem item={{ to: "/app/planos", label: "Planos", icon: Sparkle }} />
+          <ProfileMenu
+            align="start"
+            trigger={
+              <button
+                type="button"
+                aria-label="Menu da conta"
+                className="mt-1 flex w-full items-center gap-3 rounded-[14px] px-2 py-2 text-left hover:bg-canvas focus-visible:ring-2 focus-visible:ring-accent tablet:justify-center desktop:justify-start"
+              >
+                <Avatar size={30} />
+                <AccountLabel />
+              </button>
+            }
+          />
           <ThemeSwitch className="mt-2" />
           <div className="mt-2 px-1">
             <SyncChip />

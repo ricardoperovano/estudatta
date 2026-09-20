@@ -24,9 +24,9 @@ import { Banner, Button, Card, DayPicker, Field, Input, Seg, Spinner, Switch, Ta
 import { cn } from "@/lib/utils";
 import { PlanUpsell, useHasFeature } from "@/components/app/plan-upsell";
 
-export function SettingsSection({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
+export function SettingsSection({ title, children, className, id }: { title: string; children: React.ReactNode; className?: string; id?: string }) {
   return (
-    <section aria-label={title} className={cn("flex flex-col gap-[14px]", className)}>
+    <section id={id} aria-label={title} className={cn("scroll-mt-20 flex flex-col gap-[14px]", className)}>
       <h2 className="text-[17px] font-medium leading-tight desktop:text-[20px]">{title}</h2>
       {children}
     </section>

@@ -9,6 +9,7 @@ import { useUnreadCount } from "@/api/notifications";
 import { TourHelpButton } from "@/components/tour/TourHelpButton";
 import { Symbol } from "./brand";
 import { ThemeToggle } from "./theme-toggle";
+import { Avatar, ProfileMenu } from "./profile-menu";
 
 const round =
   "relative flex h-9 w-9 items-center justify-center rounded-full border border-divider bg-surface text-neutral-300 shadow-sm hover:text-primary focus-visible:ring-2 focus-visible:ring-accent";
@@ -35,6 +36,13 @@ export function MobileHeader() {
           </Link>
           <ThemeToggle className={round} />
           <TourHelpButton inline />
+          <ProfileMenu
+            trigger={
+              <button type="button" className="rounded-full focus-visible:ring-2 focus-visible:ring-accent" aria-label="Menu da conta">
+                <Avatar size={36} />
+              </button>
+            }
+          />
         </div>
       </div>
     </header>
