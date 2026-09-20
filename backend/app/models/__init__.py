@@ -10,7 +10,16 @@ from app.models.activity import (
     RecoveryAllocation,
     RecoveryPlan,
 )
-from app.models.billing import BillingEvent, Plan, PlanPrice, PromoGrant, Subscription
+from app.models.billing import (
+    BillingEvent,
+    Campaign,
+    Coupon,
+    CouponRedemption,
+    Plan,
+    PlanPrice,
+    PromoGrant,
+    Subscription,
+)
 from app.models.content import ImportJob, Material, MaterialTopic, Subject, Topic
 from app.models.notification import Notification, NotificationDelivery, NotificationOutbox
 from app.models.planning import PlannedTask, TaskSeries
@@ -46,6 +55,9 @@ __all__ = [
     "BillingEvent",
     "Plan",
     "PlanPrice",
+    "Campaign",
+    "Coupon",
+    "CouponRedemption",
     "PromoGrant",
     "Subscription",
     "ImportJob",

@@ -47,10 +47,11 @@ class PromoGrantOut(BaseModel):
     granted_by: UUID | None
     reason: str
     starts_at: datetime
-    ends_at: datetime
+    ends_at: datetime | None
     revoked_at: datetime | None
     created_at: datetime
     active: bool
+    lifetime: bool = False
 
 
 class AdminUserDetailOut(BaseModel):
@@ -199,7 +200,7 @@ class ReconcileOut(BaseModel):
 
 class PromoIn(BaseModel):
     plan_code: str = Field(min_length=1, max_length=32)
-    days: int = Field(ge=1, le=3650)
+    days: int | None = Field(default=None, ge=1, le=3650)  # None = vitalício
     reason: str = Field(min_length=3, max_length=300)
 
 

@@ -18,6 +18,8 @@ from app.schemas.auth import EntitlementsOut
 from app.schemas.billing import (
     CheckoutIn,
     CheckoutOut,
+    CouponCheckIn,
+    CouponInfoOut,
     SubscriptionOut,
     SubscriptionStateOut,
     WebhookAck,
@@ -82,7 +84,12 @@ def checkout(
     """Cria a assinatura pendente e devolve o link de pagamento. Voltar da URL de sucesso
     NÃO libera o plano: só a confirmação do provedor (webhook/reconciliação) ativa."""
     sub = billing_service.start_checkout(
-        db, user, plan_code=payload.plan_code, interval=payload.interval, provider=provider
+        db,
+        user,
+        plan_code=payload.plan_code,
+        interval=payload.interval,
+        provider=provider,
+        coupon_code=payload.coupon_code,
     )
     audit(
         db,
@@ -90,7 +97,11 @@ def checkout(
         action="billing.checkout",
         target_type="subscription",
         target_id=str(sub.id),
-        metadata={"plan_code": payload.plan_code, "interval": payload.interval},
+        metadata={
+            "plan_code": payload.plan_code,
+            "interval": payload.interval,
+            "coupon_code": payload.coupon_code,
+        },
         ip=client_ip(request),
     )
     db.commit()
@@ -212,3 +223,52 @@ def asaas_webhook(
             code="provider_unavailable",
         )
     return WebhookAck(status=outcome.status)
+
+
+@router.post(
+    "/coupons/check",
+    response_model=CouponInfoOut,
+    dependencies=[Depends(rate_limit("coupon_check", 20, 600))],
+)
+def coupon_check(
+    payload: CouponCheckIn, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+) -> CouponInfoOut:
+    """Valida um cupom para este usuário sem consumir (a tela de planos mostra o efeito)."""
+    from app.services import growth
+
+    _, info = growth.check_coupon(db, user, payload.code, plan_code=payload.plan_code)
+    return CouponInfoOut(**info)
+
+
+@router.post(
+    "/coupons/redeem",
+    response_model=SubscriptionStateOut,
+    dependencies=[Depends(rate_limit("coupon_redeem", 10, 3600))],
+)
+def coupon_redeem(
+    payload: CouponCheckIn,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> SubscriptionStateOut:
+    """Cupom de dias grátis: libera o plano na hora, sem pagamento (acesso promocional)."""
+    from app.services import growth
+
+    coupon, _ = growth.check_coupon(db, user, payload.code)
+    if coupon.kind != "trial":
+        raise NotFound("Este cupom é de desconto: use-o ao assinar.", code="coupon_kind")
+    current = billing_service.current_subscription(db, user.id)
+    if current is not None and current.status in ("active", "past_due"):
+        raise NotFound("Você já tem uma assinatura ativa.", code="already_subscribed")
+    grant = growth.redeem_trial(db, user, coupon)
+    audit(
+        db,
+        actor_id=user.id,
+        action="billing.coupon_redeem",
+        target_type="promo_grant",
+        target_id=str(grant.id),
+        metadata={"coupon": coupon.code, "days": coupon.value},
+        ip=client_ip(request),
+    )
+    db.commit()
+    return _state(db, user, message=f"Pronto: {coupon.value} dias do plano liberados.")

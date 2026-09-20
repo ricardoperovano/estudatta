@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.core.timeutil import utcnow
@@ -247,7 +247,7 @@ def get_entitlements(db: Session, user_id: uuid.UUID) -> Entitlements:
                 PromoGrant.user_id == user_id,
                 PromoGrant.revoked_at.is_(None),
                 PromoGrant.starts_at <= now,
-                PromoGrant.ends_at > now,
+                or_(PromoGrant.ends_at.is_(None), PromoGrant.ends_at > now),
             )
         )
         .scalars()
@@ -261,7 +261,7 @@ def get_entitlements(db: Session, user_id: uuid.UUID) -> Entitlements:
                 plan_name=plan.name,
                 limits=plan.limits,
                 source="promo",
-                current_period_end=grant.ends_at.isoformat(),
+                current_period_end=grant.ends_at.isoformat() if grant.ends_at else None,
             )
     return base
 

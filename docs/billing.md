@@ -1,5 +1,16 @@
 # Cobrança
 
+## Gestão pelo painel (assinaturas, cupons, campanhas)
+
+Rotas em `app/api/v1/admin_growth.py`, serviço em `app/services/growth.py`, testes em `tests/api/test_growth.py`.
+
+| Recurso | Como funciona |
+|---|---|
+| Assinaturas | `GET /admin/subscriptions` (filtros e busca) e `/metrics` (ativos, MRR, novas e canceladas em 30 dias, promo). Cancelar renovação: `POST /admin/users/{id}/subscription/cancel`. |
+| Acesso grátis | `POST /admin/users/{id}/promo` com `days` (período) ou sem `days` (vitalício). |
+| Cupons | `percent` (desconto no valor recorrente, todos os ciclos) ou `trial` (dias grátis de um plano). A pessoa aplica em Planos ou por link `/app/planos?cupom=CODIGO`. |
+| Campanhas | Segmentos calculados dos dados; e-mail com `{nome}`/`{cupom}`; teste para o admin; respeita o opt-out de e-mails de retorno. |
+
 O backend aceita dois provedores de assinatura, escolhidos por `BILLING_PROVIDER`:
 
 - **`asaas` (produção atual):** checkout hospedado do Asaas, recorrente no cartão. Seção abaixo.

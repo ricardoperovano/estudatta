@@ -146,7 +146,13 @@ def describe_subscription(db: Session, sub: Subscription) -> dict[str, Any]:
 
 
 def start_checkout(
-    db: Session, user: User, *, plan_code: str, interval: str, provider: BillingProvider
+    db: Session,
+    user: User,
+    *,
+    plan_code: str,
+    interval: str,
+    provider: BillingProvider,
+    coupon_code: str | None = None,
 ) -> Subscription:
     """Cria a assinatura local `pending` e a preapproval no provedor. NÃO concede acesso:
     só o webhook/reconciliação confirmando `authorized` ativa o plano."""
@@ -177,6 +183,21 @@ def start_checkout(
     existing = current_subscription(db, user.id, now=now)
     if existing is not None and existing.status in ("active", "past_due"):
         raise Conflict("Você já tem uma assinatura ativa.", code="already_subscribed")
+    coupon = None
+    amount_cents = price.amount_cents
+    if coupon_code:
+        from app.services import growth
+
+        coupon, _ = growth.check_coupon(db, user, coupon_code, plan_code=plan.code)
+        if coupon.kind != "percent":
+            raise ValidationFailed(
+                "Este cupom dá dias grátis: use-o em Planos, sem pagamento.", code="coupon_kind"
+            )
+        amount_cents = growth.discounted_cents(price.amount_cents, coupon)
+        if amount_cents < 100:
+            raise ValidationFailed(
+                "O desconto deixa o valor abaixo do mínimo cobrável.", code="coupon_too_big"
+            )
     if (
         existing is not None
         and existing.status == "pending"
@@ -197,7 +218,9 @@ def start_checkout(
         external_reference=ref,
         metadata_={
             "interval": interval,
-            "amount_cents": price.amount_cents,
+            "amount_cents": amount_cents,
+            "list_amount_cents": price.amount_cents,
+            "coupon_code": coupon.code if coupon else None,
             "currency": price.currency,
             "billing_mode": settings.BILLING_MODE,
         },
@@ -212,7 +235,7 @@ def start_checkout(
             reason=f"{settings.APP_NAME} — plano {plan.name} ({INTERVAL_LABEL[interval]})",
             external_reference=ref,
             payer_email=user.email,
-            amount=price.amount_cents / 100,
+            amount=amount_cents / 100,
             currency=price.currency,
             frequency=frequency,
             frequency_type=frequency_type,
@@ -236,6 +259,10 @@ def start_checkout(
     sub.provider_payer_ref = remote.payer_id
     sub.last_synced_at = now
     db.flush()
+    if coupon is not None:
+        from app.services import growth
+
+        growth.redeem_discount(db, user, coupon, sub)
     return sub
 
 

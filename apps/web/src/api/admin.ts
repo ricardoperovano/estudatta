@@ -151,14 +151,15 @@ export function useSetUserActive() {
 export function useGrantPromo() {
   const invalidate = useInvalidateAdmin();
   return useMutation({
-    mutationFn: async ({ id, plan_code, days, reason }: { id: string; plan_code: string; days: number; reason: string }) =>
+    /** `days: null` = vitalício (sem data de término). */
+    mutationFn: async ({ id, plan_code, days, reason }: { id: string; plan_code: string; days: number | null; reason: string }) =>
       unwrap(
         await api.POST("/api/v1/admin/users/{user_id}/promo", {
           params: { path: { user_id: id } },
           body: { plan_code, days, reason },
         }),
       ),
-    onSuccess: () => invalidate(adminKeys.usersScope, adminKeys.overview),
+    onSuccess: () => invalidate(adminKeys.usersScope, adminKeys.overview, ["admin", "subscriptions"]),
   });
 }
 
@@ -166,7 +167,7 @@ export function useRevokePromo() {
   const invalidate = useInvalidateAdmin();
   return useMutation({
     mutationFn: async (grantId: string) => unwrap(await api.DELETE("/api/v1/admin/promo/{grant_id}", { params: { path: { grant_id: grantId } } })),
-    onSuccess: () => invalidate(adminKeys.usersScope, adminKeys.overview),
+    onSuccess: () => invalidate(adminKeys.usersScope, adminKeys.overview, ["admin", "subscriptions"]),
   });
 }
 

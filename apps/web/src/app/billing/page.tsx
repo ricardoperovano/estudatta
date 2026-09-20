@@ -17,8 +17,9 @@ import {
   type SubscriptionState,
 } from "@/api/billing";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
-import { Banner, Button, Card, EmptyState, Seg, Spinner, Tag, toast } from "@/components/ui";
+import { Banner, Button, Card, EmptyState, Input, Seg, Spinner, Tag, toast } from "@/components/ui";
 import { fmtBRL, parseDate } from "@/lib/format";
+import { useCheckCoupon, useRedeemCoupon, type CouponInfo } from "@/api/billing";
 import { useOnline } from "@/lib/online";
 import { cn } from "@/lib/utils";
 import { usePageTour } from "@/components/tour/use-tours";
@@ -39,6 +40,36 @@ export default function BillingPage() {
   const [params, setParams] = useSearchParams();
   const [interval, setInterval] = React.useState<BillingInterval>("month");
   const [redirectingTo, setRedirectingTo] = React.useState<string | null>(null);
+  // cupom: digitado aqui ou vindo de um link (?cupom=CODIGO, como nos e-mails de campanha)
+  const [couponInput, setCouponInput] = React.useState(() => (params.get("cupom") || "").toUpperCase());
+  const [coupon, setCoupon] = React.useState<CouponInfo | null>(null);
+  const checkCoupon = useCheckCoupon();
+  const redeemCoupon = useRedeemCoupon();
+  const applyCoupon = (code: string) => {
+    const c = code.trim().toUpperCase();
+    if (!c) return;
+    checkCoupon.mutate(
+      { code: c },
+      {
+        onSuccess: (info) => {
+          setCoupon(info);
+          toast("success", "Cupom aplicado", info.description);
+        },
+        onError: (e) => {
+          setCoupon(null);
+          toast("error", "Cupom não aplicado", errorMessage(e));
+        },
+      },
+    );
+  };
+  const autoApplied = React.useRef(false);
+  React.useEffect(() => {
+    if (!autoApplied.current && params.get("cupom")) {
+      autoApplied.current = true;
+      applyCoupon(params.get("cupom") || "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   usePageTour(planosTour, !!plans.data && (!!sub.data || sub.isError));
 
   // o retorno do pagamento chega como ?checkout=sucesso ou ?retorno=checkout&status=sucesso|cancelado|expirado
@@ -63,7 +94,7 @@ export default function BillingPage() {
   const onSubscribe = (plan: PublicPlan) => {
     setRedirectingTo(plan.code);
     checkout.mutate(
-      { plan_code: plan.code, interval },
+      { plan_code: plan.code, interval, coupon_code: coupon?.kind === "percent" ? coupon.code : null },
       {
         onSuccess: (out) => {
           if (out.checkout_url) window.location.assign(out.checkout_url);
@@ -127,6 +158,66 @@ export default function BillingPage() {
       ) : null}
 
       {!online ? <Banner kind="offline">Sem conexão: os planos mostrados podem estar desatualizados, e assinar ou cancelar precisa de internet.</Banner> : null}
+
+      <Card className="gap-3 p-4" data-tour="planos-cupom">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[15px] font-medium">Tem um cupom?</span>
+          <span className="text-[13px] text-neutral-400">Cupons de desconto valem ao assinar; cupons de dias grátis liberam o plano na hora.</span>
+        </div>
+        <form
+          className="flex flex-wrap gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            applyCoupon(couponInput);
+          }}
+        >
+          <label className="sr-only" htmlFor="cupom">
+            Código do cupom
+          </label>
+          <Input
+            id="cupom"
+            value={couponInput}
+            onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+            placeholder="CÓDIGO"
+            className="min-w-[160px] flex-1 uppercase"
+            autoCapitalize="characters"
+            spellCheck={false}
+            disabled={!online}
+          />
+          <Button type="submit" variant="secondary" loading={checkCoupon.isPending} disabled={!online || !couponInput.trim()}>
+            Aplicar
+          </Button>
+        </form>
+        {coupon ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-success-tint px-3 py-2 text-[14px] text-success">
+            <span>
+              <strong className="font-medium">{coupon.code}</strong>: {coupon.description}
+            </span>
+            {coupon.kind === "trial" ? (
+              <Button
+                size="sm"
+                variant="primary"
+                loading={redeemCoupon.isPending}
+                disabled={!online}
+                onClick={() =>
+                  redeemCoupon.mutate(coupon.code, {
+                    onSuccess: (s) => {
+                      setCoupon(null);
+                      setCouponInput("");
+                      toast("success", "Plano liberado", s.message ?? undefined);
+                    },
+                    onError: (e) => toast("error", "Não foi possível usar o cupom", errorMessage(e)),
+                  })
+                }
+              >
+                Liberar {coupon.value} dias grátis
+              </Button>
+            ) : (
+              <span className="text-[12px]">Escolha o plano abaixo: o valor já sai com desconto.</span>
+            )}
+          </div>
+        ) : null}
+      </Card>
 
       {sub.isError ? (
         <Banner

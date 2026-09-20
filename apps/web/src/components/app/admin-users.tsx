@@ -20,7 +20,7 @@ import { useUser } from "@/api/session";
 import { fmtDate, intervalLabel, shortId, statusLabel, statusVariant } from "@/components/app/admin-format";
 import { AdminSection, AdminTitle, KeyValues, Pager, QueryGate, SearchInput } from "@/components/app/admin-shared";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
-import { Button, EmptyState, Field, Input, Select, Tag, Textarea, toast } from "@/components/ui";
+import { Button, Dialog, DialogActions, DialogContent, EmptyState, Field, Input, Seg, Select, Tag, Textarea, toast } from "@/components/ui";
 import { fmtBRL } from "@/lib/format";
 
 const PAGE = 25;
@@ -177,7 +177,7 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
 
       <AdminSection title="Acesso promocional" meta="Concessão explícita; não simula pagamento.">
         <PromoGrants grants={promo_grants} />
-        <PromoForm userId={user.id} />
+        <PromoForm userId={user.id} userLabel={user.name || user.email} />
       </AdminSection>
 
       <AdminSection title="Papel e situação da conta">
@@ -300,10 +300,11 @@ function PromoGrants({ grants }: { grants: PromoGrant[] }) {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[14px] font-medium">{g.plan_code}</span>
                 <Tag variant={g.active ? "success" : "neutral"}>{g.active ? "ativa" : g.revoked_at ? "revogada" : "encerrada"}</Tag>
+                {g.lifetime || !g.ends_at ? <Tag variant="accent">Vitalício</Tag> : null}
               </div>
               <span className="tnum text-neutral-400">
-                {fmtDate(g.starts_at)} → {fmtDate(g.ends_at)}
-                {g.revoked_at ? ` · revogada ${fmtDate(g.revoked_at)}` : ""} · por {shortId(g.granted_by)}
+                {fmtDate(g.starts_at)} → {g.lifetime || !g.ends_at ? "sem data de término" : fmtDate(g.ends_at)}
+                {g.revoked_at ? ` · revogada ${fmtDate(g.revoked_at)}` : ""} · {g.granted_by ? `por ${shortId(g.granted_by)}` : "via cupom"}
               </span>
               <span className="break-words">{g.reason}</span>
             </div>
@@ -329,61 +330,122 @@ function PromoGrants({ grants }: { grants: PromoGrant[] }) {
   );
 }
 
-function PromoForm({ userId }: { userId: string }) {
+type Duration = "days" | "lifetime";
+
+interface PromoDialogProps {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  userId: string;
+  /** Nome ou e-mail, só para o texto do diálogo. */
+  userLabel?: string;
+}
+
+/**
+ * Concessão de acesso promocional: plano, duração (por período ou vitalício) e motivo.
+ * Reutilizado na página de assinaturas.
+ */
+export function PromoDialog({ open, onOpenChange, userId, userLabel }: PromoDialogProps) {
   const plans = useAdminPlans();
   const grant = useGrantPromo();
   const [planCode, setPlanCode] = React.useState("");
+  const [duration, setDuration] = React.useState<Duration>("days");
   const [days, setDays] = React.useState("30");
   const [reason, setReason] = React.useState("");
   const [touched, setTouched] = React.useState(false);
 
-  const options = (plans.data ?? []).filter((p) => p.active);
+  const options = (plans.data ?? []).filter((p) => p.active && p.code !== "free");
   const daysN = /^\d+$/.test(days) ? Number(days) : NaN;
-  const daysError = Number.isInteger(daysN) && daysN >= 1 && daysN <= 3650 ? null : "Entre 1 e 3650 dias.";
+  const daysError = duration === "lifetime" || (Number.isInteger(daysN) && daysN >= 1 && daysN <= 3650) ? null : "Entre 1 e 3650 dias.";
   const reasonT = reason.trim();
   const reasonError = reasonT.length < 3 ? "Explique o motivo (mínimo 3 caracteres)." : reasonT.length > 300 ? "Máximo de 300 caracteres." : null;
   const planError = planCode ? null : "Escolha um plano.";
+
+  const reset = () => {
+    setReason("");
+    setTouched(false);
+    setDuration("days");
+    setDays("30");
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setTouched(true);
     if (daysError || reasonError || planError) return;
     try {
-      await grant.mutateAsync({ id: userId, plan_code: planCode, days: daysN, reason: reasonT });
-      toast("success", "Acesso promocional concedido", `${planCode} por ${daysN} dias.`);
-      setReason("");
-      setTouched(false);
+      await grant.mutateAsync({ id: userId, plan_code: planCode, days: duration === "lifetime" ? null : daysN, reason: reasonT });
+      toast("success", "Acesso promocional concedido", duration === "lifetime" ? `${planCode}, vitalício.` : `${planCode} por ${daysN} dias.`);
+      reset();
+      onOpenChange(false);
     } catch (err) {
       toast("error", "Não foi possível conceder", errorMessage(err));
     }
   };
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3 border-t border-divider pt-3" noValidate>
-      <span className="kicker">Conceder acesso</span>
-      <div className="grid grid-cols-1 gap-3 tablet:grid-cols-[1fr_140px]">
-        <Field label="Plano" htmlFor="promo-plan" error={touched ? planError : null} hint={plans.isError ? `Não foi possível carregar os planos: ${errorMessage(plans.error)}` : undefined}>
-          <Select id="promo-plan" value={planCode} onChange={(e) => setPlanCode(e.target.value)} invalid={touched && !!planError} disabled={plans.isLoading}>
-            <option value="">{plans.isLoading ? "Carregando…" : "Escolha…"}</option>
-            {options.map((p) => (
-              <option key={p.id} value={p.code}>
-                {p.name} ({p.code})
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Dias" htmlFor="promo-days" error={touched ? daysError : null}>
-          <Input id="promo-days" inputMode="numeric" value={days} onChange={(e) => setDays(e.target.value)} invalid={touched && !!daysError} className="tnum" />
-        </Field>
-      </div>
-      <Field label="Motivo (obrigatório, fica na auditoria)" htmlFor="promo-reason" error={touched ? reasonError : null}>
-        <Textarea id="promo-reason" value={reason} onChange={(e) => setReason(e.target.value)} invalid={touched && !!reasonError} maxLength={300} />
-      </Field>
-      <div className="flex justify-end">
-        <Button type="submit" size="lg" loading={grant.isPending}>
-          Conceder acesso
-        </Button>
-      </div>
-    </form>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        title="Conceder acesso"
+        description={
+          userLabel ? `Acesso promocional para ${userLabel}. Fica marcado como concessão, não como pagamento.` : "Acesso promocional explícito; não simula pagamento."
+        }
+      >
+        <form onSubmit={submit} className="flex flex-col gap-3" noValidate>
+          <Field label="Plano" htmlFor="promo-plan" error={touched ? planError : null} hint={plans.isError ? `Não foi possível carregar os planos: ${errorMessage(plans.error)}` : undefined}>
+            <Select id="promo-plan" value={planCode} onChange={(e) => setPlanCode(e.target.value)} invalid={touched && !!planError} disabled={plans.isLoading}>
+              <option value="">{plans.isLoading ? "Carregando…" : "Escolha…"}</option>
+              {options.map((p) => (
+                <option key={p.id} value={p.code}>
+                  {p.name} ({p.code})
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Duração">
+            <Seg<Duration>
+              label="Duração do acesso"
+              value={duration}
+              onChange={setDuration}
+              block
+              size="lg"
+              options={[
+                { value: "days", label: "Por período" },
+                { value: "lifetime", label: "Vitalício" },
+              ]}
+            />
+          </Field>
+          {duration === "days" ? (
+            <Field label="Dias" htmlFor="promo-days" error={touched ? daysError : null}>
+              <Input id="promo-days" inputMode="numeric" value={days} onChange={(e) => setDays(e.target.value)} invalid={touched && !!daysError} className="tnum" />
+            </Field>
+          ) : (
+            <p className="text-[13px] text-neutral-400">Sem data de término. Pode ser revogado a qualquer momento na página da pessoa.</p>
+          )}
+          <Field label="Motivo (obrigatório, fica na auditoria)" htmlFor="promo-reason" error={touched ? reasonError : null}>
+            <Textarea id="promo-reason" value={reason} onChange={(e) => setReason(e.target.value)} invalid={touched && !!reasonError} maxLength={300} />
+          </Field>
+          <DialogActions>
+            <Button type="button" variant="secondary" size="lg" onClick={() => onOpenChange(false)} disabled={grant.isPending}>
+              Cancelar
+            </Button>
+            <Button type="submit" size="lg" loading={grant.isPending}>
+              Conceder acesso
+            </Button>
+          </DialogActions>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PromoForm({ userId, userLabel }: { userId: string; userLabel: string }) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-divider pt-3">
+      <span className="text-[13px] text-neutral-400">Libera um plano por um período ou para sempre, sem cobrança.</span>
+      <Button size="lg" onClick={() => setOpen(true)}>
+        Conceder acesso
+      </Button>
+      <PromoDialog open={open} onOpenChange={setOpen} userId={userId} userLabel={userLabel} />
+    </div>
   );
 }

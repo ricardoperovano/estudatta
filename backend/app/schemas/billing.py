@@ -75,6 +75,20 @@ class SubscriptionStateOut(BaseModel):
 class CheckoutIn(BaseModel):
     plan_code: str = Field(min_length=1, max_length=32)
     interval: Literal["month", "year"]
+    coupon_code: str | None = Field(default=None, max_length=32)
+
+
+class CouponCheckIn(BaseModel):
+    code: str = Field(min_length=1, max_length=32)
+    plan_code: str | None = Field(default=None, max_length=32)
+
+
+class CouponInfoOut(BaseModel):
+    code: str
+    kind: str
+    value: int
+    plan_code: str | None
+    description: str
 
 
 class CheckoutOut(BaseModel):

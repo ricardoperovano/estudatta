@@ -112,6 +112,14 @@ Registro vivo das decisões tomadas durante a implementação. Cada item indica 
 - **Canais:** no app, push e e-mail. O e-mail de retorno vem ligado por padrão (`reengagement_email`), com link de descadastro de um clique (`/api/v1/public/unsubscribe`, token HMAC) e cabeçalhos `List-Unsubscribe`/`List-Unsubscribe-Post`.
 - **E-mails com a identidade atual:** fundo claro da paleta, logo, Tatá (PNG em `apps/web/public/marca/tata-email.png`), botão cheio; tabelas e estilos inline para Gmail/Outlook.
 
+## 2026-09-20 — Gestão de assinaturas, cupons e campanhas (painel)
+
+- **Pedido do responsável:** ver, acompanhar e gerenciar assinaturas; conceder acesso grátis por período ou vitalício; cupons; e-mails com dicas, descontos e chamadas de volta.
+- **Acesso promocional vitalício:** `promo_grants.ends_at` nulo. Continua marcado como `promo`, nunca finge pagamento.
+- **Cupons:** dois tipos, honestos. **Desconto %** reduz o valor da assinatura no checkout do Asaas (vale para todos os ciclos: o valor recorrente fica menor). **Dias grátis** de um plano vira uma concessão promocional na hora, sem pagamento. Um uso por pessoa, limite de usos e validade opcionais, desativável.
+- **Campanhas:** segmentos calculados dos dados (gratuito, assinantes, promo, cancelados, sem objetivo, inativos 7/30 dias, novos 7 dias). Envio pela mesma fila de e-mail, com `{nome}` e `{cupom}`, botão e teste para o próprio administrador. **Só recebe quem não desligou os e-mails de retorno**; todo e-mail tem descadastro de um clique.
+- **Não implementado:** desconto só nos primeiros N ciclos (exigiria a API de descontos do Asaas), agendamento de campanhas e automações por evento além dos lembretes de retorno já existentes.
+
 ## Pendências que dependem exclusivamente do responsável
 
 - **[pendente do responsável]** Validar os preços sugeridos (R$ 9,90 e R$ 19,90) e os tetos de IA após o primeiro mês com dados reais de uso.

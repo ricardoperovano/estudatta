@@ -37,7 +37,7 @@ export function useSubscription() {
 export function useCheckout() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (body: { plan_code: string; interval: BillingInterval }) => unwrap(await api.POST("/api/v1/billing/checkout", { body })),
+    mutationFn: async (body: { plan_code: string; interval: BillingInterval; coupon_code?: string | null }) => unwrap(await api.POST("/api/v1/billing/checkout", { body })),
     onSettled: () => qc.invalidateQueries({ queryKey: billingKeys.subscription }),
   });
 }
@@ -65,6 +65,27 @@ export function useVerifySubscription() {
   return useMutation({
     mutationFn: async () => unwrap(await api.POST("/api/v1/billing/sync")) as SubscriptionState,
     onSuccess: apply,
+  });
+}
+
+export type CouponInfo = components["schemas"]["CouponInfoOut"];
+
+/** Valida um cupom para este usuário (sem consumir). */
+export function useCheckCoupon() {
+  return useMutation({
+    mutationFn: async (body: { code: string; plan_code?: string | null }) => unwrap(await api.POST("/api/v1/billing/coupons/check", { body })) as CouponInfo,
+  });
+}
+
+/** Cupom de dias grátis: libera o plano na hora. */
+export function useRedeemCoupon() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (code: string) => unwrap(await api.POST("/api/v1/billing/coupons/redeem", { body: { code } })) as SubscriptionState,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: billingKeys.subscription });
+      qc.invalidateQueries({ queryKey: sessionKey });
+    },
   });
 }
 

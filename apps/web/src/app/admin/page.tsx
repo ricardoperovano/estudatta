@@ -1,10 +1,13 @@
 import { Link, Navigate, NavLink, Route, Routes } from "react-router";
-import { ArrowLeft, ChartBar, ClockCounterClockwise, CreditCard, GearSix, Queue, Tag as TagIcon, Users } from "@phosphor-icons/react";
+import { ArrowLeft, ChartBar, ClockCounterClockwise, CreditCard, GearSix, Megaphone, Queue, Receipt, Tag as TagIcon, Ticket, Users } from "@phosphor-icons/react";
 import { useAdminOverview, type AdminOverview } from "@/api/admin";
 import { fmtDate, fmtValue, humanize, isPlainObject, statusLabel, statusVariant } from "@/components/app/admin-format";
+import { AdminCampaignEditorPage, AdminCampaignsPage } from "@/components/app/admin-campaigns";
+import { AdminCouponsPage } from "@/components/app/admin-coupons";
 import { AdminAuditPage, AdminBillingPage, AdminQueuesPage } from "@/components/app/admin-ops";
 import { AdminPlansPage } from "@/components/app/admin-plans";
 import { AdminSettingsPage } from "@/components/app/admin-settings";
+import { AdminSubscriptionsPage } from "@/components/app/admin-subscriptions";
 import { AdminTitle, QueryGate, StatCard } from "@/components/app/admin-shared";
 import { AdminUserDetailPage, AdminUsersList } from "@/components/app/admin-users";
 import { Logo } from "@/components/app/brand";
@@ -15,7 +18,10 @@ import { cn } from "@/lib/utils";
 const SECTIONS = [
   { to: "/admin", end: true, label: "Visão geral", icon: ChartBar },
   { to: "/admin/usuarios", end: false, label: "Usuários", icon: Users },
+  { to: "/admin/assinaturas", end: false, label: "Assinaturas", icon: Receipt },
   { to: "/admin/planos", end: false, label: "Planos", icon: TagIcon },
+  { to: "/admin/cupons", end: false, label: "Cupons", icon: Ticket },
+  { to: "/admin/campanhas", end: false, label: "Campanhas", icon: Megaphone },
   { to: "/admin/configuracoes", end: false, label: "Configurações", icon: GearSix },
   { to: "/admin/filas", end: false, label: "Filas", icon: Queue },
   { to: "/admin/cobranca", end: false, label: "Cobrança", icon: CreditCard },
@@ -85,7 +91,12 @@ export default function AdminPage() {
               <Route index element={<OverviewPage />} />
               <Route path="usuarios" element={<AdminUsersList />} />
               <Route path="usuarios/:id" element={<AdminUserDetailPage />} />
+              <Route path="assinaturas" element={<AdminSubscriptionsPage />} />
               <Route path="planos" element={<AdminPlansPage />} />
+              <Route path="cupons" element={<AdminCouponsPage />} />
+              <Route path="campanhas" element={<AdminCampaignsPage />} />
+              <Route path="campanhas/nova" element={<AdminCampaignEditorPage />} />
+              <Route path="campanhas/:id" element={<AdminCampaignEditorPage />} />
               <Route path="configuracoes" element={<AdminSettingsPage />} />
               <Route path="filas" element={<AdminQueuesPage />} />
               <Route path="cobranca" element={<AdminBillingPage />} />
@@ -146,7 +157,11 @@ function OverviewGrid({ o }: { o: AdminOverview }) {
           Ver cobrança
         </Link>
       </StatCard>
-      <StatCard label="Concessões promocionais ativas" value={o.promo_grants_active.toLocaleString("pt-BR")} />
+      <StatCard label="Concessões promocionais ativas" value={o.promo_grants_active.toLocaleString("pt-BR")}>
+        <Link to="/admin/assinaturas" className="inline-flex min-h-[44px] items-center text-[13px] text-accent">
+          Ver assinaturas
+        </Link>
+      </StatCard>
     </div>
   );
 }

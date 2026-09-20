@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Any
 
-from sqlalchemy import distinct, func, select
+from sqlalchemy import distinct, func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import settings
@@ -294,7 +294,9 @@ def overview(db: Session, *, now: datetime | None = None) -> dict:
         select(func.count())
         .select_from(PromoGrant)
         .where(
-            PromoGrant.revoked_at.is_(None), PromoGrant.starts_at <= now, PromoGrant.ends_at > now
+            PromoGrant.revoked_at.is_(None),
+            PromoGrant.starts_at <= now,
+            or_(PromoGrant.ends_at.is_(None), PromoGrant.ends_at > now),
         ),
     )
     return {
@@ -633,8 +635,15 @@ def list_promo_grants(db: Session, user_id: uuid.UUID) -> list[PromoGrant]:
 
 
 def grant_promo(
-    db: Session, actor: User, user: User, *, plan_code: str, days: int, reason: str
+    db: Session,
+    actor: User,
+    user: User,
+    *,
+    plan_code: str,
+    days: int | None,
+    reason: str,
 ) -> PromoGrant:
+    """`days=None` concede acesso vitalício."""
     plan = db.execute(select(Plan).where(Plan.code == plan_code)).scalar_one_or_none()
     if plan is None or not plan.active:
         raise NotFound("Plano não encontrado.", code="plan_not_found")
@@ -649,7 +658,7 @@ def grant_promo(
         granted_by=actor.id,
         reason=reason.strip()[:300],
         starts_at=now,
-        ends_at=now + timedelta(days=days),
+        ends_at=now + timedelta(days=days) if days else None,
         created_at=now,
     )
     db.add(grant)
@@ -688,7 +697,10 @@ def promo_out(db: Session, grant: PromoGrant, *, now: datetime | None = None) ->
         "ends_at": grant.ends_at,
         "revoked_at": grant.revoked_at,
         "created_at": grant.created_at,
-        "active": grant.revoked_at is None and grant.starts_at <= now < grant.ends_at,
+        "active": grant.revoked_at is None
+        and grant.starts_at <= now
+        and (grant.ends_at is None or now < grant.ends_at),
+        "lifetime": grant.ends_at is None,
     }
 
 

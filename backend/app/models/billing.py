@@ -123,8 +123,68 @@ class PromoGrant(UUIDPk, Base):
     )
     reason: Mapped[str] = mapped_column(String(300), nullable=False)
     starts_at: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
-    ends_at: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
+    ends_at: Mapped[datetime | None] = mapped_column(UTCDateTime)  # None = vitalício
     revoked_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
+
+
+class Coupon(UUIDPk, Base):
+    """Cupom: desconto na assinatura (percentual, todos os ciclos) ou dias grátis de um plano."""
+
+    __tablename__ = "coupons"
+
+    code: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)  # percent | trial
+    value: Mapped[int] = mapped_column(Integer, nullable=False)  # % (1–100) ou dias
+    plan_code: Mapped[str | None] = mapped_column(String(32))  # None = qualquer plano pago
+    max_uses: Mapped[int | None] = mapped_column(Integer)
+    uses: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    expires_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    note: Mapped[str | None] = mapped_column(String(300))
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
+
+
+class CouponRedemption(UUIDPk, Base):
+    __tablename__ = "coupon_redemptions"
+    __table_args__ = (UniqueConstraint("coupon_id", "user_id", name="uq_coupon_user"),)
+
+    coupon_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("coupons.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    subscription_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("subscriptions.id", ondelete="SET NULL")
+    )
+    promo_grant_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("promo_grants.id", ondelete="SET NULL")
+    )
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
+
+
+class Campaign(UUIDPk, Base):
+    """Campanha de e-mail do administrador para um segmento (dicas, desconto, chamada de volta)."""
+
+    __tablename__ = "campaigns"
+
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    subject: Mapped[str] = mapped_column(String(160), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)  # texto simples com parágrafos
+    cta_label: Mapped[str | None] = mapped_column(String(60))
+    cta_url: Mapped[str | None] = mapped_column(String(400))
+    segment: Mapped[str] = mapped_column(String(32), nullable=False)
+    coupon_code: Mapped[str | None] = mapped_column(String(32))
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")  # draft | sent
+    recipients: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    sent_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
 
 

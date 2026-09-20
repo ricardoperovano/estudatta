@@ -37,7 +37,11 @@ from app.core.timeutil import local_datetime_to_utc, local_midnight_utc, today_i
 from app.domain.balance import TodaySummary
 from app.domain.messages import fmt_minutes, render
 from app.integrations import push as push_integration
-from app.integrations.email import send_nudge_email, send_weekly_summary_email
+from app.integrations.email import (
+    send_campaign_email,
+    send_nudge_email,
+    send_weekly_summary_email,
+)
 from app.models.activity import Activity, ActivityPause
 from app.models.notification import Notification, NotificationDelivery, NotificationOutbox
 from app.models.user import NotificationPreferences, PushSubscription, User, UserPreferences
@@ -782,8 +786,8 @@ def weekly_summaries(db: Session, *, now: datetime | None = None) -> dict:
 
 
 def _policy(row: NotificationOutbox) -> str:
-    if row.kind == "system":
-        return "system"
+    if row.kind in ("system", "campaign"):
+        return "system"  # campanha: sem limite diário de lembretes; respeita só o opt-out
     if row.kind == "goal_completed":
         return "reaction"
     if row.kind == "weekly_summary":
@@ -933,6 +937,8 @@ def _effective_channels(
         ):
             allowed.append(ch)
         elif ch == "email" and row.kind in REENGAGE_KINDS and prefs.reengagement_email:
+            allowed.append(ch)
+        elif ch == "email" and row.kind == "campaign" and prefs.reengagement_email:
             allowed.append(ch)
     return allowed
 
@@ -1101,6 +1107,15 @@ def _deliver(
             try:
                 if row.kind == "weekly_summary":
                     ok = send_weekly_summary_email(user.email, body)
+                elif row.kind == "campaign":
+                    ok = send_campaign_email(
+                        user.email,
+                        title=title,
+                        body=body,
+                        url=url,
+                        cta_label=(row.payload or {}).get("cta_label") or "Abrir o Estudatta",
+                        unsubscribe_url=unsubscribe_url(user.id),
+                    )
                 else:
                     ok = send_nudge_email(
                         user.email,

@@ -251,3 +251,31 @@ def send_nudge_email(to: str, *, title: str, body: str, url: str, unsubscribe_ur
             "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
         },
     )
+
+
+def send_campaign_email(
+    to: str, *, title: str, body: str, url: str, cta_label: str, unsubscribe_url: str
+) -> bool:
+    """Campanha do administrador (dicas, desconto, chamada de volta). Parágrafos por linha em branco."""
+    paras = [p.strip() for p in body.split("\n\n") if p.strip()]
+    html_body = "".join(
+        f'<p style="margin:0 0 12px">{p.replace(chr(10), "<br>")}</p>' for p in paras
+    )
+    text = f"{body}\n\n{cta_label}: {url}\n\nNão quer mais receber? {unsubscribe_url}"
+    html = _layout(
+        title,
+        html_body,
+        cta=(cta_label, url),
+        footer_note="Você recebe este e-mail porque tem uma conta no Estudatta.",
+        unsubscribe_url=unsubscribe_url,
+    )
+    return send_email(
+        to,
+        title,
+        text,
+        html,
+        headers={
+            "List-Unsubscribe": f"<{unsubscribe_url}>",
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        },
+    )
