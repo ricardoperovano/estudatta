@@ -26,7 +26,7 @@ export default function VerifyPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
   return (
-    <AuthLayout title="Confirmar e-mail">
+    <AuthLayout title="Confirmar e-mail" mood="cheer" greeting="Só mais um passo e sua conta fica pronta.">
       {state === "loading" ? <Spinner /> : state === "ok" ? <Banner kind="synced">E-mail confirmado. Bom estudo.</Banner> : <Banner kind="error">{msg}</Banner>}
       <Button asChild variant="primary" size="lg">
         <Link to="/app">Ir para Hoje</Link>

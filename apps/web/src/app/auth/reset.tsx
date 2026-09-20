@@ -26,7 +26,7 @@ export default function ResetPage() {
     }
   };
   return (
-    <AuthLayout title="Redefinir senha" footer={<Link to="/entrar">Voltar para entrar</Link>}>
+    <AuthLayout mood="encourage" greeting="Escolha uma senha nova e pronto." title="Redefinir senha" footer={<Link to="/entrar">Voltar para entrar</Link>}>
       {!token ? (
         <Banner kind="error">Link inválido. Peça um novo em "Esqueci minha senha".</Banner>
       ) : (

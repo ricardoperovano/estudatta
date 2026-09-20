@@ -35,6 +35,8 @@ export default function RegisterPage() {
 
   return (
     <AuthLayout
+      mood="cheer"
+      greeting="Oi! Eu sou o Tatá. Vamos montar seu primeiro plano de estudo?"
       title="Criar conta"
       subtitle="Você define a meta. O plano mostra o que fazer hoje e como retomar se atrasar."
       footer={

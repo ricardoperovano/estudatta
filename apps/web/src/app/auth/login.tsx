@@ -36,7 +36,7 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthLayout title="Entrar" subtitle="Seu plano de hoje está esperando." footer={<span>Ainda não tem conta? <Link to="/cadastro">Criar conta</Link></span>}>
+    <AuthLayout title="Entrar" subtitle="Continue de onde parou." greeting="Oi! Que bom te ver de novo. Seu plano de hoje está esperando." footer={<span>Ainda não tem conta? <Link to="/cadastro">Criar conta</Link></span>}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
         {error ? <Banner kind="error">{error}</Banner> : null}
         <Field label="E-mail" htmlFor="email" error={formState.errors.email?.message}>

@@ -24,7 +24,7 @@ export default function ForgotPage() {
     }
   };
   return (
-    <AuthLayout title="Recuperar senha" subtitle="Enviamos um link para redefinir a senha, se o e-mail tiver conta." footer={<Link to="/entrar">Voltar para entrar</Link>}>
+    <AuthLayout mood="think" greeting="Acontece com todo mundo. Vamos resolver isso rapidinho." title="Recuperar senha" subtitle="Enviamos um link para redefinir a senha, se o e-mail tiver conta." footer={<Link to="/entrar">Voltar para entrar</Link>}>
       {done ? (
         <Banner kind="synced">Se o e-mail existir, você receberá um link válido por 1 hora.</Banner>
       ) : (
