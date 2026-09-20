@@ -3,7 +3,16 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    ForeignKey,
+    Index,
+    Integer,
+    LargeBinary,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
@@ -29,6 +38,14 @@ class User(UUIDPk, Timestamps, Base):
     preferences: Mapped[UserPreferences | None] = relationship(
         back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
+    avatar: Mapped[UserAvatar | None] = relationship(
+        back_populates="user", uselist=False, cascade="all, delete-orphan", lazy="selectin"
+    )
+
+    @property
+    def avatar_version(self) -> int | None:
+        return self.avatar.version if self.avatar is not None else None
+
     notification_preferences: Mapped[NotificationPreferences | None] = relationship(
         back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
@@ -165,3 +182,19 @@ class PushSubscription(UUIDPk, Timestamps, Base):
 
 
 Index("ix_auth_sessions_user_active", AuthSession.user_id, AuthSession.revoked_at)
+
+
+class UserAvatar(Base):
+    """Foto de perfil: imagem pequena (até 256 px, ≤ 300 KB), já cortada no navegador."""
+
+    __tablename__ = "user_avatars"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    content_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
+
+    user: Mapped[User] = relationship(back_populates="avatar")

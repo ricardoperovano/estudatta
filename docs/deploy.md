@@ -60,3 +60,5 @@ O backend roda no servidor `api-v2` (Ubuntu 20.04, Docker 24, docker-compose 1.2
 **Certificado:** Certificado de Origem da Cloudflare para `api.estudatta.com.br` em `/etc/ssl/cloudflare/estudatta.com.br.pem` e `.key`, com SSL "Full (strict)" e proxy ligado no DNS. O site do Nginx só é ativado depois que os arquivos existem, porque um certificado ausente quebraria o `nginx -t` dos outros sites.
 
 **Rollback:** `git checkout <commit>` e `bash infra/scripts/deploy-server.sh --no-pull`. Banco: `alembic downgrade <revisão>` ou restaurar o backup de `infra/backups/`.
+
+**Arquivos (materiais, importações):** bucket privado `estudatta` no DigitalOcean Spaces (região `nyc3`), configurado no `.env` do servidor com `STORAGE_BACKEND=s3` e as variáveis `S3_*`. As chaves são as do Spaces já usadas pelos outros projetos; o acesso aos arquivos é por URL assinada de curta duração. A foto de perfil fica no banco (`user_avatars`, até 256 px), não no bucket.

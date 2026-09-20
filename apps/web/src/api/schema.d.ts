@@ -504,6 +504,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Avatar
+         * @description Troca a foto (JPEG, PNG ou WebP, até 300 KB; o app já corta e reduz para 256 px).
+         */
+        put: operations["put_avatar_api_v1_me_avatar_put"];
+        post?: never;
+        /** Delete Avatar */
+        delete: operations["delete_avatar_api_v1_me_avatar_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/activities": {
         parameters: {
             query?: never;
@@ -3053,6 +3074,11 @@ export interface components {
             payload: {
                 [key: string]: unknown;
             };
+        };
+        /** Body_put_avatar_api_v1_me_avatar_put */
+        Body_put_avatar_api_v1_me_avatar_put: {
+            /** File */
+            file: string;
         };
         /** Body_upload_api_v1_materials_upload_post */
         Body_upload_api_v1_materials_upload_post: {
@@ -6311,6 +6337,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Avatar Version */
+            avatar_version?: number | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -7296,6 +7324,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_avatar_api_v1_me_avatar_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_put_avatar_api_v1_me_avatar_put"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_avatar_api_v1_me_avatar_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
                 };
             };
         };

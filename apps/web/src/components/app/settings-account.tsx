@@ -1,3 +1,5 @@
+import { Avatar } from "./profile-menu";
+import { prepareAvatar } from "@/lib/avatar-image";
 import * as React from "react";
 import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -14,6 +16,9 @@ import {
   useRevokeSession,
   useUpdateProfile,
   type AuthSessionOut,
+  avatarUrl,
+  useDeleteAvatar,
+  useUploadAvatar,
 } from "@/api/settings";
 import { SettingsRow, SettingsSection } from "@/components/app/settings-reminders";
 import { Banner, Button, Card, Dialog, DialogActions, DialogContent, Field, Input, Select, Spinner, Tag, toast } from "@/components/ui";
@@ -50,10 +55,55 @@ export function AccountSection({ online }: { online: boolean }) {
   if (!user) return null;
   return (
     <SettingsSection title="Conta" id="conta">
+      <AvatarCard online={online} />
       <ProfileForm key={`${user.name}|${user.timezone}`} name={user.name} timezone={user.timezone} online={online} />
       <EmailCard email={user.email} verified={!!user.email_verified_at} online={online} />
       <SessionsCard online={online} />
     </SettingsSection>
+  );
+}
+
+function AvatarCard({ online }: { online: boolean }) {
+  const user = useUser();
+  const upload = useUploadAvatar();
+  const remove = useDeleteAvatar();
+  const [error, setError] = React.useState<string | null>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const url = avatarUrl(user);
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setError(null);
+    try {
+      const blob = await prepareAvatar(file);
+      await upload.mutateAsync(blob);
+      toast("success", "Foto atualizada");
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  };
+  const busy = upload.isPending || remove.isPending;
+  return (
+    <Card className="flex-row items-center gap-4 p-[14px] text-[14px]">
+      <Avatar size={64} />
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <span className="font-medium">Foto de perfil</span>
+        <span className="text-[12px] text-neutral-400">JPG, PNG ou WebP. A foto é cortada no quadrado e reduzida aqui no seu aparelho.</span>
+        {error ? <span className="text-[12px] text-error">{error}</span> : null}
+        <div className="flex flex-wrap gap-2">
+          <input ref={inputRef} type="file" accept="image/*" className="sr-only" onChange={onFile} aria-label="Escolher foto de perfil" />
+          <Button size="sm" variant="secondary" loading={upload.isPending} disabled={!online || busy} onClick={() => inputRef.current?.click()}>
+            {url ? "Trocar foto" : "Enviar foto"}
+          </Button>
+          {url ? (
+            <Button size="sm" variant="ghost" loading={remove.isPending} disabled={!online || busy} onClick={() => remove.mutate(undefined, { onSuccess: () => toast("info", "Foto removida") })}>
+              Remover
+            </Button>
+          ) : null}
+        </div>
+      </div>
+    </Card>
   );
 }
 

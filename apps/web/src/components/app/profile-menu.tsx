@@ -6,6 +6,7 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Link } from "react-router";
 import { CreditCard, Gear, SignOut, Sparkle, UserCircle } from "@phosphor-icons/react";
 import { useUser } from "@/api/session";
+import { avatarUrl } from "@/api/settings";
 import { useOnline } from "@/lib/online";
 import { cn } from "@/lib/utils";
 import { useLogoutFlow } from "./logout";
@@ -17,6 +18,10 @@ function initial(name: string | null | undefined, email: string | undefined) {
 
 export function Avatar({ size = 32, className }: { size?: number; className?: string }) {
   const user = useUser();
+  const url = avatarUrl(user);
+  if (url) {
+    return <img src={url} alt="" width={size} height={size} className={cn("shrink-0 rounded-full object-cover", className)} style={{ width: size, height: size }} />;
+  }
   return (
     <span
       aria-hidden

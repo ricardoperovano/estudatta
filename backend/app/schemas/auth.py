@@ -48,6 +48,7 @@ class UserOut(ORMModel):
     email_verified_at: datetime | None
     onboarding_completed_at: datetime | None
     created_at: datetime
+    avatar_version: int | None = None  # None = sem foto; muda a cada troca (cache-busting)
 
 
 class EntitlementsOut(BaseModel):

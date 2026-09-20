@@ -30,6 +30,7 @@ from app.models.user import (
     OneTimeToken,
     PushSubscription,
     User,
+    UserAvatar,
     UserPreferences,
 )
 
@@ -72,6 +73,7 @@ __all__ = [
     "OneTimeToken",
     "PushSubscription",
     "User",
+    "UserAvatar",
     "UserPreferences",
     "MockExam",
     "MockExamSubject",

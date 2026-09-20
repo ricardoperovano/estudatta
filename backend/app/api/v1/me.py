@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, File, Request, Response, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from app.core.audit import audit
 from app.core.db import get_db
 from app.core.deps import get_current_user
-from app.core.errors import Unauthorized, ValidationFailed
+from app.core.errors import NotFound, Unauthorized, ValidationFailed
 from app.core.security import verify_password
 from app.core.timeutil import utcnow, valid_timezone
 from app.models.activity import Activity
@@ -328,3 +328,71 @@ def _json(v):
     if hasattr(v, "hex") and not isinstance(v, (bytes, str)):
         return str(v)
     return v
+
+
+# --- Foto de perfil ------------------------------------------------------------------------
+AVATAR_MAX_BYTES = 300 * 1024
+AVATAR_TYPES = {"image/jpeg", "image/png", "image/webp"}
+
+
+@router.get("/avatar", include_in_schema=False)
+def get_avatar(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> Response:
+    """A foto da própria conta (só quem está logado vê a sua). Cache longo: a URL muda por versão."""
+    from app.models.user import UserAvatar
+
+    av = db.get(UserAvatar, user.id)
+    if av is None:
+        raise NotFound("Sem foto de perfil.", code="no_avatar")
+    return Response(
+        content=av.data,
+        media_type=av.content_type,
+        headers={
+            "Cache-Control": "private, max-age=31536000, immutable",
+            "ETag": f'"{av.version}"',
+        },
+    )
+
+
+@router.put("/avatar", response_model=UserOut)
+def put_avatar(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> UserOut:
+    """Troca a foto (JPEG, PNG ou WebP, até 300 KB; o app já corta e reduz para 256 px)."""
+    import magic
+
+    from app.core.timeutil import utcnow
+    from app.models.user import UserAvatar
+
+    data = file.file.read(AVATAR_MAX_BYTES + 1)
+    if not data:
+        raise ValidationFailed("Envie uma imagem.", code="avatar_empty")
+    if len(data) > AVATAR_MAX_BYTES:
+        raise ValidationFailed("A foto precisa ter até 300 KB.", code="avatar_too_large")
+    kind = magic.from_buffer(data, mime=True)
+    if kind not in AVATAR_TYPES:
+        raise ValidationFailed("Use uma imagem JPEG, PNG ou WebP.", code="avatar_type")
+    av = db.get(UserAvatar, user.id)
+    if av is None:
+        av = UserAvatar(
+            user_id=user.id, content_type=kind, data=data, version=1, updated_at=utcnow()
+        )
+        db.add(av)
+    else:
+        av.content_type, av.data, av.version, av.updated_at = kind, data, av.version + 1, utcnow()
+    db.commit()
+    db.refresh(user)
+    return UserOut.model_validate(user)
+
+
+@router.delete("/avatar", response_model=UserOut)
+def delete_avatar(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> UserOut:
+    from app.models.user import UserAvatar
+
+    av = db.get(UserAvatar, user.id)
+    if av is not None:
+        db.delete(av)
+        db.commit()
+        db.refresh(user)
+    return UserOut.model_validate(user)

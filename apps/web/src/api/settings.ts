@@ -1,8 +1,9 @@
 /** Preferências, lembretes, conta, sessões ativas, push e dados do usuário. */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, rawJson, unwrap, ApiError } from "./client";
+import { api, rawJson, unwrap, ApiError, API_BASE } from "./client";
 import { sessionKey } from "./session";
 import type { components } from "./schema";
+import type { User } from "./types";
 import { downloadFile } from "./reports";
 
 export type Preferences = components["schemas"]["PreferencesOut"];
@@ -66,6 +67,31 @@ export function useUpdateProfile() {
     mutationFn: async (body: components["schemas"]["ProfileUpdate"]) => unwrap(await api.PATCH("/api/v1/me", { body })),
     onSuccess: () => qc.invalidateQueries({ queryKey: sessionKey }),
   });
+}
+
+export function useUploadAvatar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (blob: Blob) => {
+      const fd = new FormData();
+      fd.append("file", blob, "avatar.jpg");
+      return rawJson<User>("/api/v1/me/avatar", { method: "PUT", body: fd });
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: sessionKey }),
+  });
+}
+
+export function useDeleteAvatar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => rawJson<User>("/api/v1/me/avatar", { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: sessionKey }),
+  });
+}
+
+/** URL da foto da conta (muda a cada troca; o navegador guarda em cache). `null` sem foto. */
+export function avatarUrl(user: { avatar_version?: number | null } | null | undefined): string | null {
+  return user?.avatar_version ? `${API_BASE}/api/v1/me/avatar?v=${user.avatar_version}` : null;
 }
 
 export function useResendVerification() {
