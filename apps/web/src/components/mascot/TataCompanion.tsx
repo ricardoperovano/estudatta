@@ -6,7 +6,7 @@
  * inteiro pode ser desligado em Preferências. Com movimento reduzido, fica parado.
  */
 import * as React from "react";
-import { SpeakerHigh, SpeakerSlash } from "@phosphor-icons/react";
+import { ChatCircleDots, ChatCircleSlash } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { TataSvg, type TataMood } from "./TataSvg";
 import { tataSay, type TataSituation } from "./tata-messages";
@@ -205,10 +205,10 @@ export function TataCompanion({ scene, size = 112, layout = "row", className, "d
           type="button"
           onClick={() => setTataMuted(!muted)}
           className="rounded-md p-1 text-neutral-500 hover:text-primary focus-visible:ring-2 focus-visible:ring-accent"
-          aria-label={muted ? "Ativar falas do Tatá" : "Silenciar falas do Tatá"}
-          title={muted ? "Ativar falas do Tatá" : "Silenciar falas do Tatá"}
+          aria-label={muted ? "Mostrar as falas do Tatá" : "Ocultar as falas do Tatá"}
+          title={muted ? "Mostrar as falas do Tatá" : "Ocultar as falas do Tatá"}
         >
-          {muted ? <SpeakerSlash size={16} aria-hidden /> : <SpeakerHigh size={16} aria-hidden />}
+          {muted ? <ChatCircleSlash size={16} aria-hidden /> : <ChatCircleDots size={16} aria-hidden />}
         </button>
       </div>
     </div>
