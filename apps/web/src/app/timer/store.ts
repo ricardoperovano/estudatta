@@ -14,6 +14,16 @@ interface TimerState {
   clear: (userId: string) => Promise<void>;
 }
 
+/** Sinal síncrono "há cronômetro neste aparelho", lido pela atualização automática do app. */
+function flagActive(t: LocalTimer | null) {
+  try {
+    if (t) localStorage.setItem("estudatta.timer_active", "1");
+    else localStorage.removeItem("estudatta.timer_active");
+  } catch {
+    /* sem storage */
+  }
+}
+
 export const useTimerStore = create<TimerState>((set, get) => ({
   timer: null,
   hydrated: false,
@@ -21,6 +31,7 @@ export const useTimerStore = create<TimerState>((set, get) => ({
     try {
       const t = (await db.timers.get(userId)) ?? null;
       set({ timer: t, hydrated: true });
+      flagActive(t);
       return t;
     } catch {
       set({ hydrated: true });
@@ -29,6 +40,7 @@ export const useTimerStore = create<TimerState>((set, get) => ({
   },
   async set(t) {
     set({ timer: t });
+    flagActive(t);
     if (t) {
       try {
         await db.timers.put(t);
@@ -39,6 +51,7 @@ export const useTimerStore = create<TimerState>((set, get) => ({
   },
   async clear(userId) {
     set({ timer: null });
+    flagActive(null);
     try {
       await db.timers.delete(userId);
     } catch {

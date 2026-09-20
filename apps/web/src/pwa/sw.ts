@@ -4,6 +4,7 @@
  * cache leve para respostas privadas de leitura (network-first, curta duração),
  * notificações push e clique. Não cacheia mutações nem arquivos de materiais.
  */
+import { clientsClaim } from "workbox-core";
 import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from "workbox-precaching";
 import { registerRoute, NavigationRoute } from "workbox-routing";
 import { NetworkFirst, CacheFirst } from "workbox-strategies";
@@ -11,6 +12,8 @@ import { ExpirationPlugin } from "workbox-expiration";
 
 declare const self: ServiceWorkerGlobalScope;
 
+// ao ativar, assume as abas abertas (o app recarrega em momento seguro; ver pwa/register.ts)
+clientsClaim();
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 

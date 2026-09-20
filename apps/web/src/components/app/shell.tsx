@@ -76,7 +76,7 @@ export function AppShell() {
                 </Button>
               }
             >
-              Uma nova versão do Estudatta está pronta.
+              Uma nova versão do Estudatta está pronta. Ela entra sozinha quando você sair da sessão.
             </Banner>
           </div>
         ) : null}
