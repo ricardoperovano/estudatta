@@ -3033,11 +3033,8 @@ export interface components {
             weekly_pages_goal?: number | null;
             /** Current Material Id */
             current_material_id?: string | null;
-            /**
-             * Clear Current Material
-             * @default false
-             */
-            clear_current_material: boolean;
+            /** Clear Current Material */
+            clear_current_material?: boolean | null;
             /** Tracking Mode */
             tracking_mode?: ("time" | "checklist" | "mixed") | null;
             /** Sort Order */
@@ -4414,11 +4411,8 @@ export interface components {
             last_position?: string | null;
             /** Current Page */
             current_page?: number | null;
-            /**
-             * Clear Current Page
-             * @default false
-             */
-            clear_current_page: boolean;
+            /** Clear Current Page */
+            clear_current_page?: boolean | null;
             /** Activity Id */
             activity_id?: string | null;
             /**

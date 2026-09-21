@@ -72,7 +72,7 @@ class ActivityUpdate(BaseModel):
     weekly_questions_goal: int | None = Field(default=None, ge=0, le=10000)
     weekly_pages_goal: int | None = Field(default=None, ge=0, le=10000)
     current_material_id: UUID | None = None  # o livro/curso/apostila "de agora"
-    clear_current_material: bool = False
+    clear_current_material: bool | None = None  # opcional: não quebra quem já chama o PATCH
     tracking_mode: Literal["time", "checklist", "mixed"] | None = None
     sort_order: int | None = None
 

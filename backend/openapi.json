@@ -9354,9 +9354,15 @@
             "title": "Current Material Id"
           },
           "clear_current_material": {
-            "type": "boolean",
-            "title": "Clear Current Material",
-            "default": false
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clear Current Material"
           },
           "tracking_mode": {
             "anyOf": [
@@ -13515,9 +13521,15 @@
             "title": "Current Page"
           },
           "clear_current_page": {
-            "type": "boolean",
-            "title": "Clear Current Page",
-            "default": false
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clear Current Page"
           },
           "activity_id": {
             "anyOf": [

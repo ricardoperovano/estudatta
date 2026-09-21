@@ -156,7 +156,7 @@ function BookmarkForm({ activity, onClose }: { activity: ActivityDetail; onClose
         id = m.id;
       }
       if (!id) {
-        await updateActivity.mutateAsync({ clear_current_material: true });
+        await updateActivity.mutateAsync({ clear_end_date: false, clear_current_material: true });
         toast.success(reading ? "Livro atual removido" : "Material atual removido");
         onClose();
         return;
@@ -166,10 +166,10 @@ function BookmarkForm({ activity, onClose }: { activity: ActivityDetail; onClose
       if (pageNum !== prevPage) {
         await updateMaterial.mutateAsync({
           id,
-          body: pageNum == null ? { clear_current_page: true } : { current_page: pageNum },
+          body: { clear_activity: false, ...(pageNum == null ? { clear_current_page: true } : { current_page: pageNum }) },
         });
       }
-      if (id !== cur?.id) await updateActivity.mutateAsync({ current_material_id: id });
+      if (id !== cur?.id) await updateActivity.mutateAsync({ clear_end_date: false, current_material_id: id });
       toast.success(
         reading ? "Marcador atualizado" : "Material atual salvo",
         pageNum != null ? `Você está na página ${pageNum}.` : undefined,

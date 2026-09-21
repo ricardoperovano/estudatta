@@ -41,7 +41,7 @@ class MaterialUpdate(BaseModel):
     page_to: int | None = Field(default=None, ge=0, le=100000)
     last_position: str | None = Field(default=None, max_length=120)
     current_page: int | None = Field(default=None, ge=0, le=100000)  # marcador de página
-    clear_current_page: bool = False
+    clear_current_page: bool | None = None  # opcional: não quebra quem já chama o PATCH
     activity_id: UUID | None = None
     clear_activity: bool = False
 

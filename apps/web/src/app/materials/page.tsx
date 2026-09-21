@@ -933,10 +933,6 @@ function TopicLinks({ material: m, online }: { material: MaterialDetail; online:
     const from = nums[0] ?? null;
     const to = nums[1] ?? null;
     if (from != null && to != null && to < from) return setError("A página final vem antes da inicial.");
-    const cur = parsePage(currentPage);
-    if (cur === undefined) return setError("Página atual: use só números.");
-    if (cur != null && m.pages_total && cur > m.pages_total)
-      return setError("A página atual não pode passar do total de páginas.");
     setError(null);
     link.mutate(
       { materialId: m.id, body: { topic_id: topicId, page_from: from, page_to: to } },

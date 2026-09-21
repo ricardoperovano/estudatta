@@ -223,7 +223,7 @@ def update_material(
         page_to=payload.page_to,
         last_position=payload.last_position,
         current_page=payload.current_page,
-        clear_current_page=payload.clear_current_page,
+        clear_current_page=bool(payload.clear_current_page),
         activity_id=payload.activity_id,
         clear_activity=payload.clear_activity,
     )
