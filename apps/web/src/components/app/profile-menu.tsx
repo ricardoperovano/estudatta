@@ -4,7 +4,7 @@
  */
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Link } from "react-router";
-import { CreditCard, Gear, SignOut, Sparkle, UserCircle } from "@phosphor-icons/react";
+import { CreditCard, Gear, ShieldCheck, SignOut, Sparkle, UserCircle } from "@phosphor-icons/react";
 import { useUser } from "@/api/session";
 import { avatarUrl } from "@/api/settings";
 import { useOnline } from "@/lib/online";
@@ -80,6 +80,16 @@ export function ProfileMenu({ trigger, align = "end" }: { trigger: React.ReactNo
                 <Sparkle size={18} aria-hidden /> Conquistas
               </Link>
             </DropdownMenu.Item>
+            {user.role === "admin" ? (
+              <>
+                <DropdownMenu.Separator className="my-1 h-px bg-divider" />
+                <DropdownMenu.Item asChild className={item}>
+                  <Link to="/admin">
+                    <ShieldCheck size={18} aria-hidden /> Painel administrativo
+                  </Link>
+                </DropdownMenu.Item>
+              </>
+            ) : null}
             <DropdownMenu.Separator className="my-1 h-px bg-divider" />
             <DropdownMenu.Item className={cn(item, "text-error data-[highlighted]:bg-error-tint data-[highlighted]:text-error")} onSelect={leave}>
               <SignOut size={18} aria-hidden /> Sair da conta
