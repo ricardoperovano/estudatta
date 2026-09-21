@@ -3,6 +3,7 @@
  * cartão com o Tatá. Teclado: Enter/→ avança, ← volta, Esc pula. Com movimento reduzido, sem
  * transições. No celular o cartão fica encaixado no topo ou na base, longe do elemento.
  */
+import { t as tx } from "@/i18n";
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { X } from "@phosphor-icons/react";
@@ -20,15 +21,22 @@ const CARD_W = 340;
 function findTarget(name: string | undefined): HTMLElement | null {
   if (!name) return null;
   const all = Array.from(document.querySelectorAll<HTMLElement>(`[data-tour="${CSS.escape(name)}"]`));
-  return all.find((el) => {
-    const r = el.getBoundingClientRect();
-    return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
-  }) ?? null;
+  return (
+    all.find((el) => {
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
+    }) ?? null
+  );
 }
 
 function sameRect(a: Rect | null, b: Rect | null) {
   if (!a || !b) return a === b;
-  return Math.abs(a.top - b.top) < 0.5 && Math.abs(a.left - b.left) < 0.5 && Math.abs(a.width - b.width) < 0.5 && Math.abs(a.height - b.height) < 0.5;
+  return (
+    Math.abs(a.top - b.top) < 0.5 &&
+    Math.abs(a.left - b.left) < 0.5 &&
+    Math.abs(a.width - b.width) < 0.5 &&
+    Math.abs(a.height - b.height) < 0.5
+  );
 }
 
 export function TourOverlay() {
@@ -60,7 +68,9 @@ export function TourOverlay() {
     const tick = () => {
       const t = findTarget(step.target);
       const r = t?.getBoundingClientRect();
-      const next = r ? { top: r.top - PAD, left: r.left - PAD, width: r.width + PAD * 2, height: r.height + PAD * 2 } : null;
+      const next = r
+        ? { top: r.top - PAD, left: r.left - PAD, width: r.width + PAD * 2, height: r.height + PAD * 2 }
+        : null;
       if (!sameRect(next, last)) {
         last = next;
         setRect(next);
@@ -141,7 +151,10 @@ export function TourOverlay() {
   if (mobile) {
     const targetLow = hasTarget && rect!.top + rect!.height / 2 > vh * 0.5;
     if (targetLow) cardStyle.top = "calc(env(safe-area-inset-top, 0px) + 12px)";
-    else cardStyle.bottom = "calc(var(--layout-bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 12px)";
+    else
+      cardStyle.bottom = tx(
+        "calc(var(--layout-bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 12px)",
+      );
     cardStyle.left = 12;
     cardStyle.right = 12;
   } else if (hasTarget) {
@@ -162,7 +175,8 @@ export function TourOverlay() {
       // elemento alto e estreito (barra lateral): cartão ao lado, centralizado na vertical
       delete cardStyle.bottom;
       cardStyle.top = Math.max(16, vh / 2 - 130);
-      cardStyle.left = r.left + r.width + 16 + CARD_W < vw ? r.left + r.width + 16 : Math.max(16, r.left - CARD_W - 16);
+      cardStyle.left =
+        r.left + r.width + 16 + CARD_W < vw ? r.left + r.width + 16 : Math.max(16, r.left - CARD_W - 16);
     }
   } else {
     cardStyle.top = "50%";
@@ -178,8 +192,17 @@ export function TourOverlay() {
       {hasTarget ? (
         <div
           aria-hidden
-          className={cn("pointer-events-none absolute rounded-[12px] ring-2 ring-accent", !reduced && "transition-all duration-300 ease-standard")}
-          style={{ top: rect!.top, left: rect!.left, width: rect!.width, height: rect!.height, boxShadow: "0 0 0 9999px rgba(10, 11, 20, 0.62)" }}
+          className={cn(
+            "pointer-events-none absolute rounded-[12px] ring-2 ring-accent",
+            !reduced && "transition-all duration-300 ease-standard",
+          )}
+          style={{
+            top: rect!.top,
+            left: rect!.left,
+            width: rect!.width,
+            height: rect!.height,
+            boxShadow: "0 0 0 9999px rgba(10, 11, 20, 0.62)",
+          }}
         />
       ) : null}
       <div
@@ -188,20 +211,28 @@ export function TourOverlay() {
         aria-labelledby={titleId}
         aria-describedby={bodyId}
         data-tour-card
-        className={cn("absolute flex flex-col gap-3 rounded-lg border border-divider bg-surface p-4 text-left shadow-lg", !reduced && "transition-[top,left,bottom] duration-300 ease-standard")}
+        className={cn(
+          "absolute flex flex-col gap-3 rounded-lg border border-divider bg-surface p-4 text-left shadow-lg",
+          !reduced && "transition-[top,left,bottom] duration-300 ease-standard",
+        )}
         style={cardStyle}
       >
         <div className="flex items-start gap-3">
           {tata ? <TataSvg mood={mood} size={56} className="-mt-1 shrink-0" /> : null}
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <span className="text-[11px] uppercase tracking-[0.08em] text-accent">
-              {def.title} · {index + 1} de {steps.length}
+              {tx("{{v0}} · {{v1}} de {{v2}}", { v0: def.title, v1: index + 1, v2: steps.length })}
             </span>
             <h2 id={titleId} className="text-[17px] font-medium leading-tight">
               {step.title}
             </h2>
           </div>
-          <button type="button" onClick={finish} className="-mr-1 -mt-1 rounded-md p-1 text-neutral-500 hover:text-primary focus-visible:ring-2 focus-visible:ring-accent" aria-label="Fechar tour">
+          <button
+            type="button"
+            onClick={finish}
+            className="-mr-1 -mt-1 rounded-md p-1 text-neutral-500 hover:text-primary focus-visible:ring-2 focus-visible:ring-accent"
+            aria-label={tx("Fechar tour")}
+          >
             <X size={16} aria-hidden />
           </button>
         </div>
@@ -210,21 +241,29 @@ export function TourOverlay() {
         </p>
         <div className="flex items-center gap-1.5" aria-hidden>
           {steps.map((_, i) => (
-            <span key={i} className={cn("h-1.5 rounded-full", i === index ? "w-4 bg-accent" : "w-1.5 bg-neutral-700")} />
+            <span
+              key={i}
+              className={cn("h-1.5 rounded-full", i === index ? "w-4 bg-accent" : "w-1.5 bg-neutral-700")}
+            />
           ))}
         </div>
         <div className="flex items-center justify-between gap-2">
           <Button variant="ghost" size="sm" onClick={finish}>
-            {last ? "Fechar" : "Pular tour"}
+            {last ? tx("Fechar") : tx("Pular tour")}
           </Button>
           <div className="flex gap-2">
             {index > 0 ? (
               <Button variant="secondary" size="sm" onClick={() => go(index - 1)}>
-                Voltar
+                {tx("Voltar")}
               </Button>
             ) : null}
-            <Button ref={primaryRef} variant="primary" size="sm" onClick={() => (last ? finish() : go(index + 1))}>
-              {last ? "Concluir" : "Próximo"}
+            <Button
+              ref={primaryRef}
+              variant="primary"
+              size="sm"
+              onClick={() => (last ? finish() : go(index + 1))}
+            >
+              {last ? tx("Concluir") : tx("Próximo")}
             </Button>
           </div>
         </div>

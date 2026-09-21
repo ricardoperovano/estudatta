@@ -64,13 +64,21 @@ export const db = new EstudattaDB();
 
 export async function saveSnapshot(userId: string, name: string, data: unknown) {
   try {
-    await db.snapshots.put({ key: `${userId}:${name}`, user_id: userId, data, saved_at: new Date().toISOString() });
+    await db.snapshots.put({
+      key: `${userId}:${name}`,
+      user_id: userId,
+      data,
+      saved_at: new Date().toISOString(),
+    });
   } catch {
     /* IndexedDB indisponível (modo privado) */
   }
 }
 
-export async function loadSnapshot<T>(userId: string, name: string): Promise<{ data: T; saved_at: string } | null> {
+export async function loadSnapshot<T>(
+  userId: string,
+  name: string,
+): Promise<{ data: T; saved_at: string } | null> {
   try {
     const row = await db.snapshots.get(`${userId}:${name}`);
     return row ? { data: row.data as T, saved_at: row.saved_at } : null;
@@ -81,7 +89,10 @@ export async function loadSnapshot<T>(userId: string, name: string): Promise<{ d
 
 export async function pendingCount(userId: string): Promise<number> {
   try {
-    return await db.pendingOps.where({ user_id: userId }).filter((o) => o.status === "pending").count();
+    return await db.pendingOps
+      .where({ user_id: userId })
+      .filter((o) => o.status === "pending")
+      .count();
   } catch {
     return 0;
   }

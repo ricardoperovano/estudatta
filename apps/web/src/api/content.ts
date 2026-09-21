@@ -27,7 +27,12 @@ export function useSubjects(activityId: string | undefined) {
   return useQuery({
     queryKey: contentKeys.subjects(activityId || ""),
     enabled: !!activityId,
-    queryFn: async () => unwrap(await api.GET("/api/v1/activities/{activity_id}/subjects", { params: { path: { activity_id: activityId! } } })) as Subject[],
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/activities/{activity_id}/subjects", {
+          params: { path: { activity_id: activityId! } },
+        }),
+      ) as Subject[],
   });
 }
 
@@ -35,7 +40,12 @@ export function useContentProgress(activityId: string | undefined) {
   return useQuery({
     queryKey: contentKeys.progress(activityId || ""),
     enabled: !!activityId,
-    queryFn: async () => unwrap(await api.GET("/api/v1/activities/{activity_id}/content-progress", { params: { path: { activity_id: activityId! } } })) as ContentProgress,
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/activities/{activity_id}/content-progress", {
+          params: { path: { activity_id: activityId! } },
+        }),
+      ) as ContentProgress,
   });
 }
 
@@ -44,7 +54,12 @@ export function useContentProgressMany(ids: string[]) {
   return useQueries({
     queries: ids.map((id) => ({
       queryKey: contentKeys.progress(id),
-      queryFn: async () => unwrap(await api.GET("/api/v1/activities/{activity_id}/content-progress", { params: { path: { activity_id: id } } })) as ContentProgress,
+      queryFn: async () =>
+        unwrap(
+          await api.GET("/api/v1/activities/{activity_id}/content-progress", {
+            params: { path: { activity_id: id } },
+          }),
+        ) as ContentProgress,
       staleTime: 60_000,
     })),
   });
@@ -63,7 +78,12 @@ export function useCreateSubject(activityId: string) {
   const invalidate = useInvalidateContent(activityId);
   return useMutation({
     mutationFn: async (body: SubjectCreate) =>
-      unwrap(await api.POST("/api/v1/activities/{activity_id}/subjects", { params: { path: { activity_id: activityId } }, body })) as Subject,
+      unwrap(
+        await api.POST("/api/v1/activities/{activity_id}/subjects", {
+          params: { path: { activity_id: activityId } },
+          body,
+        }),
+      ) as Subject,
     onSuccess: invalidate,
   });
 }
@@ -72,7 +92,9 @@ export function useUpdateSubject(activityId: string) {
   const invalidate = useInvalidateContent(activityId);
   return useMutation({
     mutationFn: async ({ id, body }: { id: string; body: SubjectUpdate }) =>
-      unwrap(await api.PATCH("/api/v1/subjects/{subject_id}", { params: { path: { subject_id: id } }, body })) as Subject,
+      unwrap(
+        await api.PATCH("/api/v1/subjects/{subject_id}", { params: { path: { subject_id: id } }, body }),
+      ) as Subject,
     onSuccess: invalidate,
   });
 }
@@ -80,7 +102,8 @@ export function useUpdateSubject(activityId: string) {
 export function useDeleteSubject(activityId: string) {
   const invalidate = useInvalidateContent(activityId);
   return useMutation({
-    mutationFn: async (id: string) => unwrap(await api.DELETE("/api/v1/subjects/{subject_id}", { params: { path: { subject_id: id } } })),
+    mutationFn: async (id: string) =>
+      unwrap(await api.DELETE("/api/v1/subjects/{subject_id}", { params: { path: { subject_id: id } } })),
     onSuccess: invalidate,
   });
 }
@@ -88,7 +111,12 @@ export function useDeleteSubject(activityId: string) {
 export function useReorderSubjects(activityId: string) {
   const invalidate = useInvalidateContent(activityId);
   return useMutation({
-    mutationFn: async (orderedIds: string[]) => unwrap(await api.POST("/api/v1/subjects/reorder", { body: { activity_id: activityId, ordered_ids: orderedIds } })) as Subject[],
+    mutationFn: async (orderedIds: string[]) =>
+      unwrap(
+        await api.POST("/api/v1/subjects/reorder", {
+          body: { activity_id: activityId, ordered_ids: orderedIds },
+        }),
+      ) as Subject[],
     onSuccess: invalidate,
   });
 }
@@ -97,7 +125,12 @@ export function useCreateTopic(activityId: string) {
   const invalidate = useInvalidateContent(activityId);
   return useMutation({
     mutationFn: async ({ subjectId, body }: { subjectId: string; body: TopicCreate }) =>
-      unwrap(await api.POST("/api/v1/subjects/{subject_id}/topics", { params: { path: { subject_id: subjectId } }, body })) as Topic,
+      unwrap(
+        await api.POST("/api/v1/subjects/{subject_id}/topics", {
+          params: { path: { subject_id: subjectId } },
+          body,
+        }),
+      ) as Topic,
     onSuccess: invalidate,
   });
 }
@@ -107,7 +140,9 @@ export function useUpdateTopic(activityId: string) {
   const invalidate = useInvalidateContent(activityId);
   return useMutation({
     mutationFn: async ({ id, body }: { id: string; body: TopicUpdate }) =>
-      unwrap(await api.PATCH("/api/v1/topics/{topic_id}", { params: { path: { topic_id: id } }, body })) as Topic,
+      unwrap(
+        await api.PATCH("/api/v1/topics/{topic_id}", { params: { path: { topic_id: id } }, body }),
+      ) as Topic,
     onSuccess: invalidate,
   });
 }
@@ -115,7 +150,8 @@ export function useUpdateTopic(activityId: string) {
 export function useDeleteTopic(activityId: string) {
   const invalidate = useInvalidateContent(activityId);
   return useMutation({
-    mutationFn: async (id: string) => unwrap(await api.DELETE("/api/v1/topics/{topic_id}", { params: { path: { topic_id: id } } })),
+    mutationFn: async (id: string) =>
+      unwrap(await api.DELETE("/api/v1/topics/{topic_id}", { params: { path: { topic_id: id } } })),
     onSuccess: invalidate,
   });
 }
@@ -123,8 +159,20 @@ export function useDeleteTopic(activityId: string) {
 export function useReorderTopics(activityId: string) {
   const invalidate = useInvalidateContent(activityId);
   return useMutation({
-    mutationFn: async ({ subjectId, parentId, orderedIds }: { subjectId: string; parentId?: string | null; orderedIds: string[] }) =>
-      unwrap(await api.POST("/api/v1/topics/reorder", { body: { subject_id: subjectId, parent_id: parentId ?? null, ordered_ids: orderedIds } })) as Topic[],
+    mutationFn: async ({
+      subjectId,
+      parentId,
+      orderedIds,
+    }: {
+      subjectId: string;
+      parentId?: string | null;
+      orderedIds: string[];
+    }) =>
+      unwrap(
+        await api.POST("/api/v1/topics/reorder", {
+          body: { subject_id: subjectId, parent_id: parentId ?? null, ordered_ids: orderedIds },
+        }),
+      ) as Topic[],
     onSuccess: invalidate,
   });
 }
@@ -133,13 +181,18 @@ export function useMaterials(activityId?: string | null, enabled = true) {
   return useQuery({
     queryKey: contentKeys.materials(activityId),
     enabled,
-    queryFn: async () => unwrap(await api.GET("/api/v1/materials", { params: { query: { activity_id: activityId ?? null } } })) as Material[],
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/materials", { params: { query: { activity_id: activityId ?? null } } }),
+      ) as Material[],
   });
 }
 
 /** Detalhe com URL assinada de download (expira). */
 export async function fetchMaterialDetail(id: string): Promise<MaterialDetail> {
-  return unwrap(await api.GET("/api/v1/materials/{material_id}", { params: { path: { material_id: id } } })) as MaterialDetail;
+  return unwrap(
+    await api.GET("/api/v1/materials/{material_id}", { params: { path: { material_id: id } } }),
+  ) as MaterialDetail;
 }
 
 function useInvalidateMaterials(activityId?: string | null) {
@@ -156,7 +209,12 @@ export function useLinkMaterialTopic(activityId?: string | null) {
   const invalidate = useInvalidateMaterials(activityId);
   return useMutation({
     mutationFn: async ({ materialId, body }: { materialId: string; body: MaterialTopicLinkIn }) =>
-      unwrap(await api.POST("/api/v1/materials/{material_id}/topics", { params: { path: { material_id: materialId } }, body })) as MaterialDetail,
+      unwrap(
+        await api.POST("/api/v1/materials/{material_id}/topics", {
+          params: { path: { material_id: materialId } },
+          body,
+        }),
+      ) as MaterialDetail,
     onSuccess: invalidate,
   });
 }
@@ -165,7 +223,11 @@ export function useUnlinkMaterialTopic(activityId?: string | null) {
   const invalidate = useInvalidateMaterials(activityId);
   return useMutation({
     mutationFn: async ({ materialId, topicId }: { materialId: string; topicId: string }) =>
-      unwrap(await api.DELETE("/api/v1/materials/{material_id}/topics/{topic_id}", { params: { path: { material_id: materialId, topic_id: topicId } } })) as MaterialDetail,
+      unwrap(
+        await api.DELETE("/api/v1/materials/{material_id}/topics/{topic_id}", {
+          params: { path: { material_id: materialId, topic_id: topicId } },
+        }),
+      ) as MaterialDetail,
     onSuccess: invalidate,
   });
 }
@@ -173,7 +235,8 @@ export function useUnlinkMaterialTopic(activityId?: string | null) {
 export function useCreateLinkMaterial(activityId?: string | null) {
   const invalidate = useInvalidateMaterials(activityId);
   return useMutation({
-    mutationFn: async (body: S["MaterialLinkIn"]) => unwrap(await api.POST("/api/v1/materials/link", { body })) as MaterialDetail,
+    mutationFn: async (body: S["MaterialLinkIn"]) =>
+      unwrap(await api.POST("/api/v1/materials/link", { body })) as MaterialDetail,
     onSuccess: invalidate,
   });
 }
@@ -181,7 +244,8 @@ export function useCreateLinkMaterial(activityId?: string | null) {
 export function useCreatePhysicalMaterial(activityId?: string | null) {
   const invalidate = useInvalidateMaterials(activityId);
   return useMutation({
-    mutationFn: async (body: S["MaterialPhysicalIn"]) => unwrap(await api.POST("/api/v1/materials/physical", { body })) as MaterialDetail,
+    mutationFn: async (body: S["MaterialPhysicalIn"]) =>
+      unwrap(await api.POST("/api/v1/materials/physical", { body })) as MaterialDetail,
     onSuccess: invalidate,
   });
 }

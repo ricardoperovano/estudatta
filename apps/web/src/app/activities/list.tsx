@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import * as React from "react";
 import { Link } from "react-router";
 import { Banner, Button, Card, EmptyState, Spinner, Tag, toast } from "@/components/ui";
@@ -49,7 +50,14 @@ export default function ActivitiesListPage() {
     setLimitMessage(null);
     try {
       await changeStatus.mutateAsync({ id: a.id, status });
-      toast.success(status === "active" ? `"${a.title}" ativo de novo` : status === "paused" ? `"${a.title}" pausado` : `"${a.title}" arquivado`, status === "paused" ? "Enquanto estiver pausado, nada entra como pendência." : undefined);
+      toast.success(
+        status === "active"
+          ? t('"{{v0}}" ativo de novo', { v0: a.title })
+          : status === "paused"
+            ? t('"{{v0}}" pausado', { v0: a.title })
+            : t('"{{v0}}" arquivado', { v0: a.title }),
+        status === "paused" ? t("Enquanto estiver pausado, nada entra como pendência.") : undefined,
+      );
     } catch (err) {
       if (err instanceof ApiError && err.code === "activity_limit") setLimitMessage(err.message);
       else setError(errorMessage(err));
@@ -66,9 +74,13 @@ export default function ActivitiesListPage() {
   if (activities.isError) {
     return (
       <EmptyState
-        title="Não foi possível carregar os objetivos."
-        description={online ? "Tente de novo em instantes." : "Sem conexão: os objetivos aparecem quando você voltar à internet."}
-        action={<Button onClick={() => activities.refetch()}>Tentar de novo</Button>}
+        title={t("Não foi possível carregar os objetivos.")}
+        description={
+          online
+            ? t("Tente de novo em instantes.")
+            : t("Sem conexão: os objetivos aparecem quando você voltar à internet.")
+        }
+        action={<Button onClick={() => activities.refetch()}>{t("Tentar de novo")}</Button>}
       />
     );
   }
@@ -82,13 +94,25 @@ export default function ActivitiesListPage() {
         <div>
           <span className="tnum text-[13px] text-neutral-400">
             {active.length} {active.length === 1 ? "ativo" : "ativos"}
-            {limit != null ? ` de ${limit} no plano ${entitlements?.plan_name ?? ""}`.trimEnd() : ""}
+            {limit != null
+              ? (
+                  " " + t("de {{v0}} no plano {{v1}}", { v0: limit, v1: entitlements?.plan_name ?? "" })
+                ).trimEnd()
+              : ""}
           </span>
-          <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">Objetivos</h1>
+          <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">
+            {t("Objetivos")}
+          </h1>
         </div>
         {/* sem objetivos, o convite logo abaixo já traz o botão */}
-        <Button asChild variant="primary" size="lg" className={all.length > 0 ? "hidden desktop:inline-flex" : "hidden"} data-tour="objetivos-novo">
-          <Link to="/app/objetivos/novo">+ Criar objetivo</Link>
+        <Button
+          asChild
+          variant="primary"
+          size="lg"
+          className={all.length > 0 ? "hidden desktop:inline-flex" : "hidden"}
+          data-tour="objetivos-novo"
+        >
+          <Link to="/app/objetivos/novo">{t("+ Criar objetivo")}</Link>
         </Button>
       </header>
 
@@ -97,7 +121,7 @@ export default function ActivitiesListPage() {
           kind="info"
           actions={
             <Button asChild size="sm" variant="secondary">
-              <Link to="/app/planos">Ver planos</Link>
+              <Link to="/app/planos">{t("Ver planos")}</Link>
             </Button>
           }
         >
@@ -105,7 +129,9 @@ export default function ActivitiesListPage() {
         </Banner>
       ) : null}
       {error ? <Banner kind="error">{error}</Banner> : null}
-      {today.data?.offline ? <Banner kind="offline">Saldo provisório: mostrando a última semana sincronizada.</Banner> : null}
+      {today.data?.offline ? (
+        <Banner kind="offline">{t("Saldo provisório: mostrando a última semana sincronizada.")}</Banner>
+      ) : null}
 
       {all.length === 0 ? (
         <NoObjectives />
@@ -119,7 +145,7 @@ export default function ActivitiesListPage() {
             const days = activeDaysCount(a.current_rule);
             const mats = materialCount(a.id);
             const meta = [
-              p ? `${p.topics_total} ${p.topics_total === 1 ? "tópico" : "tópicos"}` : null,
+              p ? `${p.topics_total} ${p.topics_total === 1 ? t("tópico") : t("tópicos")}` : null,
               materials.data ? `${mats} ${mats === 1 ? "material" : "materiais"}` : null,
               a.tracking_mode === "checklist" ? "checklist" : null,
             ]
@@ -130,11 +156,21 @@ export default function ActivitiesListPage() {
                 key={a.id}
                 to={`/app/objetivos/${a.id}`}
                 title={a.title}
-                cadence={days > 0 ? `${days}×/sem` : undefined}
+                cadence={days > 0 ? t("{{v0}}×/sem", { v0: days }) : undefined}
                 progress={target > 0 ? logged / target : 0}
-                progressLabel={a.tracking_mode === "checklist" && target === 0 ? "sem meta de tempo" : `${fmtMinutes(logged)} de ${fmtMinutes(target)}`}
+                progressLabel={
+                  a.tracking_mode === "checklist" && target === 0
+                    ? t("sem meta de tempo")
+                    : t("{{v0}} de {{v1}}", { v0: fmtMinutes(logged), v1: fmtMinutes(target) })
+                }
                 pendingSeconds={card?.summary?.pending_prior ?? 0}
-                status={card?.pause ? { label: "pausa planejada", tone: "neutral" } : !card ? { label: categoryLabel(a.category, a.language), tone: "neutral" } : undefined}
+                status={
+                  card?.pause
+                    ? { label: t("pausa planejada"), tone: "neutral" }
+                    : !card
+                      ? { label: categoryLabel(a.category, a.language), tone: "neutral" }
+                      : undefined
+                }
                 meta={meta || undefined}
               />
             );
@@ -152,9 +188,12 @@ export default function ActivitiesListPage() {
               disabledReason={
                 atLimit ? (
                   <>
-                    Seu plano permite {limit} {limit === 1 ? "objetivo ativo" : "objetivos ativos"}. Pause outro ou{" "}
+                    {t("Seu plano permite {{v0}} {{v1}}. Pause outro ou", {
+                      v0: limit,
+                      v1: limit === 1 ? t("objetivo ativo") : t("objetivos ativos"),
+                    })}{" "}
                     <Link to="/app/planos" className="text-accent">
-                      veja os planos
+                      {t("veja os planos")}
                     </Link>
                     .
                   </>
@@ -166,33 +205,60 @@ export default function ActivitiesListPage() {
       )}
 
       {paused.length > 0 ? (
-        <Section title="Pausados" hint="Objetivos pausados não geram pendência nem lembretes.">
+        <Section title={t("Pausados")} hint={t("Objetivos pausados não geram pendência nem lembretes.")}>
           {paused.map((a) => (
-            <InactiveRow key={a.id} activity={a} busy={changeStatus.isPending} onActivate={() => setStatus(a, "active")} onArchive={() => setConfirm({ activity: a, action: "archive" })} onDelete={() => setConfirm({ activity: a, action: "delete" })} />
+            <InactiveRow
+              key={a.id}
+              activity={a}
+              busy={changeStatus.isPending}
+              onActivate={() => setStatus(a, "active")}
+              onArchive={() => setConfirm({ activity: a, action: "archive" })}
+              onDelete={() => setConfirm({ activity: a, action: "delete" })}
+            />
           ))}
         </Section>
       ) : null}
       {archived.length > 0 ? (
-        <Section title="Arquivados" hint="O histórico continua nos relatórios.">
+        <Section title={t("Arquivados")} hint={t("O histórico continua nos relatórios.")}>
           {archived.map((a) => (
-            <InactiveRow key={a.id} activity={a} busy={changeStatus.isPending} onActivate={() => setStatus(a, "active")} onDelete={() => setConfirm({ activity: a, action: "delete" })} />
+            <InactiveRow
+              key={a.id}
+              activity={a}
+              busy={changeStatus.isPending}
+              onActivate={() => setStatus(a, "active")}
+              onDelete={() => setConfirm({ activity: a, action: "delete" })}
+            />
           ))}
         </Section>
       ) : null}
 
       {active.length > 0 ? (
-        <Section title="Gerenciar ativos" tour="objetivos-gerenciar">
+        <Section title={t("Gerenciar ativos")} tour="objetivos-gerenciar">
           {active.map((a) => (
             <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 text-[14px]">
-              <Link to={`/app/objetivos/${a.id}`} className="min-w-0 flex-1 truncate text-primary no-underline">
+              <Link
+                to={`/app/objetivos/${a.id}`}
+                className="min-w-0 flex-1 truncate text-primary no-underline"
+              >
                 {a.title}
               </Link>
               <span className="flex gap-1">
-                <Button variant="ghost-muted" size="sm" className="min-h-[44px] px-2" disabled={changeStatus.isPending} onClick={() => setStatus(a, "paused")}>
-                  Pausar
+                <Button
+                  variant="ghost-muted"
+                  size="sm"
+                  className="min-h-[44px] px-2"
+                  disabled={changeStatus.isPending}
+                  onClick={() => setStatus(a, "paused")}
+                >
+                  {t("Pausar")}
                 </Button>
-                <Button variant="ghost-muted" size="sm" className="min-h-[44px] px-2" onClick={() => setConfirm({ activity: a, action: "archive" })}>
-                  Arquivar
+                <Button
+                  variant="ghost-muted"
+                  size="sm"
+                  className="min-h-[44px] px-2"
+                  onClick={() => setConfirm({ activity: a, action: "archive" })}
+                >
+                  {t("Arquivar")}
                 </Button>
               </span>
             </div>
@@ -203,13 +269,21 @@ export default function ActivitiesListPage() {
       <ConfirmDialog
         open={!!confirm}
         onOpenChange={(o) => !o && setConfirm(null)}
-        title={confirm?.action === "delete" ? `Excluir "${confirm.activity.title}"?` : `Arquivar "${confirm?.activity.title ?? ""}"?`}
+        title={
+          confirm?.action === "delete"
+            ? t('Excluir "{{v0}}"?', { v0: confirm.activity.title })
+            : t('Arquivar "{{v0}}"?', { v0: confirm?.activity.title ?? "" })
+        }
         description={
           confirm?.action === "delete"
-            ? "O objetivo, suas metas, tarefas e sessões registradas são removidos. Essa ação não pode ser desfeita. Para guardar o histórico, prefira arquivar."
-            : "O objetivo sai de Hoje e do plano, e para de gerar pendência. O histórico continua nos relatórios e você pode reativar depois."
+            ? t(
+                "O objetivo, suas metas, tarefas e sessões registradas são removidos. Essa ação não pode ser desfeita. Para guardar o histórico, prefira arquivar.",
+              )
+            : t(
+                "O objetivo sai de Hoje e do plano, e para de gerar pendência. O histórico continua nos relatórios e você pode reativar depois.",
+              )
         }
-        confirmLabel={confirm?.action === "delete" ? "Excluir" : "Arquivar"}
+        confirmLabel={confirm?.action === "delete" ? t("Excluir") : t("Arquivar")}
         danger={confirm?.action === "delete"}
         loading={remove.isPending || changeStatus.isPending}
         onConfirm={async () => {
@@ -219,7 +293,7 @@ export default function ActivitiesListPage() {
           } else {
             try {
               await remove.mutateAsync(confirm.activity.id);
-              toast.success("Objetivo excluído");
+              toast.success(t("Objetivo excluído"));
             } catch (err) {
               setError(errorMessage(err));
             }
@@ -231,7 +305,17 @@ export default function ActivitiesListPage() {
   );
 }
 
-function Section({ title, hint, tour, children }: { title: string; hint?: string; tour?: string; children: React.ReactNode }) {
+function Section({
+  title,
+  hint,
+  tour,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  tour?: string;
+  children: React.ReactNode;
+}) {
   return (
     <section className="flex flex-col gap-2" data-tour={tour}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -243,24 +327,39 @@ function Section({ title, hint, tour, children }: { title: string; hint?: string
   );
 }
 
-function InactiveRow({ activity, busy, onActivate, onArchive, onDelete }: { activity: Activity; busy: boolean; onActivate: () => void; onArchive?: () => void; onDelete: () => void }) {
+function InactiveRow({
+  activity,
+  busy,
+  onActivate,
+  onArchive,
+  onDelete,
+}: {
+  activity: Activity;
+  busy: boolean;
+  onActivate: () => void;
+  onArchive?: () => void;
+  onDelete: () => void;
+}) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 text-[14px]">
-      <Link to={`/app/objetivos/${activity.id}`} className="flex min-w-0 flex-1 items-center gap-2 text-primary no-underline">
+      <Link
+        to={`/app/objetivos/${activity.id}`}
+        className="flex min-w-0 flex-1 items-center gap-2 text-primary no-underline"
+      >
         <span className="truncate">{activity.title}</span>
         <Tag variant="neutral">{activity.status === "paused" ? "pausado" : "arquivado"}</Tag>
       </Link>
       <span className="flex gap-1">
         <Button variant="ghost" size="sm" className="min-h-[44px] px-2" disabled={busy} onClick={onActivate}>
-          Ativar
+          {t("Ativar")}
         </Button>
         {onArchive ? (
           <Button variant="ghost-muted" size="sm" className="min-h-[44px] px-2" onClick={onArchive}>
-            Arquivar
+            {t("Arquivar")}
           </Button>
         ) : null}
         <Button variant="ghost-muted" size="sm" className="min-h-[44px] px-2 text-error" onClick={onDelete}>
-          Excluir
+          {t("Excluir")}
         </Button>
       </span>
     </div>

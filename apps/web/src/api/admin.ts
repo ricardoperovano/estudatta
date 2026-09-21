@@ -125,7 +125,8 @@ export function useAdminUser(id: string | undefined) {
   return useQuery({
     queryKey: adminKeys.user(id || ""),
     enabled: !!id,
-    queryFn: async () => unwrap(await api.GET("/api/v1/admin/users/{user_id}", { params: { path: { user_id: id! } } })),
+    queryFn: async () =>
+      unwrap(await api.GET("/api/v1/admin/users/{user_id}", { params: { path: { user_id: id! } } })),
   });
 }
 
@@ -133,7 +134,12 @@ export function useSetUserRole() {
   const invalidate = useInvalidateAdmin();
   return useMutation({
     mutationFn: async ({ id, role }: { id: string; role: UserRole }) =>
-      unwrap(await api.POST("/api/v1/admin/users/{user_id}/role", { params: { path: { user_id: id } }, body: { role } })),
+      unwrap(
+        await api.POST("/api/v1/admin/users/{user_id}/role", {
+          params: { path: { user_id: id } },
+          body: { role },
+        }),
+      ),
     onSuccess: () => invalidate(adminKeys.usersScope, adminKeys.overview),
   });
 }
@@ -143,8 +149,12 @@ export function useSetUserActive() {
   return useMutation({
     mutationFn: async ({ id, active }: { id: string; active: boolean }) =>
       active
-        ? unwrap(await api.POST("/api/v1/admin/users/{user_id}/reactivate", { params: { path: { user_id: id } } }))
-        : unwrap(await api.POST("/api/v1/admin/users/{user_id}/deactivate", { params: { path: { user_id: id } } })),
+        ? unwrap(
+            await api.POST("/api/v1/admin/users/{user_id}/reactivate", { params: { path: { user_id: id } } }),
+          )
+        : unwrap(
+            await api.POST("/api/v1/admin/users/{user_id}/deactivate", { params: { path: { user_id: id } } }),
+          ),
     onSuccess: () => invalidate(adminKeys.usersScope, adminKeys.overview),
   });
 }
@@ -153,7 +163,17 @@ export function useGrantPromo() {
   const invalidate = useInvalidateAdmin();
   return useMutation({
     /** `days: null` = vitalício (sem data de término). */
-    mutationFn: async ({ id, plan_code, days, reason }: { id: string; plan_code: string; days: number | null; reason: string }) =>
+    mutationFn: async ({
+      id,
+      plan_code,
+      days,
+      reason,
+    }: {
+      id: string;
+      plan_code: string;
+      days: number | null;
+      reason: string;
+    }) =>
       unwrap(
         await api.POST("/api/v1/admin/users/{user_id}/promo", {
           params: { path: { user_id: id } },
@@ -167,7 +187,8 @@ export function useGrantPromo() {
 export function useRevokePromo() {
   const invalidate = useInvalidateAdmin();
   return useMutation({
-    mutationFn: async (grantId: string) => unwrap(await api.DELETE("/api/v1/admin/promo/{grant_id}", { params: { path: { grant_id: grantId } } })),
+    mutationFn: async (grantId: string) =>
+      unwrap(await api.DELETE("/api/v1/admin/promo/{grant_id}", { params: { path: { grant_id: grantId } } })),
     onSuccess: () => invalidate(adminKeys.usersScope, adminKeys.overview, ["admin", "subscriptions"]),
   });
 }
@@ -203,7 +224,12 @@ export function useSetPlanPrices() {
   const invalidate = useInvalidateAdmin();
   return useMutation({
     mutationFn: async ({ id, prices }: { id: string; prices: PlanPriceIn[] }) =>
-      unwrap(await api.PUT("/api/v1/admin/plans/{plan_id}/prices", { params: { path: { plan_id: id } }, body: { prices } })),
+      unwrap(
+        await api.PUT("/api/v1/admin/plans/{plan_id}/prices", {
+          params: { path: { plan_id: id } },
+          body: { prices },
+        }),
+      ),
     onSuccess: () => invalidate(adminKeys.plans),
   });
 }
@@ -231,7 +257,12 @@ export function useSaveSetting() {
 export function useAdminQueues(f: PageFilter) {
   return useQuery({
     queryKey: adminKeys.queues(f),
-    queryFn: async () => unwrap(await api.GET("/api/v1/admin/queues", { params: { query: { limit: f.limit ?? 20, offset: f.offset ?? 0 } } })),
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/admin/queues", {
+          params: { query: { limit: f.limit ?? 20, offset: f.offset ?? 0 } },
+        }),
+      ),
     placeholderData: keepPreviousData,
     staleTime: 15_000,
   });
@@ -241,7 +272,11 @@ export function useRetryOutbox() {
   const invalidate = useInvalidateAdmin();
   return useMutation({
     mutationFn: async (outboxId: string) =>
-      unwrap(await api.POST("/api/v1/admin/outbox/{outbox_id}/retry", { params: { path: { outbox_id: outboxId } } })),
+      unwrap(
+        await api.POST("/api/v1/admin/outbox/{outbox_id}/retry", {
+          params: { path: { outbox_id: outboxId } },
+        }),
+      ),
     onSuccess: () => invalidate(adminKeys.queuesScope, adminKeys.overview),
   });
 }
@@ -278,7 +313,12 @@ export function useAuditLog(f: AuditFilter) {
       unwrap(
         await api.GET("/api/v1/admin/audit", {
           params: {
-            query: { limit: f.limit ?? 50, offset: f.offset ?? 0, action: f.action || undefined, actor_id: f.actor_id || undefined },
+            query: {
+              limit: f.limit ?? 50,
+              offset: f.offset ?? 0,
+              action: f.action || undefined,
+              actor_id: f.actor_id || undefined,
+            },
           },
         }),
       ),

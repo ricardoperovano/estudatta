@@ -1,4 +1,5 @@
 /** "Dica do Tatá": uma dica curta e útil sobre o app por dia, com a opção de ver outra. */
+import { t as tx } from "@/i18n";
 import * as React from "react";
 import { Link } from "react-router";
 import { ArrowRight, ArrowsClockwise, Lightbulb } from "@phosphor-icons/react";
@@ -19,56 +20,68 @@ interface Tip {
 
 const TATA_TIPS: Tip[] = [
   {
-    title: "Revisões no automático",
-    body: "Depois de estudar um tópico, as revisões são agendadas sozinhas. As que vencem hoje aparecem aqui na tela Hoje.",
-    link: { to: "/app/revisoes", label: "Ver revisões" },
+    title: tx("Revisões no automático"),
+    body: tx(
+      "Depois de estudar um tópico, as revisões são agendadas sozinhas. As que vencem hoje aparecem aqui na tela Hoje.",
+    ),
+    link: { to: "/app/revisoes", label: tx("Ver revisões") },
     mood: "think",
   },
   {
-    title: "Estudou sem o cronômetro?",
-    body: "Tudo bem! Dá para registrar depois, com a duração e o tipo de estudo. Vale para ontem também.",
-    link: { to: "/app?registrar=1", label: "Registrar tempo" },
+    title: tx("Estudou sem o cronômetro?"),
+    body: tx("Tudo bem! Dá para registrar depois, com a duração e o tipo de estudo. Vale para ontem também."),
+    link: { to: "/app?registrar=1", label: tx("Registrar tempo") },
     mood: "encourage",
     needsObjective: true,
   },
   {
-    title: "Pausa planejada",
-    body: "Viagem, semana de provas ou uns dias doente? Marque uma pausa no objetivo: nada vira pendência e os lembretes ficam em silêncio.",
-    link: { to: "/app/objetivos", label: "Ver objetivos" },
+    title: tx("Pausa planejada"),
+    body: tx(
+      "Viagem, semana de provas ou uns dias doente? Marque uma pausa no objetivo: nada vira pendência e os lembretes ficam em silêncio.",
+    ),
+    link: { to: "/app/objetivos", label: tx("Ver objetivos") },
     mood: "paused",
   },
   {
-    title: "Recuperar sem culpa",
-    body: "Se um dia ficar para trás, o tempo pode ser distribuído nos próximos dias, aos pouquinhos. Ninguém precisa compensar tudo de uma vez.",
+    title: tx("Recuperar sem culpa"),
+    body: tx(
+      "Se um dia ficar para trás, o tempo pode ser distribuído nos próximos dias, aos pouquinhos. Ninguém precisa compensar tudo de uma vez.",
+    ),
     mood: "love",
   },
   {
-    title: "Seus materiais num lugar só",
-    body: "Guarde PDFs, links e livros e vincule cada um ao tópico, com as páginas. Fica fácil saber de onde continuar.",
-    link: { to: "/app/materiais", label: "Abrir materiais" },
+    title: tx("Seus materiais num lugar só"),
+    body: tx(
+      "Guarde PDFs, links e livros e vincule cada um ao tópico, com as páginas. Fica fácil saber de onde continuar.",
+    ),
+    link: { to: "/app/materiais", label: tx("Abrir materiais") },
     mood: "focus",
   },
   {
-    title: "A semana inteira de uma vez",
-    body: "No Plano você vê os blocos de cada dia e pode imprimir a semana para deixar na mesa.",
-    link: { to: "/app/plano", label: "Abrir o plano" },
+    title: tx("A semana inteira de uma vez"),
+    body: tx("No Plano você vê os blocos de cada dia e pode imprimir a semana para deixar na mesa."),
+    link: { to: "/app/plano", label: tx("Abrir o plano") },
     mood: "idle",
   },
   {
-    title: "Do seu jeito",
-    body: "Prefere um Tatá mais direto ou mais firme? O tom das falas e dos lembretes muda em Preferências.",
-    link: { to: "/app/preferencias", label: "Preferências" },
+    title: tx("Do seu jeito"),
+    body: tx(
+      "Prefere um Tatá mais direto ou mais firme? O tom das falas e dos lembretes muda em Preferências.",
+    ),
+    link: { to: "/app/preferencias", label: tx("Preferências") },
     mood: "wave",
   },
   {
-    title: "Pausas contam a favor",
-    body: "Durante a sessão, eu comemoro cada 25 minutos de foco. Aproveita para esticar as costas e beber água: o tempo pausado não conta, mas nada do que foi feito se perde.",
+    title: tx("Pausas contam a favor"),
+    body: tx(
+      "Durante a sessão, eu comemoro cada 25 minutos de foco. Aproveita para esticar as costas e beber água: o tempo pausado não conta, mas nada do que foi feito se perde.",
+    ),
     mood: "paused",
     needsMascot: true,
   },
   {
-    title: "Carinho faz bem",
-    body: "Toque em mim de vez em quando! E se a tela ficar parada, eu tiro um cochilo.",
+    title: tx("Carinho faz bem"),
+    body: tx("Toque em mim de vez em quando! E se a tela ficar parada, eu tiro um cochilo."),
     mood: "love",
     needsMascot: true,
   },
@@ -76,20 +89,34 @@ const TATA_TIPS: Tip[] = [
 
 function dayIndex(): number {
   const d = new Date();
-  return Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(d.getFullYear(), 0, 0)) / 86_400_000);
+  return Math.floor(
+    (Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(d.getFullYear(), 0, 0)) / 86_400_000,
+  );
 }
 
 export function TataTip({ hasObjective, className }: { hasObjective: boolean; className?: string }) {
   const { enabled } = useTataPrefs();
-  const tips = React.useMemo(() => TATA_TIPS.filter((t) => (hasObjective || !t.needsObjective) && (enabled || !t.needsMascot)), [hasObjective, enabled]);
+  const tips = React.useMemo(
+    () => TATA_TIPS.filter((t) => (hasObjective || !t.needsObjective) && (enabled || !t.needsMascot)),
+    [hasObjective, enabled],
+  );
   const [i, setI] = React.useState(() => dayIndex());
   const tip = tips[i % tips.length];
   return (
-    <section aria-labelledby="dica-tata" className={cn("tip-soft rise-in relative flex gap-3 overflow-hidden rounded-[20px] p-4 shadow-sm", className)}>
+    <section
+      aria-labelledby="dica-tata"
+      className={cn(
+        "tip-soft rise-in relative flex gap-3 overflow-hidden rounded-[20px] p-4 shadow-sm",
+        className,
+      )}
+    >
       {enabled ? (
         <TataSvg mood={tip.mood} size={52} className="relative shrink-0 self-start" />
       ) : (
-        <span className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full bg-warning-tint text-pending" aria-hidden>
+        <span
+          className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full bg-warning-tint text-pending"
+          aria-hidden
+        >
           <Lightbulb size={20} weight="fill" />
         </span>
       )}
@@ -97,16 +124,16 @@ export function TataTip({ hasObjective, className }: { hasObjective: boolean; cl
         <div className="flex items-center justify-between gap-2">
           <span className="kicker-pending flex items-center gap-1">
             <Lightbulb size={12} weight="fill" aria-hidden />
-            {enabled ? "Dica do Tatá" : "Dica"}
+            {enabled ? tx("Dica do Tatá") : tx("Dica")}
           </span>
           <button
             type="button"
             onClick={() => setI(i + 1)}
             className="-mr-1 flex items-center gap-1 rounded-md px-1.5 py-1 text-[12px] text-neutral-400 hover:text-primary"
-            aria-label="Ver outra dica"
+            aria-label={tx("Ver outra dica")}
           >
             <ArrowsClockwise size={13} aria-hidden />
-            Outra
+            {tx("Outra")}
           </button>
         </div>
         <h2 id="dica-tata" className="mt-1 text-[15px] font-medium leading-[1.25]">
@@ -116,7 +143,10 @@ export function TataTip({ hasObjective, className }: { hasObjective: boolean; cl
           {tip.body}
         </p>
         {tip.link ? (
-          <Link to={tip.link.to} className="mt-2 inline-flex items-center gap-1 text-[13px] font-medium no-underline hover:underline">
+          <Link
+            to={tip.link.to}
+            className="mt-2 inline-flex items-center gap-1 text-[13px] font-medium no-underline hover:underline"
+          >
             {tip.link.label}
             <ArrowRight size={12} aria-hidden />
           </Link>

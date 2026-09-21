@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import * as React from "react";
 import { Dialog, DialogContent, Button, Field, Input, Seg, Select, Banner } from "@/components/ui";
 import { useManualSession, type ManualBody } from "@/api/queries";
@@ -64,7 +65,7 @@ export function ManualEntrySheet({
     e.preventDefault();
     setError(null);
     if (minutes < 1) {
-      setError("Informe uma duração de pelo menos 1 minuto.");
+      setError(t("Informe uma duração de pelo menos 1 minuto."));
       return;
     }
     const studyError = validateStudyFields(study) ?? (reading ? validatePagesRead(pagesRead) : null);
@@ -94,12 +95,15 @@ export function ManualEntrySheet({
     };
     try {
       await manual.mutateAsync(body);
-      toast.success(`${minutes} min registrados`, "A pendência foi ajustada.");
+      toast.success(t("{{v0}} min registrados", { v0: minutes }), t("A pendência foi ajustada."));
       onOpenChange(false);
     } catch (err) {
       if (isNetworkError(err) && user) {
         await enqueueOp(user.id, "session.manual", body, body.client_uuid);
-        toast.offline("Registro salvo neste aparelho", "Vamos sincronizar quando você voltar à internet.");
+        toast.offline(
+          t("Registro salvo neste aparelho"),
+          t("Vamos sincronizar quando você voltar à internet."),
+        );
         onOpenChange(false);
         return;
       }
@@ -111,13 +115,13 @@ export function ManualEntrySheet({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         mode="sheet"
-        title="Registrar tempo"
-        description="Você estudou e esqueceu de registrar? Adicione agora — a pendência se ajusta."
+        title={t("Registrar tempo")}
+        description={t("Você estudou e esqueceu de registrar? Adicione agora — a pendência se ajusta.")}
       >
         <form onSubmit={submit} className="flex flex-col gap-[14px]">
           {error ? <Banner kind="error">{error}</Banner> : null}
           {cards.length > 1 ? (
-            <Field label="Objetivo" htmlFor="m-activity">
+            <Field label={t("Objetivo")} htmlFor="m-activity">
               <Select
                 id="m-activity"
                 value={activityId}
@@ -138,7 +142,7 @@ export function ManualEntrySheet({
           <Seg
             block
             size="lg"
-            label="Duração"
+            label={t("Duração")}
             value={preset}
             onChange={setPreset}
             options={[
@@ -146,11 +150,11 @@ export function ManualEntrySheet({
               { value: "30", label: "30" },
               { value: "45", label: "45" },
               { value: "60", label: "60" },
-              { value: "outro", label: "Outro" },
+              { value: "outro", label: t("Outro") },
             ]}
           />
           {preset === "outro" ? (
-            <Field label="Minutos" htmlFor="m-custom">
+            <Field label={t("Minutos")} htmlFor="m-custom">
               <Input
                 id="m-custom"
                 type="number"
@@ -164,7 +168,7 @@ export function ManualEntrySheet({
           ) : null}
           <StudyFields idPrefix="m-study" value={study} onChange={setStudy} />
           <div className="grid grid-cols-2 gap-2">
-            <Field label="Quando" htmlFor="m-date">
+            <Field label={t("Quando")} htmlFor="m-date">
               <Input
                 id="m-date"
                 type="date"
@@ -173,7 +177,7 @@ export function ManualEntrySheet({
                 onChange={(e) => setDate(e.target.value)}
               />
             </Field>
-            <Field label="Horário (opcional)" htmlFor="m-time">
+            <Field label={t("Horário (opcional)")} htmlFor="m-time">
               <Input id="m-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
             </Field>
           </div>
@@ -186,10 +190,10 @@ export function ManualEntrySheet({
               idPrefix="m-read"
             />
           ) : null}
-          <Field label="Conteúdo (opcional)" htmlFor="m-note">
+          <Field label={t("Conteúdo (opcional)")} htmlFor="m-note">
             <Input
               id="m-note"
-              placeholder={reading ? "Capítulo 3 · até a p. 58" : "Vocabulário · lista 12"}
+              placeholder={reading ? t("Capítulo 3 · até a p. 58") : t("Vocabulário · lista 12")}
               value={note}
               onChange={(e) => setNote(e.target.value)}
               maxLength={2000}
@@ -197,17 +201,17 @@ export function ManualEntrySheet({
           </Field>
           <NoteSuggestions category={current.category} note={note} onPick={setNote} />
           {reading ? null : (
-            <Field label="Páginas (opcional)" htmlFor="m-pages">
+            <Field label={t("Páginas (opcional)")} htmlFor="m-pages">
               <Input
                 id="m-pages"
-                placeholder="p. 40–46"
+                placeholder={t("p. 40–46")}
                 value={pages}
                 onChange={(e) => setPages(e.target.value)}
               />
             </Field>
           )}
           <Button type="submit" size="xl" block loading={manual.isPending}>
-            Salvar {minutes > 0 ? `${minutes} min` : ""}
+            {t("Salvar {{v0}}", { v0: minutes > 0 ? t("{{v0}} min", { v0: minutes }) : "" })}
           </Button>
         </form>
       </DialogContent>

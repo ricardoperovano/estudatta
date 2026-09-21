@@ -3,6 +3,7 @@
  * aparelho ainda não sincronizados, pergunta antes: sincronizar e sair, descartar e sair, ou
  * continuar. Ao sair, o cache privado deste aparelho é apagado.
  */
+import { t } from "@/i18n";
 import * as React from "react";
 import { useNavigate } from "react-router";
 import { useAuthActions, useUser } from "@/api/session";
@@ -39,10 +40,12 @@ export function useLogoutFlow(online: boolean) {
     setBusy(null);
     setError(
       s.status === "offline"
-        ? "Sem conexão: não deu para sincronizar agora. Você pode esperar a internet voltar ou sair descartando os registros."
+        ? t(
+            "Sem conexão: não deu para sincronizar agora. Você pode esperar a internet voltar ou sair descartando os registros.",
+          )
         : s.conflicts > 0
-          ? "Alguns registros precisam da sua decisão em Sincronização antes de serem enviados."
-          : "Não foi possível sincronizar agora. Nada foi perdido; tente de novo em instantes.",
+          ? t("Alguns registros precisam da sua decisão em Sincronização antes de serem enviados.")
+          : t("Não foi possível sincronizar agora. Nada foi perdido; tente de novo em instantes."),
     );
   };
 
@@ -53,22 +56,53 @@ export function useLogoutFlow(online: boolean) {
     <Dialog open={open} onOpenChange={(o) => busy === null && setOpen(o)}>
       <DialogContent
         mode="sheet"
-        title="Há registros ainda não sincronizados"
-        description={`${waiting} ${waiting === 1 ? "registro feito" : "registros feitos"} neste aparelho ainda não ${waiting === 1 ? "chegou" : "chegaram"} à sua conta. Ao sair, os dados deste aparelho são apagados.`}
+        title={t("Há registros ainda não sincronizados")}
+        description={t(
+          "{{v0}} {{v1}} neste aparelho ainda não {{v2}} à sua conta. Ao sair, os dados deste aparelho são apagados.",
+          {
+            v0: waiting,
+            v1: waiting === 1 ? t("registro feito") : t("registros feitos"),
+            v2: waiting === 1 ? "chegou" : "chegaram",
+          },
+        )}
       >
         {error ? <Banner kind="error">{error}</Banner> : null}
         <div className="flex flex-col gap-2">
-          <Button variant="primary" size="lg" block loading={busy === "sync"} disabled={!online || busy !== null} onClick={() => void syncAndLeave()}>
-            Sincronizar e sair
+          <Button
+            variant="primary"
+            size="lg"
+            block
+            loading={busy === "sync"}
+            disabled={!online || busy !== null}
+            onClick={() => void syncAndLeave()}
+          >
+            {t("Sincronizar e sair")}
           </Button>
-          <Button variant="danger" size="lg" block loading={busy === "discard"} disabled={busy !== null} onClick={() => void doLeave("discard")}>
-            Descartar {waiting === 1 ? "o registro" : "os registros"} e sair
+          <Button
+            variant="danger"
+            size="lg"
+            block
+            loading={busy === "discard"}
+            disabled={busy !== null}
+            onClick={() => void doLeave("discard")}
+          >
+            {t("Descartar {{v0}} e sair", { v0: waiting === 1 ? t("o registro") : t("os registros") })}
           </Button>
-          <Button variant="ghost-muted" size="lg" block disabled={busy !== null} onClick={() => setOpen(false)}>
-            Continuar conectado
+          <Button
+            variant="ghost-muted"
+            size="lg"
+            block
+            disabled={busy !== null}
+            onClick={() => setOpen(false)}
+          >
+            {t("Continuar conectado")}
           </Button>
         </div>
-        {!online ? <p className="text-[12px] text-neutral-400">Sem conexão: sincronizar só será possível quando a internet voltar.</p> : null}
+        {!online ? (
+          <p className="text-[12px] text-neutral-400">
+            {t("Sem conexão: sincronizar só será possível quando a internet voltar.")}
+          </p>
+        ) : null}
       </DialogContent>
     </Dialog>
   );

@@ -88,6 +88,7 @@ def register(
         password=payload.password,
         name=payload.name,
         timezone=payload.timezone,
+        locale=payload.locale,
     )
     sess, raw = auth_service.start_session(
         db, user, user_agent=request.headers.get("user-agent"), ip=client_ip(request)

@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, setCsrfToken, unwrap, ApiError } from "./client";
 import type { AuthState as SessionOut, Entitlements, PublicConfig, User } from "./types";
 import { clearPrivateData } from "@/offline/db";
+import { locale as uiLocale, syncLocaleFromAccount } from "@/i18n";
 
 export const sessionKey = ["auth", "session"] as const;
 export const configKey = ["auth", "config"] as const;
@@ -13,6 +14,8 @@ export async function fetchSession(): Promise<SessionOut | null> {
   if (res.response.status === 401) return null;
   const data = unwrap(res);
   setCsrfToken(data.csrf_token);
+  // a conta manda: se o idioma salvo no servidor difere do aparelho, recarrega no idioma da conta
+  syncLocaleFromAccount(data.user?.locale);
   return data;
 }
 
@@ -51,7 +54,11 @@ export function useAuthActions() {
       return data;
     },
     async register(email: string, password: string, name: string, timezone: string) {
-      const data = unwrap(await api.POST("/api/v1/auth/register", { body: { email, password, name, timezone } }));
+      const data = unwrap(
+        await api.POST("/api/v1/auth/register", {
+          body: { email, password, name, timezone, locale: uiLocale },
+        }),
+      );
       apply(data);
       return data;
     },

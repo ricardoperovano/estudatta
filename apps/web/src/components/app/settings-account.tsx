@@ -1,3 +1,12 @@
+import {
+  LOCALES,
+  LOCALE_LABELS,
+  normalizeLocale,
+  setLocale,
+  t,
+  locale as uiLocale,
+  type Locale,
+} from "@/i18n";
 import { Avatar } from "./profile-menu";
 import { prepareAvatar } from "@/lib/avatar-image";
 import * as React from "react";
@@ -21,11 +30,37 @@ import {
   useUploadAvatar,
 } from "@/api/settings";
 import { SettingsRow, SettingsSection } from "@/components/app/settings-reminders";
-import { Banner, Button, Card, Dialog, DialogActions, DialogContent, Field, Input, Select, Spinner, Tag, toast } from "@/components/ui";
+import {
+  Banner,
+  Button,
+  Card,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  Field,
+  Input,
+  Select,
+  Spinner,
+  Tag,
+  toast,
+} from "@/components/ui";
 import { detectTimezone } from "@/lib/device";
 import { fmtDateTimeShort } from "@/lib/format";
 
-const FALLBACK_ZONES = ["America/Sao_Paulo", "America/Manaus", "America/Belem", "America/Fortaleza", "America/Recife", "America/Bahia", "America/Cuiaba", "America/Porto_Velho", "America/Rio_Branco", "America/Noronha", "Europe/Lisbon", "UTC"];
+const FALLBACK_ZONES = [
+  "America/Sao_Paulo",
+  "America/Manaus",
+  "America/Belem",
+  "America/Fortaleza",
+  "America/Recife",
+  "America/Bahia",
+  "America/Cuiaba",
+  "America/Porto_Velho",
+  "America/Rio_Branco",
+  "America/Noronha",
+  "Europe/Lisbon",
+  "UTC",
+];
 
 function timezones(current: string): string[] {
   let list: string[] = [];
@@ -43,9 +78,29 @@ function timezones(current: string): string[] {
 function describeDevice(s: AuthSessionOut): string {
   if (s.device_label) return s.device_label;
   const ua = s.user_agent ?? "";
-  if (!ua) return "Aparelho não identificado";
-  const browser = /Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "Navegador";
-  const os = /iPhone|iPad|iPod/.test(ua) ? "iOS" : /Android/.test(ua) ? "Android" : /Windows/.test(ua) ? "Windows" : /Mac OS X/.test(ua) ? "macOS" : /Linux/.test(ua) ? "Linux" : "";
+  if (!ua) return t("Aparelho não identificado");
+  const browser = /Edg\//.test(ua)
+    ? t("Edge")
+    : /OPR\//.test(ua)
+      ? t("Opera")
+      : /Firefox\//.test(ua)
+        ? t("Firefox")
+        : /Chrome\//.test(ua)
+          ? t("Chrome")
+          : /Safari\//.test(ua)
+            ? t("Safari")
+            : t("Navegador");
+  const os = /iPhone|iPad|iPod/.test(ua)
+    ? "iOS"
+    : /Android/.test(ua)
+      ? t("Android")
+      : /Windows/.test(ua)
+        ? t("Windows")
+        : /Mac OS X/.test(ua)
+          ? "macOS"
+          : /Linux/.test(ua)
+            ? t("Linux")
+            : "";
   return os ? `${browser} · ${os}` : browser;
 }
 
@@ -54,9 +109,15 @@ export function AccountSection({ online }: { online: boolean }) {
   const user = useUser();
   if (!user) return null;
   return (
-    <SettingsSection title="Conta" id="conta">
+    <SettingsSection title={t("Conta")} id="conta">
       <AvatarCard online={online} />
-      <ProfileForm key={`${user.name}|${user.timezone}`} name={user.name} timezone={user.timezone} online={online} />
+      <ProfileForm
+        key={`${user.name}|${user.timezone}`}
+        name={user.name}
+        timezone={user.timezone}
+        online={online}
+      />
+      <LanguageCard accountLocale={user.locale} online={online} />
       <EmailCard email={user.email} verified={!!user.email_verified_at} online={online} />
       <SessionsCard online={online} />
     </SettingsSection>
@@ -78,7 +139,7 @@ function AvatarCard({ online }: { online: boolean }) {
     try {
       const blob = await prepareAvatar(file);
       await upload.mutateAsync(blob);
-      toast("success", "Foto atualizada");
+      toast("success", t("Foto atualizada"));
     } catch (err) {
       setError(errorMessage(err));
     }
@@ -88,17 +149,38 @@ function AvatarCard({ online }: { online: boolean }) {
     <Card className="flex-row items-center gap-4 p-[14px] text-[14px]">
       <Avatar size={64} />
       <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <span className="font-medium">Foto de perfil</span>
-        <span className="text-[12px] text-neutral-400">JPG, PNG ou WebP. A foto é cortada no quadrado e reduzida aqui no seu aparelho.</span>
+        <span className="font-medium">{t("Foto de perfil")}</span>
+        <span className="text-[12px] text-neutral-400">
+          {t("JPG, PNG ou WebP. A foto é cortada no quadrado e reduzida aqui no seu aparelho.")}
+        </span>
         {error ? <span className="text-[12px] text-error">{error}</span> : null}
         <div className="flex flex-wrap gap-2">
-          <input ref={inputRef} type="file" accept="image/*" className="sr-only" onChange={onFile} aria-label="Escolher foto de perfil" />
-          <Button size="sm" variant="secondary" loading={upload.isPending} disabled={!online || busy} onClick={() => inputRef.current?.click()}>
-            {url ? "Trocar foto" : "Enviar foto"}
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={onFile}
+            aria-label={t("Escolher foto de perfil")}
+          />
+          <Button
+            size="sm"
+            variant="secondary"
+            loading={upload.isPending}
+            disabled={!online || busy}
+            onClick={() => inputRef.current?.click()}
+          >
+            {url ? t("Trocar foto") : t("Enviar foto")}
           </Button>
           {url ? (
-            <Button size="sm" variant="ghost" loading={remove.isPending} disabled={!online || busy} onClick={() => remove.mutate(undefined, { onSuccess: () => toast("info", "Foto removida") })}>
-              Remover
+            <Button
+              size="sm"
+              variant="ghost"
+              loading={remove.isPending}
+              disabled={!online || busy}
+              onClick={() => remove.mutate(undefined, { onSuccess: () => toast("info", t("Foto removida")) })}
+            >
+              {t("Remover")}
             </Button>
           ) : null}
         </div>
@@ -107,7 +189,15 @@ function AvatarCard({ online }: { online: boolean }) {
   );
 }
 
-function ProfileForm({ name: initialName, timezone: initialZone, online }: { name: string; timezone: string; online: boolean }) {
+function ProfileForm({
+  name: initialName,
+  timezone: initialZone,
+  online,
+}: {
+  name: string;
+  timezone: string;
+  online: boolean;
+}) {
   const update = useUpdateProfile();
   const [name, setName] = React.useState(initialName);
   const [zone, setZone] = React.useState(initialZone);
@@ -118,12 +208,12 @@ function ProfileForm({ name: initialName, timezone: initialZone, online }: { nam
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return setError("Informe seu nome.");
+    if (!name.trim()) return setError(t("Informe seu nome."));
     setError(null);
     update.mutate(
       { name: name.trim(), timezone: zone },
       {
-        onSuccess: () => toast("success", "Conta atualizada"),
+        onSuccess: () => toast("success", t("Conta atualizada")),
         onError: (err) => setError(errorMessage(err)),
       },
     );
@@ -132,10 +222,20 @@ function ProfileForm({ name: initialName, timezone: initialZone, online }: { nam
   return (
     <Card as="section" className="p-[14px]">
       <form className="flex flex-col gap-3" onSubmit={submit} noValidate>
-        <Field label="Nome" htmlFor="account-name">
-          <Input id="account-name" value={name} maxLength={120} autoComplete="name" onChange={(e) => setName(e.target.value)} />
+        <Field label={t("Nome")} htmlFor="account-name">
+          <Input
+            id="account-name"
+            value={name}
+            maxLength={120}
+            autoComplete="name"
+            onChange={(e) => setName(e.target.value)}
+          />
         </Field>
-        <Field label="Fuso horário" htmlFor="account-zone" hint="Define quando o seu dia começa e termina para metas, saldo e lembretes.">
+        <Field
+          label={t("Fuso horário")}
+          htmlFor="account-zone"
+          hint={t("Define quando o seu dia começa e termina para metas, saldo e lembretes.")}
+        >
           <Select id="account-zone" value={zone} onChange={(e) => setZone(e.target.value)}>
             {zones.map((z) => (
               <option key={z} value={z}>
@@ -145,15 +245,69 @@ function ProfileForm({ name: initialName, timezone: initialZone, online }: { nam
           </Select>
         </Field>
         {deviceZone !== zone ? (
-          <Button type="button" variant="ghost" size="sm" className="self-start" onClick={() => setZone(deviceZone)}>
-            Usar o fuso deste aparelho ({deviceZone.replace(/_/g, " ")})
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="self-start"
+            onClick={() => setZone(deviceZone)}
+          >
+            {t("Usar o fuso deste aparelho ({{v0}})", { v0: deviceZone.replace(/_/g, " ") })}
           </Button>
         ) : null}
         {error ? <Banner kind="error">{error}</Banner> : null}
-        <Button type="submit" variant="primary" size="lg" className="self-start" loading={update.isPending} disabled={!dirty || !online}>
-          Salvar
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          className="self-start"
+          loading={update.isPending}
+          disabled={!dirty || !online}
+        >
+          {t("Salvar")}
         </Button>
       </form>
+    </Card>
+  );
+}
+
+/** Idioma da interface: salvo na conta (vale em todos os aparelhos) e aplicado com recarga da página. */
+function LanguageCard({ accountLocale, online }: { accountLocale: string; online: boolean }) {
+  const update = useUpdateProfile();
+  const current = normalizeLocale(accountLocale) ?? uiLocale;
+  const [error, setError] = React.useState<string | null>(null);
+  const choose = (next: Locale) => {
+    if (next === current) return;
+    setError(null);
+    update.mutate(
+      { locale: next },
+      {
+        onSuccess: () => setLocale(next),
+        onError: (err) => setError(errorMessage(err)),
+      },
+    );
+  };
+  return (
+    <Card as="section" className="p-[14px]" data-tour="conta-idioma">
+      <Field
+        label={t("Idioma")}
+        htmlFor="account-locale"
+        hint={t("Vale para a interface, os lembretes, os e-mails e o Tatá, em todos os seus aparelhos.")}
+      >
+        <Select
+          id="account-locale"
+          value={current}
+          disabled={!online || update.isPending}
+          onChange={(e) => choose(e.target.value as Locale)}
+        >
+          {LOCALES.map((l) => (
+            <option key={l} value={l}>
+              {LOCALE_LABELS[l]}
+            </option>
+          ))}
+        </Select>
+      </Field>
+      {error ? <Banner kind="error">{error}</Banner> : null}
     </Card>
   );
 }
@@ -163,12 +317,18 @@ function EmailCard({ email, verified, online }: { email: string; verified: boole
   const [pwOpen, setPwOpen] = React.useState(false);
   return (
     <Card className="gap-3 p-[14px] text-[14px]">
-      <SettingsRow label="E-mail" hint={<span className="break-all">{email}</span>}>
-        {verified ? <Tag variant="success">Confirmado</Tag> : <Tag variant="pending">Não confirmado</Tag>}
+      <SettingsRow label={t("E-mail")} hint={<span className="break-all">{email}</span>}>
+        {verified ? (
+          <Tag variant="success">{t("Confirmado")}</Tag>
+        ) : (
+          <Tag variant="pending">{t("Não confirmado")}</Tag>
+        )}
       </SettingsRow>
       {!verified ? (
         <div className="flex flex-col gap-2">
-          <span className="text-[12px] text-neutral-400">Confirme seu e-mail para poder recuperar a conta se esquecer a senha.</span>
+          <span className="text-[12px] text-neutral-400">
+            {t("Confirme seu e-mail para poder recuperar a conta se esquecer a senha.")}
+          </span>
           <Button
             variant="primary"
             className="min-h-[40px] self-start"
@@ -176,18 +336,28 @@ function EmailCard({ email, verified, online }: { email: string; verified: boole
             disabled={!online}
             onClick={() =>
               resend.mutate(undefined, {
-                onSuccess: (r) => toast("info", "Confirmação reenviada", r.message ?? `Confira a caixa de entrada de ${email}.`),
-                onError: (e) => toast("error", "Não foi possível reenviar", errorMessage(e)),
+                onSuccess: (r) =>
+                  toast(
+                    "info",
+                    t("Confirmação reenviada"),
+                    r.message ?? t("Confira a caixa de entrada de {{v0}}.", { v0: email }),
+                  ),
+                onError: (e) => toast("error", t("Não foi possível reenviar"), errorMessage(e)),
               })
             }
           >
-            Reenviar confirmação
+            {t("Reenviar confirmação")}
           </Button>
         </div>
       ) : null}
-      <SettingsRow label="Senha">
-        <Button variant="secondary" className="min-h-[40px]" disabled={!online} onClick={() => setPwOpen(true)}>
-          Trocar senha
+      <SettingsRow label={t("Senha")}>
+        <Button
+          variant="secondary"
+          className="min-h-[40px]"
+          disabled={!online}
+          onClick={() => setPwOpen(true)}
+        >
+          {t("Trocar senha")}
         </Button>
       </SettingsRow>
       {pwOpen ? <ChangePasswordDialog onClose={() => setPwOpen(false)} /> : null}
@@ -201,21 +371,30 @@ function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
   const [current, setCurrent] = React.useState("");
   const [next, setNext] = React.useState("");
   const [again, setAgain] = React.useState("");
-  const [errors, setErrors] = React.useState<{ current?: string; next?: string; again?: string; form?: string }>({});
+  const [errors, setErrors] = React.useState<{
+    current?: string;
+    next?: string;
+    again?: string;
+    form?: string;
+  }>({});
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const errs: typeof errors = {};
-    if (!current) errs.current = "Informe a senha atual.";
-    if (next.length < 8) errs.next = "A nova senha precisa de pelo menos 8 caracteres.";
-    if (again !== next) errs.again = "As senhas não são iguais.";
+    if (!current) errs.current = t("Informe a senha atual.");
+    if (next.length < 8) errs.next = t("A nova senha precisa de pelo menos 8 caracteres.");
+    if (again !== next) errs.again = t("As senhas não são iguais.");
     setErrors(errs);
     if (Object.keys(errs).length) return;
     change.mutate(
       { current_password: current, new_password: next },
       {
         onSuccess: (r) => {
-          toast("success", "Senha alterada", r.message === "Senha alterada." ? undefined : (r.message ?? undefined));
+          toast(
+            "success",
+            t("Senha alterada"),
+            r.message === "Senha alterada." ? undefined : (r.message ?? undefined),
+          );
           void qc.invalidateQueries({ queryKey: settingsKeys.authSessions });
           onClose();
         },
@@ -226,24 +405,50 @@ function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent mode="sheet" title="Trocar senha">
+      <DialogContent mode="sheet" title={t("Trocar senha")}>
         <form className="flex flex-col gap-3" onSubmit={submit} noValidate>
-          <Field label="Senha atual" htmlFor="pw-current" error={errors.current}>
-            <Input id="pw-current" type="password" autoComplete="current-password" value={current} invalid={!!errors.current} onChange={(e) => setCurrent(e.target.value)} />
+          <Field label={t("Senha atual")} htmlFor="pw-current" error={errors.current}>
+            <Input
+              id="pw-current"
+              type="password"
+              autoComplete="current-password"
+              value={current}
+              invalid={!!errors.current}
+              onChange={(e) => setCurrent(e.target.value)}
+            />
           </Field>
-          <Field label="Nova senha" htmlFor="pw-next" error={errors.next} hint="Pelo menos 8 caracteres.">
-            <Input id="pw-next" type="password" autoComplete="new-password" value={next} invalid={!!errors.next} onChange={(e) => setNext(e.target.value)} />
+          <Field
+            label={t("Nova senha")}
+            htmlFor="pw-next"
+            error={errors.next}
+            hint={t("Pelo menos 8 caracteres.")}
+          >
+            <Input
+              id="pw-next"
+              type="password"
+              autoComplete="new-password"
+              value={next}
+              invalid={!!errors.next}
+              onChange={(e) => setNext(e.target.value)}
+            />
           </Field>
-          <Field label="Repita a nova senha" htmlFor="pw-again" error={errors.again}>
-            <Input id="pw-again" type="password" autoComplete="new-password" value={again} invalid={!!errors.again} onChange={(e) => setAgain(e.target.value)} />
+          <Field label={t("Repita a nova senha")} htmlFor="pw-again" error={errors.again}>
+            <Input
+              id="pw-again"
+              type="password"
+              autoComplete="new-password"
+              value={again}
+              invalid={!!errors.again}
+              onChange={(e) => setAgain(e.target.value)}
+            />
           </Field>
           {errors.form ? <Banner kind="error">{errors.form}</Banner> : null}
           <DialogActions>
             <Button type="button" variant="secondary" size="lg" onClick={onClose} disabled={change.isPending}>
-              Cancelar
+              {t("Cancelar")}
             </Button>
             <Button type="submit" variant="primary" size="lg" loading={change.isPending}>
-              Trocar senha
+              {t("Trocar senha")}
             </Button>
           </DialogActions>
         </form>
@@ -260,20 +465,24 @@ function SessionsCard({ online }: { online: boolean }) {
 
   return (
     <Card className="gap-2 p-[14px] text-[14px]">
-      <span>Sessões ativas</span>
-      <span className="text-[12px] text-neutral-400">Aparelhos em que sua conta está aberta. Encerrar uma sessão exige entrar de novo naquele aparelho.</span>
+      <span>{t("Sessões ativas")}</span>
+      <span className="text-[12px] text-neutral-400">
+        {t(
+          "Aparelhos em que sua conta está aberta. Encerrar uma sessão exige entrar de novo naquele aparelho.",
+        )}
+      </span>
       {sessions.isPending ? (
-        <Spinner label="Carregando sessões" />
+        <Spinner label={t("Carregando sessões")} />
       ) : sessions.isError ? (
         <Banner
           kind="error"
           actions={
             <Button size="sm" variant="secondary" onClick={() => sessions.refetch()}>
-              Tentar de novo
+              {t("Tentar de novo")}
             </Button>
           }
         >
-          Não foi possível carregar as sessões. {errorMessage(sessions.error, "")}
+          {t("Não foi possível carregar as sessões. {{v0}}", { v0: errorMessage(sessions.error, "") })}
         </Banner>
       ) : (
         <>
@@ -282,10 +491,12 @@ function SessionsCard({ online }: { online: boolean }) {
               <li key={s.id} className="flex min-h-[52px] items-center justify-between gap-3 py-2">
                 <div className="flex min-w-0 flex-col">
                   <span className="truncate">{describeDevice(s)}</span>
-                  <span className="text-[12px] text-neutral-400">Último acesso: {fmtDateTimeShort(s.last_seen_at)}</span>
+                  <span className="text-[12px] text-neutral-400">
+                    {t("Último acesso: {{v0}}", { v0: fmtDateTimeShort(s.last_seen_at) })}
+                  </span>
                 </div>
                 {s.current ? (
-                  <Tag variant="accent">Este aparelho</Tag>
+                  <Tag variant="accent">{t("Este aparelho")}</Tag>
                 ) : (
                   <Button
                     variant="secondary"
@@ -294,12 +505,13 @@ function SessionsCard({ online }: { online: boolean }) {
                     loading={revoke.isPending && revoke.variables === s.id}
                     onClick={() =>
                       revoke.mutate(s.id, {
-                        onSuccess: () => toast("success", "Sessão encerrada"),
-                        onError: (e) => toast("error", "Não foi possível encerrar a sessão", errorMessage(e)),
+                        onSuccess: () => toast("success", t("Sessão encerrada")),
+                        onError: (e) =>
+                          toast("error", t("Não foi possível encerrar a sessão"), errorMessage(e)),
                       })
                     }
                   >
-                    Revogar
+                    {t("Revogar")}
                   </Button>
                 )}
               </li>
@@ -313,12 +525,12 @@ function SessionsCard({ online }: { online: boolean }) {
               disabled={!online}
               onClick={() =>
                 revokeOthers.mutate(undefined, {
-                  onSuccess: () => toast("success", "Outras sessões encerradas"),
-                  onError: (e) => toast("error", "Não foi possível encerrar as sessões", errorMessage(e)),
+                  onSuccess: () => toast("success", t("Outras sessões encerradas")),
+                  onError: (e) => toast("error", t("Não foi possível encerrar as sessões"), errorMessage(e)),
                 })
               }
             >
-              Encerrar todas as outras sessões
+              {t("Encerrar todas as outras sessões")}
             </Button>
           ) : null}
         </>
@@ -339,31 +551,56 @@ export function DataSection({ online }: { online: boolean }) {
     try {
       await exportMyData(format);
     } catch (e) {
-      toast("error", "Não foi possível exportar", errorMessage(e));
+      toast("error", t("Não foi possível exportar"), errorMessage(e));
     } finally {
       setExporting(null);
     }
   };
 
   return (
-    <SettingsSection title="Dados">
+    <SettingsSection title={t("Dados")}>
       <Card className="gap-2 p-[14px] text-[14px]" data-tour="preferencias-dados">
-        <span>Exportar meus dados</span>
-        <span className="text-[12px] text-neutral-400">Tudo o que você registrou, em um arquivo completo, ou só o histórico de sessões em planilha. Disponível em qualquer plano.</span>
+        <span>{t("Exportar meus dados")}</span>
+        <span className="text-[12px] text-neutral-400">
+          {t(
+            "Tudo o que você registrou, em um arquivo completo, ou só o histórico de sessões em planilha. Disponível em qualquer plano.",
+          )}
+        </span>
         <div className="flex flex-wrap gap-2">
-          <Button variant="primary" className="min-h-[40px]" loading={exporting === "json"} disabled={!online || exporting !== null} onClick={() => doExport("json")}>
-            Exportar tudo (JSON)
+          <Button
+            variant="primary"
+            className="min-h-[40px]"
+            loading={exporting === "json"}
+            disabled={!online || exporting !== null}
+            onClick={() => doExport("json")}
+          >
+            {t("Exportar tudo (JSON)")}
           </Button>
-          <Button variant="secondary" className="min-h-[40px]" loading={exporting === "csv"} disabled={!online || exporting !== null} onClick={() => doExport("csv")}>
-            Histórico de sessões (CSV)
+          <Button
+            variant="secondary"
+            className="min-h-[40px]"
+            loading={exporting === "csv"}
+            disabled={!online || exporting !== null}
+            onClick={() => doExport("csv")}
+          >
+            {t("Histórico de sessões (CSV)")}
           </Button>
         </div>
       </Card>
       <Card className="gap-2 p-[14px] text-[14px]">
-        <span>Excluir conta</span>
-        <span className="text-[12px] text-neutral-400">Apaga objetivos, sessões, planos, materiais e preferências. Não dá para desfazer. Se quiser guardar algo, exporte antes.</span>
-        <Button variant="danger" className="min-h-[40px] self-start" disabled={!online} onClick={() => setDeleteOpen(true)}>
-          Excluir minha conta
+        <span>{t("Excluir conta")}</span>
+        <span className="text-[12px] text-neutral-400">
+          {t(
+            "Apaga objetivos, sessões, planos, materiais e preferências. Não dá para desfazer. Se quiser guardar algo, exporte antes.",
+          )}
+        </span>
+        <Button
+          variant="danger"
+          className="min-h-[40px] self-start"
+          disabled={!online}
+          onClick={() => setDeleteOpen(true)}
+        >
+          {t("Excluir minha conta")}
         </Button>
       </Card>
       {deleteOpen ? <DeleteAccountDialog onClose={() => setDeleteOpen(false)} /> : null}
@@ -390,7 +627,7 @@ function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
       {
         onSuccess: async () => {
           await logout();
-          toast("info", "Conta excluída");
+          toast("info", t("Conta excluída"));
           nav("/", { replace: true });
         },
         onError: (err) => setError(errorMessage(err)),
@@ -400,21 +637,48 @@ function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={(o) => !o && !del.isPending && onClose()}>
-      <DialogContent mode="sheet" title="Excluir minha conta" description="Tudo o que você registrou será apagado de forma definitiva. Se tiver assinatura, cancele a renovação em Planos antes.">
+      <DialogContent
+        mode="sheet"
+        title={t("Excluir minha conta")}
+        description={t(
+          "Tudo o que você registrou será apagado de forma definitiva. Se tiver assinatura, cancele a renovação em Planos antes.",
+        )}
+      >
         <form className="flex flex-col gap-3" onSubmit={submit} noValidate>
-          <Field label="Para confirmar, digite EXCLUIR" htmlFor="del-confirm">
-            <Input id="del-confirm" value={confirm} autoComplete="off" autoCapitalize="characters" spellCheck={false} onChange={(e) => setConfirm(e.target.value)} />
+          <Field label={t("Para confirmar, digite EXCLUIR")} htmlFor="del-confirm">
+            <Input
+              id="del-confirm"
+              value={confirm}
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              onChange={(e) => setConfirm(e.target.value)}
+            />
           </Field>
-          <Field label="Sua senha" htmlFor="del-password" hint={config.data?.google_oauth_enabled ? "Se você entra só com o Google e nunca criou senha, deixe em branco." : undefined}>
-            <Input id="del-password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <Field
+            label={t("Sua senha")}
+            htmlFor="del-password"
+            hint={
+              config.data?.google_oauth_enabled
+                ? t("Se você entra só com o Google e nunca criou senha, deixe em branco.")
+                : undefined
+            }
+          >
+            <Input
+              id="del-password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </Field>
           {error ? <Banner kind="error">{error}</Banner> : null}
           <DialogActions>
             <Button type="button" variant="secondary" size="lg" onClick={onClose} disabled={del.isPending}>
-              Manter minha conta
+              {t("Manter minha conta")}
             </Button>
             <Button type="submit" variant="danger" size="lg" loading={del.isPending} disabled={!ready}>
-              Excluir definitivamente
+              {t("Excluir definitivamente")}
             </Button>
           </DialogActions>
         </form>

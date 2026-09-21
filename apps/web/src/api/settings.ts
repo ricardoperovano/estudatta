@@ -1,4 +1,5 @@
 /** Preferências, lembretes, conta, sessões ativas, push e dados do usuário. */
+import { t } from "@/i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, rawJson, unwrap, ApiError, API_BASE } from "./client";
 import { sessionKey } from "./session";
@@ -32,7 +33,8 @@ export function usePreferences() {
 export function useUpdatePreferences() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (body: PreferencesUpdate) => unwrap(await api.PATCH("/api/v1/me/preferences", { body })) as Preferences,
+    mutationFn: async (body: PreferencesUpdate) =>
+      unwrap(await api.PATCH("/api/v1/me/preferences", { body })) as Preferences,
     onSuccess: (data) => qc.setQueryData(settingsKeys.preferences, data),
   });
 }
@@ -48,7 +50,8 @@ export function useNotificationPrefs() {
 export function useUpdateNotificationPrefs() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (body: NotificationPrefsUpdate) => unwrap(await api.PATCH("/api/v1/notifications/preferences", { body })) as NotificationPrefs,
+    mutationFn: async (body: NotificationPrefsUpdate) =>
+      unwrap(await api.PATCH("/api/v1/notifications/preferences", { body })) as NotificationPrefs,
     onSuccess: (data) => qc.setQueryData(settingsKeys.notificationPrefs, data),
   });
 }
@@ -64,7 +67,8 @@ export function useNotificationPreview(tone: Tone, kind: PreviewKind = "planned_
 export function useUpdateProfile() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (body: components["schemas"]["ProfileUpdate"]) => unwrap(await api.PATCH("/api/v1/me", { body })),
+    mutationFn: async (body: components["schemas"]["ProfileUpdate"]) =>
+      unwrap(await api.PATCH("/api/v1/me", { body })),
     onSuccess: () => qc.invalidateQueries({ queryKey: sessionKey }),
   });
 }
@@ -100,7 +104,8 @@ export function useResendVerification() {
 
 export function useChangePassword() {
   return useMutation({
-    mutationFn: async (body: components["schemas"]["ChangePasswordRequest"]) => unwrap(await api.POST("/api/v1/auth/change-password", { body })),
+    mutationFn: async (body: components["schemas"]["ChangePasswordRequest"]) =>
+      unwrap(await api.POST("/api/v1/auth/change-password", { body })),
   });
 }
 
@@ -115,7 +120,10 @@ export function useAuthSessions() {
 export function useRevokeSession() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => unwrap(await api.DELETE("/api/v1/auth/sessions/{session_id}", { params: { path: { session_id: id } } })),
+    mutationFn: async (id: string) =>
+      unwrap(
+        await api.DELETE("/api/v1/auth/sessions/{session_id}", { params: { path: { session_id: id } } }),
+      ),
     onSuccess: () => qc.invalidateQueries({ queryKey: settingsKeys.authSessions }),
   });
 }
@@ -130,12 +138,15 @@ export function useRevokeOtherSessions() {
 
 export function useDeleteAccount() {
   return useMutation({
-    mutationFn: async (body: { confirm: "EXCLUIR"; password: string | null }) => unwrap(await api.POST("/api/v1/me/delete", { body })),
+    mutationFn: async (body: { confirm: "EXCLUIR"; password: string | null }) =>
+      unwrap(await api.POST("/api/v1/me/delete", { body })),
   });
 }
 
 export function exportMyData(format: "json" | "csv") {
-  return format === "json" ? downloadFile("/api/v1/me/export", "estudatta-export.json") : downloadFile("/api/v1/me/export.csv", "estudatta-historico.csv");
+  return format === "json"
+    ? downloadFile("/api/v1/me/export", "estudatta-export.json")
+    : downloadFile("/api/v1/me/export.csv", "estudatta-historico.csv");
 }
 
 // --- Push ---------------------------------------------------------------------------------
@@ -146,9 +157,15 @@ export type PushServerState = { kind: "ok"; key: string } | { kind: "disabled"; 
 export async function getVapidPublicKey(): Promise<PushServerState> {
   try {
     const res = unwrap(await api.GET("/api/v1/notifications/push/vapid-public-key"));
-    return res.public_key ? { kind: "ok", key: res.public_key } : { kind: "disabled", message: "O servidor ainda não tem o envio de notificações configurado." };
+    return res.public_key
+      ? { kind: "ok", key: res.public_key }
+      : { kind: "disabled", message: t("O servidor ainda não tem o envio de notificações configurado.") };
   } catch (e) {
-    if (e instanceof ApiError && e.status === 404) return { kind: "disabled", message: e.message || "O servidor ainda não tem o envio de notificações configurado." };
+    if (e instanceof ApiError && e.status === 404)
+      return {
+        kind: "disabled",
+        message: e.message || t("O servidor ainda não tem o envio de notificações configurado."),
+      };
     throw e;
   }
 }
@@ -184,13 +201,27 @@ export async function getCurrentPushSubscription(): Promise<PushSubscription | n
 /** Assina push neste aparelho e registra no servidor. Pressupõe permissão concedida. */
 export async function subscribePush(publicKey: string): Promise<PushSubscription> {
   const reg = await getServiceWorkerRegistration();
-  if (!reg) throw new ApiError(0, "no_service_worker", "O app ainda não está pronto para receber avisos em segundo plano neste navegador. Recarregue a página e tente de novo.");
-  const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource });
+  if (!reg)
+    throw new ApiError(
+      0,
+      "no_service_worker",
+      t(
+        "O app ainda não está pronto para receber avisos em segundo plano neste navegador. Recarregue a página e tente de novo.",
+      ),
+    );
+  const sub = await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
+  });
   const json = sub.toJSON();
   await rawJson("/api/v1/notifications/push/subscriptions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ endpoint: sub.endpoint, keys: { p256dh: json.keys?.p256dh ?? "", auth: json.keys?.auth ?? "" }, user_agent: navigator.userAgent.slice(0, 250) }),
+    body: JSON.stringify({
+      endpoint: sub.endpoint,
+      keys: { p256dh: json.keys?.p256dh ?? "", auth: json.keys?.auth ?? "" },
+      user_agent: navigator.userAgent.slice(0, 250),
+    }),
   });
   return sub;
 }
@@ -204,7 +235,11 @@ export async function unsubscribePush(): Promise<void> {
   } catch {
     /* segue para remover no servidor */
   }
-  await rawJson("/api/v1/notifications/push/subscriptions", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint }) });
+  await rawJson("/api/v1/notifications/push/subscriptions", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ endpoint }),
+  });
 }
 
 export async function sendTestPush(): Promise<string> {

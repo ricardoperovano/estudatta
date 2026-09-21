@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "@phosphor-icons/react";
@@ -17,7 +18,16 @@ interface ContentProps extends React.ComponentPropsWithoutRef<typeof DialogPrimi
 }
 
 /** Diálogo/folha: superfície, raio 14, elevação lg, backdrop neutro-900 a 55–70%. */
-export function DialogContent({ mode = "dialog", title, description, hideTitle, width, className, children, ...props }: ContentProps) {
+export function DialogContent({
+  mode = "dialog",
+  title,
+  description,
+  hideTitle,
+  width,
+  className,
+  children,
+  ...props
+}: ContentProps) {
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[color-mix(in_srgb,var(--color-neutral-900)_60%,transparent)] data-[state=open]:animate-fade-in" />
@@ -32,19 +42,32 @@ export function DialogContent({ mode = "dialog", title, description, hideTitle, 
         style={width ? { width } : undefined}
         {...props}
       >
-        {mode === "sheet" ? <div aria-hidden className="mx-auto h-1 w-9 rounded-full bg-neutral-700 tablet:hidden" /> : null}
+        {mode === "sheet" ? (
+          <div aria-hidden className="mx-auto h-1 w-9 rounded-full bg-neutral-700 tablet:hidden" />
+        ) : null}
         <div className={cn("flex items-start justify-between gap-3", hideTitle && "sr-only")}>
           <div className="flex flex-col gap-1">
-            <DialogPrimitive.Title className="text-[20px] font-medium leading-tight">{title}</DialogPrimitive.Title>
-            {description ? <DialogPrimitive.Description className="text-[14px] text-neutral-400">{description}</DialogPrimitive.Description> : null}
+            <DialogPrimitive.Title className="text-[20px] font-medium leading-tight">
+              {title}
+            </DialogPrimitive.Title>
+            {description ? (
+              <DialogPrimitive.Description className="text-[14px] text-neutral-400">
+                {description}
+              </DialogPrimitive.Description>
+            ) : null}
           </div>
           {mode === "dialog" ? (
-            <DialogPrimitive.Close className="grid h-9 w-9 shrink-0 place-items-center rounded-md text-neutral-400 hover:bg-[color-mix(in_srgb,var(--color-text-primary)_7%,transparent)]" aria-label="Fechar">
+            <DialogPrimitive.Close
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-md text-neutral-400 hover:bg-[color-mix(in_srgb,var(--color-text-primary)_7%,transparent)]"
+              aria-label={t("Fechar")}
+            >
               <X size={18} />
             </DialogPrimitive.Close>
           ) : null}
         </div>
-        {!description ? <DialogPrimitive.Description className="sr-only">{title}</DialogPrimitive.Description> : null}
+        {!description ? (
+          <DialogPrimitive.Description className="sr-only">{title}</DialogPrimitive.Description>
+        ) : null}
         {children}
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>

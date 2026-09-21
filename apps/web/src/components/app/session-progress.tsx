@@ -5,6 +5,7 @@
  * - Demais categorias: sugestões de preenchimento para "o que você estudou" (chips que completam
  *   a observação) e o tipo de estudo mais provável.
  */
+import { t } from "@/i18n";
 import * as React from "react";
 import { Link } from "react-router";
 import { Field, Input } from "@/components/ui";
@@ -35,15 +36,15 @@ export function defaultStudyType(category: string | null | undefined): StudyType
 
 /** Sugestões curtas do que costuma ser registrado em cada categoria; viram chips na observação. */
 export const NOTE_SUGGESTIONS: Record<string, string[]> = {
-  idioma: ["Vocabulário", "Gramática", "Listening", "Conversação", "Leitura", "Escrita"],
-  ingles: ["Vocabulário", "Gramática", "Listening", "Conversação", "Leitura", "Escrita"],
-  concurso: ["Lei seca", "Questões", "Resumo", "Videoaula", "Revisão", "Simulado"],
-  faculdade: ["Aula", "Exercícios", "Trabalho", "Leitura", "Prova", "Resumo"],
-  certificacao: ["Documentação", "Videoaula", "Laboratório", "Simulado", "Resumo"],
-  curso: ["Aula", "Exercícios", "Projeto", "Revisão"],
-  outro_estudo: ["Teoria", "Exercícios", "Resumo", "Revisão"],
-  pratica: ["Aquecimento", "Técnica", "Repertório", "Treino", "Revisão"],
-  rotina: ["Feito", "Parcial"],
+  idioma: [t("Vocabulário"), t("Gramática"), t("Listening"), t("Conversação"), t("Leitura"), t("Escrita")],
+  ingles: [t("Vocabulário"), t("Gramática"), t("Listening"), t("Conversação"), t("Leitura"), t("Escrita")],
+  concurso: [t("Lei seca"), t("Questões"), t("Resumo"), t("Videoaula"), t("Revisão"), t("Simulado")],
+  faculdade: [t("Aula"), t("Exercícios"), t("Trabalho"), t("Leitura"), t("Prova"), t("Resumo")],
+  certificacao: [t("Documentação"), t("Videoaula"), t("Laboratório"), t("Simulado"), t("Resumo")],
+  curso: [t("Aula"), t("Exercícios"), t("Projeto"), t("Revisão")],
+  outro_estudo: [t("Teoria"), t("Exercícios"), t("Resumo"), t("Revisão")],
+  pratica: [t("Aquecimento"), t("Técnica"), t("Repertório"), t("Treino"), t("Revisão")],
+  rotina: [t("Feito"), t("Parcial")],
 };
 
 /** Acrescenta a sugestão à observação ("Vocabulário · Gramática"), sem repetir. */
@@ -76,7 +77,7 @@ export function NoteSuggestions({
       .filter(Boolean),
   );
   return (
-    <div className={cn("flex flex-wrap gap-1.5", className)} aria-label="Sugestões para o conteúdo">
+    <div className={cn("flex flex-wrap gap-1.5", className)} aria-label={t("Sugestões para o conteúdo")}>
       {list.map((s) => {
         const on = chosen.has(s);
         return (
@@ -104,8 +105,8 @@ export function NoteSuggestions({
 export function fmtBookmark(m: CurrentMaterial | null | undefined): string | null {
   if (!m) return null;
   const page = m.current_page ?? 0;
-  const where = page > 0 ? `p. ${page}` : "ainda sem marcador";
-  return `${m.title} · ${m.pages_total ? `${where} de ${m.pages_total}` : where}`;
+  const where = page > 0 ? `p. ${page}` : t("ainda sem marcador");
+  return `${m.title} · ${m.pages_total ? t("{{v0}} de {{v1}}", { v0: where, v1: m.pages_total }) : where}`;
 }
 
 interface ReadingPagesFieldProps {
@@ -136,20 +137,21 @@ export function ReadingPagesField({
     hint = (
       <>
         {fmtBookmark(material)}
-        {dest != null ? ` → vai para p. ${dest}` : " · o marcador avança sozinho"}
-        {dest != null && total && from + (value ?? 0) > total ? " (fim do livro)" : ""}
+        {dest != null ? " " + t("→ vai para p. {{v0}}", { v0: dest }) : t("· o marcador avança sozinho")}
+        {dest != null && total && from + (value ?? 0) > total ? t("(fim do livro)") : ""}
       </>
     );
   } else {
     hint = (
       <>
-        Sem livro atual. <Link to={`/app/objetivos/${activityId}?aba=materiais`}>Defina o livro</Link> para o
-        marcador avançar sozinho.
+        {t("Sem livro atual.")}{" "}
+        <Link to={`/app/objetivos/${activityId}?aba=materiais`}>{t("Defina o livro")}</Link>{" "}
+        {t("para o marcador avançar sozinho.")}
       </>
     );
   }
   return (
-    <Field label="Quantas páginas você leu?" htmlFor={id} hint={hint}>
+    <Field label={t("Quantas páginas você leu?")} htmlFor={id} hint={hint}>
       <Input
         id={id}
         type="number"
@@ -157,7 +159,7 @@ export function ReadingPagesField({
         min={0}
         max={MAX_PAGES_READ}
         step={1}
-        placeholder="ex.: 8"
+        placeholder={t("ex.: 8")}
         className="tnum"
         autoFocus={autoFocus}
         value={value ?? ""}
@@ -170,7 +172,7 @@ export function ReadingPagesField({
 /** Erro pt-BR ou `null`. */
 export function validatePagesRead(v: number | null): string | null {
   if (v == null) return null;
-  if (!Number.isInteger(v) || v < 0) return "Páginas lidas: use um número inteiro a partir de 0.";
-  if (v > MAX_PAGES_READ) return `O limite é de ${MAX_PAGES_READ} páginas por sessão.`;
+  if (!Number.isInteger(v) || v < 0) return t("Páginas lidas: use um número inteiro a partir de 0.");
+  if (v > MAX_PAGES_READ) return t("O limite é de {{v0}} páginas por sessão.", { v0: MAX_PAGES_READ });
   return null;
 }

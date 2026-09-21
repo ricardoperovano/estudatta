@@ -1,4 +1,5 @@
 /** Simulados sem registro: convite, exemplo apagado da evolução e das matérias, e o que anotar. */
+import { t } from "@/i18n";
 import { ChartLineUp, Exam, ListNumbers, Target } from "@phosphor-icons/react";
 import { Button } from "@/components/ui";
 import { cn } from "@/lib/utils";
@@ -13,9 +14,9 @@ const EXAMS = [
   { label: "4º", pct: 72 },
 ];
 const SUBJECTS = [
-  { name: "Português", pct: 78 },
-  { name: "Direito constitucional", pct: 66 },
-  { name: "Matemática", pct: 45 },
+  { name: t("Português"), pct: 78 },
+  { name: t("Direito constitucional"), pct: 66 },
+  { name: t("Matemática"), pct: 45 },
 ];
 
 export function NoMockExams({ onNew }: { onNew: () => void }) {
@@ -23,8 +24,8 @@ export function NoMockExams({ onNew }: { onNew: () => void }) {
     <div className="grid gap-4 desktop:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] desktop:gap-6">
       <div className="flex min-w-0 flex-col gap-4 desktop:gap-6">
         <EmptyHero
-          kicker="Nenhum simulado ainda"
-          title="Veja sua evolução a cada simulado"
+          kicker={t("Nenhum simulado ainda")}
+          title={t("Veja sua evolução a cada simulado")}
           mood="focus"
           icon={Exam}
           actions={
@@ -35,34 +36,35 @@ export function NoMockExams({ onNew }: { onNew: () => void }) {
               onClick={onNew}
               data-tour="simulados-novo"
             >
-              Registrar simulado
+              {t("Registrar simulado")}
             </Button>
           }
         >
           <p className="m-0">
-            Anote o resultado no total ou por matéria. Os números mostram se você está melhorando e quais
-            matérias pedem mais atenção.
+            {t(
+              "Anote o resultado no total ou por matéria. Os números mostram se você está melhorando e quais matérias pedem mais atenção.",
+            )}
           </p>
         </EmptyHero>
         <Explainer
-          title="O que anotar"
+          title={t("O que anotar")}
           items={[
             {
               icon: ListNumbers,
-              title: "Questões e acertos",
-              body: "No total ou separados por matéria. Leva um minuto.",
+              title: t("Questões e acertos"),
+              body: t("No total ou separados por matéria. Leva um minuto."),
               tint: "accent",
             },
             {
               icon: ChartLineUp,
-              title: "A evolução aparece sozinha",
-              body: "Último, melhor e a variação entre um simulado e outro.",
+              title: t("A evolução aparece sozinha"),
+              body: t("Último, melhor e a variação entre um simulado e outro."),
               tint: "info",
             },
             {
               icon: Target,
-              title: "Onde focar",
-              body: "As matérias com menos acertos ficam em destaque.",
+              title: t("Onde focar"),
+              body: t("As matérias com menos acertos ficam em destaque."),
               tint: "warning",
             },
           ]}
@@ -70,12 +72,14 @@ export function NoMockExams({ onNew }: { onNew: () => void }) {
       </div>
       <ExamplePreview
         className="desktop:self-start"
-        title="Assim fica o acompanhamento"
-        summary="quatro simulados com 58, 64, 61 e 72 por cento de acertos; por matéria, Português 78, Direito constitucional 66 e Matemática 45 por cento."
+        title={t("Assim fica o acompanhamento")}
+        summary={t(
+          "quatro simulados com 58, 64, 61 e 72 por cento de acertos; por matéria, Português 78, Direito constitucional 66 e Matemática 45 por cento.",
+        )}
       >
         <div className="flex flex-col gap-3">
           <div className="rounded-md bg-surface p-3 shadow-sm">
-            <span className="kicker">Evolução</span>
+            <span className="kicker">{t("Evolução")}</span>
             <div className="mt-2 flex h-[112px] items-end gap-3">
               {EXAMS.map((e, i) => (
                 <div key={e.label} className="flex flex-1 flex-col items-center gap-1">
@@ -93,7 +97,7 @@ export function NoMockExams({ onNew }: { onNew: () => void }) {
             </div>
           </div>
           <div className="flex flex-col gap-2 rounded-md bg-surface p-3 shadow-sm">
-            <span className="kicker">Por matéria</span>
+            <span className="kicker">{t("Por matéria")}</span>
             {SUBJECTS.map((s) => (
               <div key={s.name} className="text-[13px]">
                 <div className="flex justify-between gap-2">

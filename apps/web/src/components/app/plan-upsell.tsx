@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { Link } from "react-router";
 import { Lock } from "@phosphor-icons/react";
 import { Button, Card } from "@/components/ui";
@@ -19,14 +20,29 @@ export function useHasFeature(key: "reports" | "reminders" | "auto_planning"): b
 }
 
 /** Aviso honesto de recurso de plano pago, com caminho para a tela de planos. */
-export function PlanUpsell({ title = "", text, className, compact }: { title?: string; text: string; className?: string; compact?: boolean }) {
+export function PlanUpsell({
+  title = "",
+  text,
+  className,
+  compact,
+}: {
+  title?: string;
+  text: string;
+  className?: string;
+  compact?: boolean;
+}) {
   if (compact) {
     return (
-      <span className={cn("inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-neutral-400", className)}>
+      <span
+        className={cn(
+          "inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-neutral-400",
+          className,
+        )}
+      >
         <Lock size={12} aria-hidden className="text-accent" />
         {text}{" "}
         <Link to="/app/planos" className="text-accent">
-          Ver planos
+          {t("Ver planos")}
         </Link>
       </span>
     );
@@ -39,7 +55,7 @@ export function PlanUpsell({ title = "", text, className, compact }: { title?: s
       </span>
       <p className="text-[14px] text-neutral-400">{text}</p>
       <Button asChild variant="primary" size="md" className="self-start">
-        <Link to="/app/planos">Ver planos</Link>
+        <Link to="/app/planos">{t("Ver planos")}</Link>
       </Button>
     </Card>
   );

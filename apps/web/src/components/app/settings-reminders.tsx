@@ -1,3 +1,4 @@
+import { t as tx } from "@/i18n";
 import * as React from "react";
 import { Link } from "react-router";
 import { Minus, Plus } from "@phosphor-icons/react";
@@ -20,20 +21,52 @@ import {
 } from "@/api/settings";
 import { pushState, subscribeToPush, unsubscribeFromPush, type PushState } from "@/app/push";
 import { Symbol } from "@/components/app/brand";
-import { Banner, Button, Card, DayPicker, Field, Input, Seg, Spinner, Switch, Tag, toast } from "@/components/ui";
+import {
+  Banner,
+  Button,
+  Card,
+  DayPicker,
+  Field,
+  Input,
+  Seg,
+  Spinner,
+  Switch,
+  Tag,
+  toast,
+} from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { PlanUpsell, useHasFeature } from "@/components/app/plan-upsell";
 
-export function SettingsSection({ title, children, className, id }: { title: string; children: React.ReactNode; className?: string; id?: string }) {
+export function SettingsSection({
+  title,
+  children,
+  className,
+  id,
+}: {
+  title: string;
+  children: React.ReactNode;
+  className?: string;
+  id?: string;
+}) {
   return (
-    <section id={id} aria-label={title} className={cn("scroll-mt-20 flex flex-col gap-[14px]", className)}>
+    <section id={id} aria-label={title} className={cn("flex scroll-mt-20 flex-col gap-[14px]", className)}>
       <h2 className="text-[17px] font-medium leading-tight desktop:text-[20px]">{title}</h2>
       {children}
     </section>
   );
 }
 
-export function SettingsRow({ label, hint, children, htmlFor }: { label: React.ReactNode; hint?: React.ReactNode; children: React.ReactNode; htmlFor?: string }) {
+export function SettingsRow({
+  label,
+  hint,
+  children,
+  htmlFor,
+}: {
+  label: React.ReactNode;
+  hint?: React.ReactNode;
+  children: React.ReactNode;
+  htmlFor?: string;
+}) {
   return (
     <div className="flex min-h-[32px] items-center justify-between gap-3">
       <div className="flex min-w-0 flex-col">
@@ -46,7 +79,19 @@ export function SettingsRow({ label, hint, children, htmlFor }: { label: React.R
 }
 
 /** Campo de hora compacto: confirma ao sair do campo; `key` = valor do servidor para acompanhar mudanças sem efeito. */
-function TimeField({ id, value, label, disabled, onCommit }: { id: string; value: string; label: string; disabled?: boolean; onCommit: (v: string) => void }) {
+function TimeField({
+  id,
+  value,
+  label,
+  disabled,
+  onCommit,
+}: {
+  id: string;
+  value: string;
+  label: string;
+  disabled?: boolean;
+  onCommit: (v: string) => void;
+}) {
   return (
     <Input
       key={value}
@@ -84,32 +129,32 @@ export function RemindersSection({ online }: { online: boolean }) {
           const c = (e.details as { ceiling?: unknown } | null)?.ceiling;
           if (typeof c === "number") setCeiling(c);
         }
-        toast("error", "Não foi possível salvar", errorMessage(e));
+        toast("error", tx("Não foi possível salvar"), errorMessage(e));
       },
     });
   };
 
   if (prefs.isPending) {
     return (
-      <SettingsSection title="Lembretes">
+      <SettingsSection title={tx("Lembretes")}>
         <div className="flex justify-center py-10" role="status">
-          <Spinner className="h-6 w-6" label="Carregando lembretes" />
+          <Spinner className="h-6 w-6" label={tx("Carregando lembretes")} />
         </div>
       </SettingsSection>
     );
   }
   if (prefs.isError) {
     return (
-      <SettingsSection title="Lembretes">
+      <SettingsSection title={tx("Lembretes")}>
         <Banner
           kind="error"
           actions={
             <Button size="sm" variant="secondary" onClick={() => prefs.refetch()}>
-              Tentar de novo
+              {tx("Tentar de novo")}
             </Button>
           }
         >
-          Não foi possível carregar seus lembretes. {errorMessage(prefs.error, "")}
+          {tx("Não foi possível carregar seus lembretes. {{v0}}", { v0: errorMessage(prefs.error, "") })}
         </Banner>
       </SettingsSection>
     );
@@ -121,50 +166,101 @@ export function RemindersSection({ online }: { online: boolean }) {
   const maxReached = ceiling != null && p.max_per_day >= ceiling;
 
   return (
-    <SettingsSection title="Lembretes">
+    <SettingsSection title={tx("Lembretes")}>
       <Card className="gap-3 p-[14px] text-[14px]" data-tour="preferencias-lembretes">
-        <SettingsRow label="Lembrar de estudar">
-          <Switch label="Lembrar de estudar" checked={p.enabled} disabled={!online} onCheckedChange={(v) => patch({ enabled: v })} />
+        <SettingsRow label={tx("Lembrar de estudar")}>
+          <Switch
+            label={tx("Lembrar de estudar")}
+            checked={p.enabled}
+            disabled={!online}
+            onCheckedChange={(v) => patch({ enabled: v })}
+          />
         </SettingsRow>
-        <SettingsRow label="Horário" htmlFor="reminder-time">
-          <TimeField id="reminder-time" label="Horário do lembrete" value={p.reminder_time} disabled={off} onCommit={(v) => patch({ reminder_time: v })} />
+        <SettingsRow label={tx("Horário")} htmlFor="reminder-time">
+          <TimeField
+            id="reminder-time"
+            label={tx("Horário do lembrete")}
+            value={p.reminder_time}
+            disabled={off}
+            onCommit={(v) => patch({ reminder_time: v })}
+          />
         </SettingsRow>
-        <SettingsRow label="Avisar se o dia terminar sem registro">
-          <Switch label="Avisar se o dia terminar sem registro" checked={fullReminders && p.end_of_window_alert} disabled={off || !fullReminders} onCheckedChange={(v) => patch({ end_of_window_alert: v })} />
+        <SettingsRow label={tx("Avisar se o dia terminar sem registro")}>
+          <Switch
+            label={tx("Avisar se o dia terminar sem registro")}
+            checked={fullReminders && p.end_of_window_alert}
+            disabled={off || !fullReminders}
+            onCheckedChange={(v) => patch({ end_of_window_alert: v })}
+          />
         </SettingsRow>
-        <SettingsRow label="Avisar quando a meta de hoje for concluída">
-          <Switch label="Avisar quando a meta de hoje for concluída" checked={p.goal_completed_alert} disabled={off} onCheckedChange={(v) => patch({ goal_completed_alert: v })} />
+        <SettingsRow label={tx("Avisar quando a meta de hoje for concluída")}>
+          <Switch
+            label={tx("Avisar quando a meta de hoje for concluída")}
+            checked={p.goal_completed_alert}
+            disabled={off}
+            onCheckedChange={(v) => patch({ goal_completed_alert: v })}
+          />
         </SettingsRow>
-        <SettingsRow label="Resumo da semana">
-          <Switch label="Resumo da semana" checked={p.weekly_summary} disabled={off} onCheckedChange={(v) => patch({ weekly_summary: v })} />
+        <SettingsRow label={tx("Resumo da semana")}>
+          <Switch
+            label={tx("Resumo da semana")}
+            checked={p.weekly_summary}
+            disabled={off}
+            onCheckedChange={(v) => patch({ weekly_summary: v })}
+          />
         </SettingsRow>
         {!fullReminders ? (
           <PlanUpsell
             compact
-            text="No Gratuito você recebe o lembrete no horário planejado e o resumo da semana no app. O segundo aviso, o aviso de fim do dia, o de retomada e o resumo por e-mail estão nos planos Essencial e Completo."
+            text={tx(
+              "No Gratuito você recebe o lembrete no horário planejado e o resumo da semana no app. O segundo aviso, o aviso de fim do dia, o de retomada e o resumo por e-mail estão nos planos Essencial e Completo.",
+            )}
           />
         ) : null}
-        <SettingsRow label="Mostrar o nome do objetivo" hint="Desligado, o aviso não revela o que você estuda.">
-          <Switch label="Mostrar o nome do objetivo no aviso" checked={p.show_activity_name} disabled={off} onCheckedChange={(v) => patch({ show_activity_name: v })} />
+        <SettingsRow
+          label={tx("Mostrar o nome do objetivo")}
+          hint={tx("Desligado, o aviso não revela o que você estuda.")}
+        >
+          <Switch
+            label={tx("Mostrar o nome do objetivo no aviso")}
+            checked={p.show_activity_name}
+            disabled={off}
+            onCheckedChange={(v) => patch({ show_activity_name: v })}
+          />
         </SettingsRow>
       </Card>
 
       <Card className="gap-3 p-[14px] text-[14px]" data-tour="preferencias-retorno">
         <div className="flex flex-col gap-0.5">
-          <span className="font-medium">Não me deixe desistir</span>
+          <span className="font-medium">{tx("Não me deixe desistir")}</span>
           <span className="text-[12px] text-neutral-400">
-            Se você ficar alguns dias sem estudar (3, 7, 14 e 30 dias) ou ainda não tiver criado um objetivo, o Tatá manda um lembrete gentil. Pausas planejadas e objetivos pausados ficam em silêncio.
+            {tx(
+              "Se você ficar alguns dias sem estudar (3, 7, 14 e 30 dias) ou ainda não tiver criado um objetivo, o Tatá manda um lembrete gentil. Pausas planejadas e objetivos pausados ficam em silêncio.",
+            )}
           </span>
         </div>
-        <SettingsRow label="Lembretes de retorno">
-          <Switch label="Lembretes de retorno" checked={p.reengagement} disabled={off} onCheckedChange={(v) => patch({ reengagement: v })} />
+        <SettingsRow label={tx("Lembretes de retorno")}>
+          <Switch
+            label={tx("Lembretes de retorno")}
+            checked={p.reengagement}
+            disabled={off}
+            onCheckedChange={(v) => patch({ reengagement: v })}
+          />
         </SettingsRow>
-        <SettingsRow label="Também por e-mail" hint="Cada e-mail tem um link para parar de receber.">
-          <Switch label="Lembretes de retorno por e-mail" checked={p.reengagement && p.reengagement_email} disabled={off || !p.reengagement} onCheckedChange={(v) => patch({ reengagement_email: v })} />
+        <SettingsRow
+          label={tx("Também por e-mail")}
+          hint={tx("Cada e-mail tem um link para parar de receber.")}
+        >
+          <Switch
+            label={tx("Lembretes de retorno por e-mail")}
+            checked={p.reengagement && p.reengagement_email}
+            disabled={off || !p.reengagement}
+            onCheckedChange={(v) => patch({ reengagement_email: v })}
+          />
         </SettingsRow>
       </Card>
 
-      <Field label="Dias com lembrete">
+      <Field label={tx("Dias com lembrete")}>
         <DayPicker
           value={p.reminder_days}
           onChange={(days) => patch({ reminder_days: days })}
@@ -175,24 +271,60 @@ export function RemindersSection({ online }: { online: boolean }) {
       <ToneField online={online} />
 
       <Card className="gap-3 p-[14px] text-[14px]">
-        <SettingsRow label="Horário de silêncio">
-          <TimeField id="quiet-start" label="Início do silêncio" value={p.quiet_start} disabled={off} onCommit={(v) => patch({ quiet_start: v })} />
+        <SettingsRow label={tx("Horário de silêncio")}>
+          <TimeField
+            id="quiet-start"
+            label={tx("Início do silêncio")}
+            value={p.quiet_start}
+            disabled={off}
+            onCommit={(v) => patch({ quiet_start: v })}
+          />
           <span aria-hidden className="text-neutral-400">
             –
           </span>
-          <TimeField id="quiet-end" label="Fim do silêncio" value={p.quiet_end} disabled={off} onCommit={(v) => patch({ quiet_end: v })} />
+          <TimeField
+            id="quiet-end"
+            label={tx("Fim do silêncio")}
+            value={p.quiet_end}
+            disabled={off}
+            onCommit={(v) => patch({ quiet_end: v })}
+          />
         </SettingsRow>
-        <SettingsRow label="Fins de semana em silêncio">
-          <Switch label="Fins de semana em silêncio" checked={p.quiet_weekends} disabled={off} onCheckedChange={(v) => patch({ quiet_weekends: v })} />
+        <SettingsRow label={tx("Fins de semana em silêncio")}>
+          <Switch
+            label={tx("Fins de semana em silêncio")}
+            checked={p.quiet_weekends}
+            disabled={off}
+            onCheckedChange={(v) => patch({ quiet_weekends: v })}
+          />
         </SettingsRow>
-        <SettingsRow label="Limite diário" hint={maxReached ? `O máximo é ${ceiling} por dia.` : "Máximo de lembretes por dia."}>
-          <Button variant="secondary" size="icon" aria-label="Menos um lembrete por dia" disabled={off || p.max_per_day <= 1} onClick={() => patch({ max_per_day: p.max_per_day - 1 })}>
+        <SettingsRow
+          label={tx("Limite diário")}
+          hint={
+            maxReached
+              ? tx("O máximo é {{v0}} por dia.", { v0: ceiling })
+              : tx("Máximo de lembretes por dia.")
+          }
+        >
+          <Button
+            variant="secondary"
+            size="icon"
+            aria-label={tx("Menos um lembrete por dia")}
+            disabled={off || p.max_per_day <= 1}
+            onClick={() => patch({ max_per_day: p.max_per_day - 1 })}
+          >
             <Minus size={16} aria-hidden />
           </Button>
           <span className="tnum min-w-[28px] text-center text-neutral-300" aria-live="polite">
             {p.max_per_day}
           </span>
-          <Button variant="secondary" size="icon" aria-label="Mais um lembrete por dia" disabled={off || maxReached} onClick={() => patch({ max_per_day: p.max_per_day + 1 })}>
+          <Button
+            variant="secondary"
+            size="icon"
+            aria-label={tx("Mais um lembrete por dia")}
+            disabled={off || maxReached}
+            onClick={() => patch({ max_per_day: p.max_per_day + 1 })}
+          >
             <Plus size={16} aria-hidden />
           </Button>
         </SettingsRow>
@@ -218,7 +350,7 @@ function ToneField({ online }: { online: boolean }) {
       {
         onError: (e) => {
           if (prev) qc.setQueryData(settingsKeys.preferences, prev);
-          toast("error", "Não foi possível salvar o tom", errorMessage(e));
+          toast("error", tx("Não foi possível salvar o tom"), errorMessage(e));
         },
       },
     );
@@ -226,31 +358,37 @@ function ToneField({ online }: { online: boolean }) {
 
   return (
     <>
-      <Field label="Tom das mensagens">
+      <Field label={tx("Tom das mensagens")}>
         <Seg<Tone>
-          label="Tom das mensagens"
+          label={tx("Tom das mensagens")}
           block
           size="lg"
           value={tone}
           onChange={setTone}
           options={[
-            { value: "acolhedor", label: "Acolhedor", disabled: !online || prefs.isPending },
-            { value: "direto", label: "Direto", disabled: !online || prefs.isPending },
-            { value: "firme", label: "Firme", disabled: !online || prefs.isPending },
+            { value: "acolhedor", label: tx("Acolhedor"), disabled: !online || prefs.isPending },
+            { value: "direto", label: tx("Direto"), disabled: !online || prefs.isPending },
+            { value: "firme", label: tx("Firme"), disabled: !online || prefs.isPending },
           ]}
         />
       </Field>
       <div className="flex items-start gap-[10px] rounded-md bg-surface p-3" aria-live="polite">
         <Symbol size={20} className="mt-0.5 shrink-0" />
         <div className="text-[14px]">
-          <span className="block text-[12px] text-neutral-400">Exemplo · {TONE_LABEL[tone]}</span>
+          <span className="block text-[12px] text-neutral-400">
+            {tx("Exemplo · {{v0}}", { v0: TONE_LABEL[tone] })}
+          </span>
           {preview.isPending ? (
-            <span className="text-neutral-400">Carregando exemplo…</span>
+            <span className="text-neutral-400">{tx("Carregando exemplo…")}</span>
           ) : preview.isError ? (
             <span className="text-neutral-400">
-              Não foi possível carregar o exemplo agora.{" "}
-              <button type="button" className="cursor-pointer text-accent underline-offset-2 hover:underline" onClick={() => preview.refetch()}>
-                Tentar de novo
+              {tx("Não foi possível carregar o exemplo agora.")}{" "}
+              <button
+                type="button"
+                className="cursor-pointer text-accent underline-offset-2 hover:underline"
+                onClick={() => preview.refetch()}
+              >
+                {tx("Tentar de novo")}
               </button>
             </span>
           ) : (
@@ -272,11 +410,19 @@ async function readDeviceState(): Promise<DeviceState> {
   return { state, subscribed: !!sub, ready: !!reg };
 }
 
-const NOT_READY = "O app ainda não está pronto para receber avisos em segundo plano neste navegador. Recarregue a página e tente de novo.";
+const NOT_READY = tx(
+  "O app ainda não está pronto para receber avisos em segundo plano neste navegador. Recarregue a página e tente de novo.",
+);
 
 /** Estado honesto das notificações do navegador neste aparelho; a permissão só é pedida no clique. */
 function BrowserNotificationsCard({ online }: { online: boolean }) {
-  const device = useQuery({ queryKey: ["push", "device-state"], queryFn: readDeviceState, staleTime: 0, gcTime: 0, retry: false });
+  const device = useQuery({
+    queryKey: ["push", "device-state"],
+    queryFn: readDeviceState,
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+  });
   const [busy, setBusy] = React.useState<"on" | "off" | "test" | null>(null);
 
   const run = async (kind: "on" | "off" | "test", fn: () => Promise<void>) => {
@@ -284,7 +430,7 @@ function BrowserNotificationsCard({ online }: { online: boolean }) {
     try {
       await fn();
     } catch (e) {
-      toast("error", "Não foi possível concluir", errorMessage(e));
+      toast("error", tx("Não foi possível concluir"), errorMessage(e));
     } finally {
       setBusy(null);
       void device.refetch();
@@ -295,8 +441,9 @@ function BrowserNotificationsCard({ online }: { online: boolean }) {
     run("on", async () => {
       if (!device.data?.ready) throw new Error(NOT_READY);
       const result = await subscribeToPush();
-      if (result === "granted") toast("success", "Notificações ativadas neste aparelho");
-      else if (result === "denied") toast("info", "Permissão negada", "Os lembretes continuam aparecendo com o app aberto.");
+      if (result === "granted") toast("success", tx("Notificações ativadas neste aparelho"));
+      else if (result === "denied")
+        toast("info", tx("Permissão negada"), tx("Os lembretes continuam aparecendo com o app aberto."));
     });
 
   const d = device.data;
@@ -305,22 +452,30 @@ function BrowserNotificationsCard({ online }: { online: boolean }) {
   let actions: React.ReactNode = null;
 
   if (device.isPending) {
-    text = <Spinner label="Verificando notificações" />;
+    text = <Spinner label={tx("Verificando notificações")} />;
   } else if (!d) {
-    tag = <Tag variant="neutral">Indisponíveis</Tag>;
-    text = "Não foi possível verificar as notificações neste navegador.";
+    tag = <Tag variant="neutral">{tx("Indisponíveis")}</Tag>;
+    text = tx("Não foi possível verificar as notificações neste navegador.");
     actions = (
       <Button variant="secondary" className="min-h-[40px] self-start" onClick={() => device.refetch()}>
-        Verificar de novo
+        {tx("Verificar de novo")}
       </Button>
     );
   } else if (d.state === "granted" && d.subscribed) {
-    tag = <Tag variant="success">Ativas neste aparelho</Tag>;
-    text = "Os lembretes chegam mesmo com o app fechado. O horário exato depende do aparelho e do navegador.";
+    tag = <Tag variant="success">{tx("Ativas neste aparelho")}</Tag>;
+    text = tx(
+      "Os lembretes chegam mesmo com o app fechado. O horário exato depende do aparelho e do navegador.",
+    );
     actions = (
       <div className="flex flex-wrap gap-2">
-        <Button variant="primary" className="min-h-[40px]" loading={busy === "test"} disabled={!online || busy !== null} onClick={() => run("test", async () => toast("info", "Teste enviado", await sendTestPush()))}>
-          Enviar um teste
+        <Button
+          variant="primary"
+          className="min-h-[40px]"
+          loading={busy === "test"}
+          disabled={!online || busy !== null}
+          onClick={() => run("test", async () => toast("info", tx("Teste enviado"), await sendTestPush()))}
+        >
+          {tx("Enviar um teste")}
         </Button>
         <Button
           variant="ghost-muted"
@@ -330,53 +485,71 @@ function BrowserNotificationsCard({ online }: { online: boolean }) {
           onClick={() =>
             run("off", async () => {
               await unsubscribeFromPush();
-              toast("info", "Notificações desativadas neste aparelho");
+              toast("info", tx("Notificações desativadas neste aparelho"));
             })
           }
         >
-          Desativar neste aparelho
+          {tx("Desativar neste aparelho")}
         </Button>
       </div>
     );
   } else if (d.state === "granted" || d.state === "default") {
-    tag = <Tag variant="pending">{d.state === "granted" ? "Não ativadas neste aparelho" : "Não permitidas"}</Tag>;
-    text = d.ready ? "Sem permissão, os lembretes aparecem só com o app aberto." : `Sem permissão, os lembretes aparecem só com o app aberto. ${NOT_READY}`;
+    tag = (
+      <Tag variant="pending">
+        {d.state === "granted" ? tx("Não ativadas neste aparelho") : tx("Não permitidas")}
+      </Tag>
+    );
+    text = d.ready
+      ? tx("Sem permissão, os lembretes aparecem só com o app aberto.")
+      : tx("Sem permissão, os lembretes aparecem só com o app aberto. {{v0}}", { v0: NOT_READY });
     actions = (
-      <Button variant="primary" className="min-h-[40px] self-start" loading={busy === "on"} disabled={!online || busy !== null} onClick={allow}>
-        Permitir notificações
+      <Button
+        variant="primary"
+        className="min-h-[40px] self-start"
+        loading={busy === "on"}
+        disabled={!online || busy !== null}
+        onClick={allow}
+      >
+        {tx("Permitir notificações")}
       </Button>
     );
   } else if (d.state === "denied") {
-    tag = <Tag variant="pending">Bloqueadas</Tag>;
-    text = "As notificações deste site estão bloqueadas no navegador. Para receber lembretes com o app fechado, libere nas permissões do site e volte aqui. Até lá, eles aparecem só com o app aberto.";
+    tag = <Tag variant="pending">{tx("Bloqueadas")}</Tag>;
+    text = tx(
+      "As notificações deste site estão bloqueadas no navegador. Para receber lembretes com o app fechado, libere nas permissões do site e volte aqui. Até lá, eles aparecem só com o app aberto.",
+    );
     actions = (
       <Button variant="secondary" className="min-h-[40px] self-start" onClick={() => device.refetch()}>
-        Verificar de novo
+        {tx("Verificar de novo")}
       </Button>
     );
   } else if (d.state === "ios-needs-install") {
-    tag = <Tag variant="neutral">Requer instalação</Tag>;
-    text = "No iPhone e no iPad, as notificações só funcionam com o app adicionado à tela inicial. Veja “Instalar o app” mais abaixo e volte aqui depois.";
+    tag = <Tag variant="neutral">{tx("Requer instalação")}</Tag>;
+    text = tx(
+      "No iPhone e no iPad, as notificações só funcionam com o app adicionado à tela inicial. Veja “Instalar o app” mais abaixo e volte aqui depois.",
+    );
   } else if (d.state === "server-disabled") {
-    tag = <Tag variant="neutral">Indisponíveis</Tag>;
+    tag = <Tag variant="neutral">{tx("Indisponíveis")}</Tag>;
     text = (
       <>
-        O envio de notificações com o app fechado ainda não está ativo neste ambiente. Os lembretes aparecem com o app aberto, na{" "}
+        {tx(
+          "O envio de notificações com o app fechado ainda não está ativo neste ambiente. Os lembretes aparecem com o app aberto, na",
+        )}{" "}
         <Link to="/app/notificacoes" className="text-accent underline-offset-2 hover:underline">
-          central de notificações
+          {tx("central de notificações")}
         </Link>
         .
       </>
     );
   } else {
-    tag = <Tag variant="neutral">Sem suporte</Tag>;
-    text = "Este navegador não oferece notificações. Os lembretes aparecem só com o app aberto.";
+    tag = <Tag variant="neutral">{tx("Sem suporte")}</Tag>;
+    text = tx("Este navegador não oferece notificações. Os lembretes aparecem só com o app aberto.");
   }
 
   return (
     <Card className="gap-2 p-[14px] text-[14px]">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span>Notificações do navegador</span>
+        <span>{tx("Notificações do navegador")}</span>
         {tag}
       </div>
       <span className="text-[12px] text-neutral-400">{text}</span>

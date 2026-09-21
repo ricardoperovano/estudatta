@@ -35,7 +35,12 @@ export const useSyncStore = create<SyncState>((set) => ({
   set: (p) => set(p),
 }));
 
-export async function enqueueOp(userId: string, kind: string, payload: Record<string, unknown>, opId?: string): Promise<PendingOp> {
+export async function enqueueOp(
+  userId: string,
+  kind: string,
+  payload: Record<string, unknown>,
+  opId?: string,
+): Promise<PendingOp> {
   const op: PendingOp = {
     op_id: opId || uuid(),
     user_id: userId,
@@ -65,7 +70,12 @@ export async function refreshCounts(userId: string) {
 }
 
 interface BatchResult {
-  results: { op_id: string; status: "applied" | "duplicate" | "rejected" | "conflict"; result?: unknown; error?: string }[];
+  results: {
+    op_id: string;
+    status: "applied" | "duplicate" | "rejected" | "conflict";
+    result?: unknown;
+    error?: string;
+  }[];
   server_time: string;
 }
 
@@ -78,7 +88,10 @@ export async function syncNow(userId: string): Promise<boolean> {
     const store = useSyncStore.getState();
     let ops: PendingOp[] = [];
     try {
-      ops = await db.pendingOps.where({ user_id: userId }).filter((o) => o.status === "pending").sortBy("client_created_at");
+      ops = await db.pendingOps
+        .where({ user_id: userId })
+        .filter((o) => o.status === "pending")
+        .sortBy("client_created_at");
     } catch {
       return true;
     }
@@ -97,12 +110,22 @@ export async function syncNow(userId: string): Promise<boolean> {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           device_id: deviceId(),
-          operations: ops.map((o) => ({ op_id: o.op_id, kind: o.kind, payload: o.payload, client_created_at: o.client_created_at })),
+          operations: ops.map((o) => ({
+            op_id: o.op_id,
+            kind: o.kind,
+            payload: o.payload,
+            client_created_at: o.client_created_at,
+          })),
         }),
       });
       for (const r of res.results) {
         if (r.status === "applied" || r.status === "duplicate") await db.pendingOps.delete(r.op_id);
-        else await db.pendingOps.update(r.op_id, { status: r.status, error: r.error, attempts: (ops.find((o) => o.op_id === r.op_id)?.attempts ?? 0) + 1 });
+        else
+          await db.pendingOps.update(r.op_id, {
+            status: r.status,
+            error: r.error,
+            attempts: (ops.find((o) => o.op_id === r.op_id)?.attempts ?? 0) + 1,
+          });
       }
       const now = new Date().toISOString();
       try {
@@ -114,7 +137,10 @@ export async function syncNow(userId: string): Promise<boolean> {
       await refreshCounts(userId);
       return res.results.every((r) => r.status === "applied" || r.status === "duplicate");
     } catch (e) {
-      store.set({ status: isNetworkError(e) ? "offline" : "error", lastError: e instanceof Error ? e.message : "erro" });
+      store.set({
+        status: isNetworkError(e) ? "offline" : "error",
+        lastError: e instanceof Error ? e.message : "erro",
+      });
       return false;
     } finally {
       inFlight = null;
@@ -125,7 +151,10 @@ export async function syncNow(userId: string): Promise<boolean> {
 
 export async function listConflicts(userId: string) {
   try {
-    return await db.pendingOps.where({ user_id: userId }).filter((o) => o.status !== "pending").toArray();
+    return await db.pendingOps
+      .where({ user_id: userId })
+      .filter((o) => o.status !== "pending")
+      .toArray();
   } catch {
     return [];
   }

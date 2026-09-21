@@ -1,10 +1,30 @@
+import { t as tx } from "@/i18n";
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
 import { CaretLeft, CaretRight, Check, Printer, Warning } from "@phosphor-icons/react";
-import { Banner, Button, Card, Dialog, DialogContent, Seg, Select, Spinner, Tag, toast } from "@/components/ui";
+import {
+  Banner,
+  Button,
+  Card,
+  Dialog,
+  DialogContent,
+  Seg,
+  Select,
+  Spinner,
+  Tag,
+  toast,
+} from "@/components/ui";
 import { errorMessage } from "@/api/client";
 import { useActivities, useToday } from "@/api/queries";
-import { useCalendar, useDeleteSeries, usePreferences, useSeries, type CalendarDay, type Series, type Task } from "@/api/planning";
+import {
+  useCalendar,
+  useDeleteSeries,
+  usePreferences,
+  useSeries,
+  type CalendarDay,
+  type Series,
+  type Task,
+} from "@/api/planning";
 import { useRangeSessions } from "@/api/plan-week";
 import type { Activity, StudySession, TodayCard } from "@/api/types";
 import { ManualEntrySheet } from "@/app/today/manual-entry";
@@ -15,8 +35,25 @@ import { RecoveryPlanner } from "@/components/app/recovery-planner";
 import { TaskCheckRow } from "@/components/app/task-check-row";
 import { taskMeta, useToggleTaskDone } from "@/components/app/task-toggle";
 import { TaskEditorSheet, type TaskDefaults } from "@/components/app/task-editor-sheet";
-import { capitalize, fmtLongDuration, hhmmToMinutes, joinNames, shiftIso, startOfWeekIso, weekdayMon } from "@/components/app/week-utils";
-import { fmtDayShort, fmtMinutes, fmtRange, fmtTime, minutesOf, parseDate, todayIso, WEEKDAY_SHORT } from "@/lib/format";
+import {
+  capitalize,
+  fmtLongDuration,
+  hhmmToMinutes,
+  joinNames,
+  shiftIso,
+  startOfWeekIso,
+  weekdayMon,
+} from "@/components/app/week-utils";
+import {
+  fmtDayShort,
+  fmtMinutes,
+  fmtRange,
+  fmtTime,
+  minutesOf,
+  parseDate,
+  todayIso,
+  WEEKDAY_SHORT,
+} from "@/lib/format";
 import { useOnline } from "@/lib/online";
 import { usePageTour } from "@/components/tour/use-tours";
 import { planoTour } from "@/tours/plano";
@@ -38,9 +75,15 @@ function readView(): View {
 const dayNum = (iso: string) => parseDate(iso).getDate();
 const dur = (s: StudySession) => s.duration_seconds ?? 0;
 const taskKey = (t: Task) => t.id ?? `${t.series_id}-${t.local_date}`;
-const sortTasks = (tasks: Task[]) => [...tasks].sort((a, b) => (hhmmToMinutes(a.start_time) ?? 9999) - (hhmmToMinutes(b.start_time) ?? 9999) || a.sort_order - b.sort_order);
+const sortTasks = (tasks: Task[]) =>
+  [...tasks].sort(
+    (a, b) =>
+      (hhmmToMinutes(a.start_time) ?? 9999) - (hhmmToMinutes(b.start_time) ?? 9999) ||
+      a.sort_order - b.sort_order,
+  );
 /** Dia passado, ativo, abaixo da meta. "Falta hoje" não entra aqui: hoje nunca é atraso. */
-const isShort = (d: CalendarDay, today: string) => d.local_date < today && d.target_seconds > 0 && !d.is_paused && d.logged_seconds < d.target_seconds;
+const isShort = (d: CalendarDay, today: string) =>
+  d.local_date < today && d.target_seconds > 0 && !d.is_paused && d.logged_seconds < d.target_seconds;
 
 /** Plano da semana (07 / 08 / D2): grade de 7 dias, agenda do dia, lista, tarefas, séries, distribuição automática e impressão. */
 export default function PlanPage() {
@@ -107,26 +150,36 @@ export default function PlanPage() {
 
   const openManual = (date: string) => {
     if (!manualCard) {
-      toast.info("Crie um objetivo para registrar tempo");
+      toast.info(tx("Crie um objetivo para registrar tempo"));
       return;
     }
     setManual({ card: manualCard, date });
   };
-  const addTask = (date: string, time?: string) => setEditor({ defaults: { activityId: filter ?? acts[0]?.id, date, time, kind: "study" } });
+  const addTask = (date: string, time?: string) =>
+    setEditor({ defaults: { activityId: filter ?? acts[0]?.id, date, time, kind: "study" } });
   const printHref = `/app/plano/imprimir?inicio=${start}${filter ? `&objetivo=${filter}` : ""}`;
 
   const subtitle = (
     <span className="tnum text-[13px] text-neutral-400">
       {fmtRange(start, end)}
-      {calendar.data ? ` · ${fmtMinutes(logged)} de ${fmtMinutes(target)}` : ""}
+      {calendar.data
+        ? " " + tx("· {{v0}} de {{v1}}", { v0: fmtMinutes(logged), v1: fmtMinutes(target) })
+        : ""}
       {pending > 0 && pendingCard ? (
         <>
           {" · "}
-          <Link to={`/app/objetivos/${pendingCard.activity.id}/recuperar`} className="text-pending no-underline hover:underline desktop:hidden">
-            {fmtMinutes(pending)} a recuperar
+          <Link
+            to={`/app/objetivos/${pendingCard.activity.id}/recuperar`}
+            className="text-pending no-underline hover:underline desktop:hidden"
+          >
+            {tx("{{v0}} a recuperar", { v0: fmtMinutes(pending) })}
           </Link>
-          <button type="button" className="hidden text-pending hover:underline desktop:inline" onClick={() => setRecoveryFor(pendingCard.activity.id)}>
-            {fmtMinutes(pending)} a recuperar
+          <button
+            type="button"
+            className="hidden text-pending hover:underline desktop:inline"
+            onClick={() => setRecoveryFor(pendingCard.activity.id)}
+          >
+            {tx("{{v0}} a recuperar", { v0: fmtMinutes(pending) })}
           </button>
         </>
       ) : null}
@@ -137,25 +190,25 @@ export default function PlanPage() {
     <>
       {!isCurrentWeek ? (
         <Button variant="ghost" size="md" onClick={() => patchParams({ semana: null })}>
-          Hoje
+          {tx("Hoje")}
         </Button>
       ) : null}
-      <Button variant="secondary" size="icon" aria-label="Semana anterior" onClick={() => goWeek(-1)}>
+      <Button variant="secondary" size="icon" aria-label={tx("Semana anterior")} onClick={() => goWeek(-1)}>
         <CaretLeft size={16} aria-hidden />
       </Button>
-      <Button variant="secondary" size="icon" aria-label="Próxima semana" onClick={() => goWeek(1)}>
+      <Button variant="secondary" size="icon" aria-label={tx("Próxima semana")} onClick={() => goWeek(1)}>
         <CaretRight size={16} aria-hidden />
       </Button>
     </>
   );
   const viewSeg = (
     <Seg
-      label="Visão do plano"
+      label={tx("Visão do plano")}
       value={view}
       onChange={setView}
       options={[
-        { value: "agenda", label: "Agenda" },
-        { value: "lista", label: "Lista" },
+        { value: "agenda", label: tx("Agenda") },
+        { value: "lista", label: tx("Lista") },
       ]}
     />
   );
@@ -165,7 +218,9 @@ export default function PlanPage() {
       <header className="flex items-center justify-between gap-3 desktop:items-end">
         <div className="flex min-w-0 flex-col">
           <span className="hidden desktop:block">{subtitle}</span>
-          <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">Plano da semana</h1>
+          <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">
+            {tx("Plano da semana")}
+          </h1>
         </div>
         <div className="flex items-center gap-2" data-tour="plano-visao">
           {viewSeg}
@@ -178,8 +233,13 @@ export default function PlanPage() {
       </div>
 
       {acts.length > 1 ? (
-        <Select aria-label="Filtrar por objetivo" value={filter ?? ""} onChange={(e) => patchParams({ objetivo: e.target.value || null })} className="desktop:max-w-[280px]">
-          <option value="">Todos os objetivos</option>
+        <Select
+          aria-label={tx("Filtrar por objetivo")}
+          value={filter ?? ""}
+          onChange={(e) => patchParams({ objetivo: e.target.value || null })}
+          className="desktop:max-w-[280px]"
+        >
+          <option value="">{tx("Todos os objetivos")}</option>
           {acts.map((a) => (
             <option key={a.id} value={a.id}>
               {a.title}
@@ -193,15 +253,27 @@ export default function PlanPage() {
           kind="info"
           actions={
             <Button size="sm" variant="secondary" onClick={() => setAutoPlan(true)}>
-              Redistribuir tarefas
+              {tx("Redistribuir tarefas")}
             </Button>
           }
         >
           <span className="inline-flex items-center gap-1 text-pending">
-            <Warning size={14} aria-hidden /> Sobrecarga
+            <Warning size={14} aria-hidden /> {tx("Sobrecarga")}
           </span>{" "}
-          em {joinNames(overloaded.map((d) => `${WEEKDAY_SHORT[weekdayMon(d.local_date)]} ${dayNum(d.local_date)}`))}: o planejado passa do limite diário
-          {overloaded.length === 1 && overloaded[0].overload_seconds > 0 ? ` em ${fmtMinutes(overloaded[0].overload_seconds)}` : ""}. Mova tarefas ou reduza a recuperação do dia.
+          {tx(
+            tx(
+              "em {{v0}}: o planejado passa do limite diário {{v1}}. Mova tarefas ou reduza a recuperação do dia.",
+            ),
+            {
+              v0: joinNames(
+                overloaded.map((d) => `${WEEKDAY_SHORT[weekdayMon(d.local_date)]} ${dayNum(d.local_date)}`),
+              ),
+              v1:
+                overloaded.length === 1 && overloaded[0].overload_seconds > 0
+                  ? " " + tx("em {{v0}}", { v0: fmtMinutes(overloaded[0].overload_seconds) })
+                  : "",
+            },
+          )}
         </Banner>
       ) : null}
 
@@ -210,8 +282,19 @@ export default function PlanPage() {
           <Spinner className="h-6 w-6" />
         </div>
       ) : calendar.isError ? (
-        <Banner kind={online ? "error" : "offline"} actions={<Button size="sm" variant="secondary" onClick={() => calendar.refetch()}>Tentar de novo</Button>}>
-          {online ? `Não foi possível carregar o plano. ${errorMessage(calendar.error, "")}`.trim() : "Sem conexão: o plano da semana aparece quando você voltar à internet."}
+        <Banner
+          kind={online ? "error" : "offline"}
+          actions={
+            <Button size="sm" variant="secondary" onClick={() => calendar.refetch()}>
+              {tx("Tentar de novo")}
+            </Button>
+          }
+        >
+          {online
+            ? tx("Não foi possível carregar o plano. {{v0}}", {
+                v0: errorMessage(calendar.error, ""),
+              }).trim()
+            : tx("Sem conexão: o plano da semana aparece quando você voltar à internet.")}
         </Banner>
       ) : acts.length === 0 && activities.isSuccess ? (
         <NoPlan hasPaused={(activities.data ?? []).some((a) => a.status === "paused")} />
@@ -221,30 +304,60 @@ export default function PlanPage() {
             <WeekBars days={days} today={today} selected={selectedDate} onSelect={setSelected} />
           </div>
           <div className="flex flex-col gap-[14px] desktop:hidden">
-            <DayAgenda day={days.find((d) => d.local_date === selectedDate) ?? days[0]} today={today} sessions={sessions.data ?? []} activities={activities.data ?? []} showActivity={!filter && acts.length > 1} onEdit={(task) => setEditor({ task })} onAdd={addTask} onManual={openManual} />
+            <DayAgenda
+              day={days.find((d) => d.local_date === selectedDate) ?? days[0]}
+              today={today}
+              sessions={sessions.data ?? []}
+              activities={activities.data ?? []}
+              showActivity={!filter && acts.length > 1}
+              onEdit={(task) => setEditor({ task })}
+              onAdd={addTask}
+              onManual={openManual}
+            />
           </div>
-          <WeekColumns days={days} today={today} pending={pending} sessions={sessions.data ?? []} onEdit={(task) => setEditor({ task })} onAdd={addTask} onManual={openManual} />
+          <WeekColumns
+            days={days}
+            today={today}
+            pending={pending}
+            sessions={sessions.data ?? []}
+            onEdit={(task) => setEditor({ task })}
+            onAdd={addTask}
+            onManual={openManual}
+          />
         </>
       ) : (
-        <WeekList days={days} today={today} pending={pending} sessions={sessions.data ?? []} onEdit={(task) => setEditor({ task })} onAdd={addTask} onManual={openManual} canRegister={!!manualCard} />
+        <WeekList
+          days={days}
+          today={today}
+          pending={pending}
+          sessions={sessions.data ?? []}
+          onEdit={(task) => setEditor({ task })}
+          onAdd={addTask}
+          onManual={openManual}
+          canRegister={!!manualCard}
+        />
       )}
 
       {calendar.data && acts.length > 0 ? (
         <>
           {days.every((d) => d.tasks.length === 0) && logged === 0 ? <PlanWeekTip /> : null}
           <p className="m-0 text-[13px] text-neutral-400">
-            Total planejado: {fmtMinutes(target)}
-            {recovery > 0 ? ` + ${fmtMinutes(recovery)} de recuperação` : ""}.
+            {tx("Total planejado: {{v0}}", { v0: fmtMinutes(target) })}
+            {recovery > 0 ? " " + tx("+ {{v0}} de recuperação", { v0: fmtMinutes(recovery) }) : ""}.
             {pending > 0 && isCurrentWeek ? (
               recovery >= pending ? (
-                " Ao final da semana a pendência zera."
+                tx("Ao final da semana a pendência zera.")
               ) : (
                 <>
                   {" "}
-                  {recovery > 0 ? `Ainda ficam ${fmtMinutes(pending - recovery)} a recuperar depois desta semana.` : `Há ${fmtLongDuration(pending)} a recuperar fora do plano.`}{" "}
+                  {recovery > 0
+                    ? tx("Ainda ficam {{v0}} a recuperar depois desta semana.", {
+                        v0: fmtMinutes(pending - recovery),
+                      })
+                    : tx("Há {{v0}} a recuperar fora do plano.", { v0: fmtLongDuration(pending) })}{" "}
                   {pendingCard ? (
                     <Link to={`/app/objetivos/${pendingCard.activity.id}/recuperar`} className="text-accent">
-                      Distribuir
+                      {tx("Distribuir")}
                     </Link>
                   ) : null}
                 </>
@@ -252,15 +365,25 @@ export default function PlanPage() {
             ) : null}
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button variant="primary" size="lg" onClick={() => addTask(selectedDate < today ? today : selectedDate)} data-tour="plano-nova-tarefa">
-              + Nova tarefa
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => addTask(selectedDate < today ? today : selectedDate)}
+              data-tour="plano-nova-tarefa"
+            >
+              {tx("+ Nova tarefa")}
             </Button>
-            <Button variant="secondary" size="lg" onClick={() => setAutoPlan(true)} data-tour="plano-distribuir">
-              Distribuir tarefas
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => setAutoPlan(true)}
+              data-tour="plano-distribuir"
+            >
+              {tx("Distribuir tarefas")}
             </Button>
             <Button asChild variant="secondary" size="lg" data-tour="plano-imprimir">
               <Link to={printHref}>
-                <Printer size={16} aria-hidden /> Imprimir semana
+                <Printer size={16} aria-hidden /> {tx("Imprimir semana")}
               </Link>
             </Button>
           </div>
@@ -268,23 +391,61 @@ export default function PlanPage() {
         </>
       ) : null}
 
-      {editor ? <TaskEditorSheet key={editor.task ? taskKey(editor.task) : `new-${editor.defaults?.date}-${editor.defaults?.time ?? ""}`} open onOpenChange={(o) => !o && setEditor(null)} activities={acts} task={editor.task} defaults={editor.defaults} /> : null}
-      {manual ? <ManualEntrySheet key={manual.date} card={manual.card} cards={cards} open onOpenChange={(o) => !o && setManual(null)} defaultDate={manual.date} /> : null}
-      {autoPlan && canAutoPlan ? <AutoPlanDialog open onOpenChange={setAutoPlan} activities={acts} defaultActivityId={filter} start={start} end={end} /> : null}
+      {editor ? (
+        <TaskEditorSheet
+          key={
+            editor.task ? taskKey(editor.task) : `new-${editor.defaults?.date}-${editor.defaults?.time ?? ""}`
+          }
+          open
+          onOpenChange={(o) => !o && setEditor(null)}
+          activities={acts}
+          task={editor.task}
+          defaults={editor.defaults}
+        />
+      ) : null}
+      {manual ? (
+        <ManualEntrySheet
+          key={manual.date}
+          card={manual.card}
+          cards={cards}
+          open
+          onOpenChange={(o) => !o && setManual(null)}
+          defaultDate={manual.date}
+        />
+      ) : null}
+      {autoPlan && canAutoPlan ? (
+        <AutoPlanDialog
+          open
+          onOpenChange={setAutoPlan}
+          activities={acts}
+          defaultActivityId={filter}
+          start={start}
+          end={end}
+        />
+      ) : null}
       {autoPlan && !canAutoPlan ? (
         <Dialog open onOpenChange={setAutoPlan}>
-          <DialogContent title="Distribuir tarefas automaticamente">
+          <DialogContent title={tx("Distribuir tarefas automaticamente")}>
             <PlanUpsell
               className="bg-canvas"
-              title="Recurso dos planos pagos"
-              text="A distribuição automática das tarefas na semana está nos planos Essencial e Completo. No Gratuito, você planeja cada tarefa manualmente, com a mesma agenda e os mesmos lembretes."
+              title={tx("Recurso dos planos pagos")}
+              text={tx(
+                "A distribuição automática das tarefas na semana está nos planos Essencial e Completo. No Gratuito, você planeja cada tarefa manualmente, com a mesma agenda e os mesmos lembretes.",
+              )}
             />
           </DialogContent>
         </Dialog>
       ) : null}
       <Dialog open={!!recoveryFor} onOpenChange={(o) => !o && setRecoveryFor(null)}>
-        <DialogContent title={`Há ${fmtLongDuration(pending)} a recuperar. Distribuir nos próximos dias?`} width="min(560px, calc(100% - 32px))">
-          {recoveryFor ? <RecoveryPlanner activityId={recoveryFor} inDialog onDone={() => setRecoveryFor(null)} /> : null}
+        <DialogContent
+          title={tx("Há {{v0}} a recuperar. Distribuir nos próximos dias?", {
+            v0: fmtLongDuration(pending),
+          })}
+          width="min(560px, calc(100% - 32px))"
+        >
+          {recoveryFor ? (
+            <RecoveryPlanner activityId={recoveryFor} inDialog onDone={() => setRecoveryFor(null)} />
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>
@@ -298,18 +459,32 @@ function dayFigure(d: CalendarDay, today: string): { text: string; className: st
   const r = minutesOf(d.recovery_seconds);
   if (d.is_paused) return { text: "pausa", className: "" };
   if (d.local_date < today) {
-    if (d.target_seconds === 0) return l > 0 ? { text: String(l), className: "text-success" } : { text: "—", className: "" };
-    return d.logged_seconds >= d.target_seconds ? { text: String(l), className: "text-success" } : { text: String(l), className: "text-pending" };
+    if (d.target_seconds === 0)
+      return l > 0 ? { text: String(l), className: "text-success" } : { text: "—", className: "" };
+    return d.logged_seconds >= d.target_seconds
+      ? { text: String(l), className: "text-success" }
+      : { text: String(l), className: "text-pending" };
   }
   if (d.local_date === today) {
-    if (d.target_seconds > 0 && d.logged_seconds >= d.target_seconds + d.recovery_seconds) return { text: String(l), className: "text-success" };
+    if (d.target_seconds > 0 && d.logged_seconds >= d.target_seconds + d.recovery_seconds)
+      return { text: String(l), className: "text-success" };
     return { text: l > 0 || t > 0 ? String(l) : r > 0 ? `+${r}` : "—", className: "text-primary" };
   }
   if (t === 0 && r === 0) return { text: "—", className: "" };
   return { text: `${t > 0 ? t : ""}${r > 0 ? `+${r}` : ""}`, className: "" };
 }
 
-function WeekBars({ days, today, selected, onSelect }: { days: CalendarDay[]; today: string; selected: string; onSelect: (d: string) => void }) {
+function WeekBars({
+  days,
+  today,
+  selected,
+  onSelect,
+}: {
+  days: CalendarDay[];
+  today: string;
+  selected: string;
+  onSelect: (d: string) => void;
+}) {
   return (
     <div className="grid grid-cols-7 gap-1 text-center text-[11px] text-neutral-500">
       {days.map((d) => {
@@ -317,24 +492,69 @@ function WeekBars({ days, today, selected, onSelect }: { days: CalendarDay[]; to
         const free = d.target_seconds === 0 && d.recovery_seconds === 0 && d.logged_seconds === 0;
         const total = Math.max(d.target_seconds + d.recovery_seconds, d.logged_seconds, 1);
         const loggedPct = Math.min(100, (d.logged_seconds / total) * 100);
-        const recoveryLeft = Math.max(0, d.recovery_seconds - Math.max(0, d.logged_seconds - d.target_seconds));
-        const recoveryPct = d.local_date >= today ? Math.min(100 - loggedPct, (recoveryLeft / total) * 100) : 0;
+        const recoveryLeft = Math.max(
+          0,
+          d.recovery_seconds - Math.max(0, d.logged_seconds - d.target_seconds),
+        );
+        const recoveryPct =
+          d.local_date >= today ? Math.min(100 - loggedPct, (recoveryLeft / total) * 100) : 0;
         const fig = dayFigure(d, today);
         const short = isShort(d, today);
-        const label = `${capitalize(fmtDayShort(d.local_date))}${isToday ? ", hoje" : ""}: ${minutesOf(d.logged_seconds)} de ${minutesOf(d.target_seconds)} minutos${d.recovery_seconds > 0 ? `, mais ${minutesOf(d.recovery_seconds)} de recuperação` : ""}${d.over_capacity ? ", sobrecarga" : ""}`;
+        const label = tx("{{v0}}{{v1}}: {{v2}} de {{v3}} minutos{{v4}}{{v5}}", {
+          v0: capitalize(fmtDayShort(d.local_date)),
+          v1: isToday ? tx(", hoje") : "",
+          v2: minutesOf(d.logged_seconds),
+          v3: minutesOf(d.target_seconds),
+          v4:
+            d.recovery_seconds > 0
+              ? tx(", mais {{v0}} de recuperação", { v0: minutesOf(d.recovery_seconds) })
+              : "",
+          v5: d.over_capacity ? tx(", sobrecarga") : "",
+        });
         return (
-          <button key={d.local_date} type="button" aria-pressed={selected === d.local_date} aria-label={label} onClick={() => onSelect(d.local_date)} className={cn("flex flex-col items-center gap-1 rounded-md pb-1", free && !isToday && "opacity-50")}>
+          <button
+            key={d.local_date}
+            type="button"
+            aria-pressed={selected === d.local_date}
+            aria-label={label}
+            onClick={() => onSelect(d.local_date)}
+            className={cn(
+              "flex flex-col items-center gap-1 rounded-md pb-1",
+              free && !isToday && "opacity-50",
+            )}
+          >
             <span className={cn(isToday && "text-accent")}>{WEEKDAY_SHORT[weekdayMon(d.local_date)]}</span>
-            <span className={cn("tnum text-[14px]", isToday ? "text-accent" : "text-primary", selected === d.local_date && "underline decoration-accent decoration-2 underline-offset-4")}>{dayNum(d.local_date)}</span>
+            <span
+              className={cn(
+                "tnum text-[14px]",
+                isToday ? "text-accent" : "text-primary",
+                selected === d.local_date && "underline decoration-accent decoration-2 underline-offset-4",
+              )}
+            >
+              {dayNum(d.local_date)}
+            </span>
             <span
               className={cn(
                 "relative block h-20 w-full overflow-hidden rounded-[6px] bg-surface",
                 isToday && "shadow-inset-accent",
-                !isToday && short && d.logged_seconds === 0 && "shadow-[inset_0_0_0_1px_var(--color-pending)]",
+                !isToday &&
+                  short &&
+                  d.logged_seconds === 0 &&
+                  "shadow-[inset_0_0_0_1px_var(--color-pending)]",
               )}
             >
-              {recoveryPct > 0 ? <span className="recovery-stripes-v absolute inset-x-0 block" style={{ bottom: `${loggedPct}%`, height: `${recoveryPct}%` }} /> : null}
-              {loggedPct > 0 ? <span className="absolute inset-x-0 bottom-0 block bg-accent-800" style={{ height: `${loggedPct}%` }} /> : null}
+              {recoveryPct > 0 ? (
+                <span
+                  className="recovery-stripes-v absolute inset-x-0 block"
+                  style={{ bottom: `${loggedPct}%`, height: `${recoveryPct}%` }}
+                />
+              ) : null}
+              {loggedPct > 0 ? (
+                <span
+                  className="absolute inset-x-0 bottom-0 block bg-accent-800"
+                  style={{ height: `${loggedPct}%` }}
+                />
+              ) : null}
             </span>
             <span className={cn("tnum inline-flex items-center gap-[2px]", fig.className)}>
               {fig.text}
@@ -349,11 +569,13 @@ function WeekBars({ days, today, selected, onSelect }: { days: CalendarDay[]; to
 
 function sessionLabel(s: StudySession, activities: Activity[], showActivity: boolean): string {
   const act = activities.find((a) => a.id === s.activity_id)?.title;
-  const base = s.note?.trim() || (s.kind === "manual" ? "Registro manual" : "Sessão");
+  const base = s.note?.trim() || (s.kind === "manual" ? tx("Registro manual") : tx("Sessão"));
   return showActivity && act ? `${act} · ${base}` : base;
 }
 
-type Slot = { key: string; minute: number; time: string | null } & ({ kind: "session"; session: StudySession } | { kind: "task"; task: Task });
+type Slot = { key: string; minute: number; time: string | null } & (
+  { kind: "session"; session: StudySession } | { kind: "task"; task: Task }
+);
 
 function daySlots(day: CalendarDay, sessions: StudySession[]): Slot[] {
   const linked = new Set(sessions.filter((s) => s.planned_task_id).map((s) => s.planned_task_id));
@@ -393,7 +615,16 @@ interface DayProps {
   onManual: (date: string) => void;
 }
 
-function DayAgenda({ day, today, sessions, activities, showActivity, onEdit, onAdd, onManual }: DayProps & { day: CalendarDay | undefined; activities: Activity[]; showActivity: boolean }) {
+function DayAgenda({
+  day,
+  today,
+  sessions,
+  activities,
+  showActivity,
+  onEdit,
+  onAdd,
+  onManual,
+}: DayProps & { day: CalendarDay | undefined; activities: Activity[]; showActivity: boolean }) {
   if (!day) return null;
   const slots = daySlots(day, sessions);
   const checklist = sortTasks(day.tasks).filter((t) => t.kind !== "study");
@@ -405,8 +636,14 @@ function DayAgenda({ day, today, sessions, activities, showActivity, onEdit, onA
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="kicker">{capitalize(fmtDayShort(day.local_date))}</span>
         <span className="flex gap-1">
-          {day.is_paused ? <Tag variant="neutral">Pausa planejada</Tag> : null}
-          {day.over_capacity ? <Tag variant="pending">Sobrecarga{day.overload_seconds > 0 ? ` · +${fmtMinutes(day.overload_seconds)}` : ""}</Tag> : null}
+          {day.is_paused ? <Tag variant="neutral">{tx("Pausa planejada")}</Tag> : null}
+          {day.over_capacity ? (
+            <Tag variant="pending">
+              {tx("Sobrecarga{{v0}}", {
+                v0: day.overload_seconds > 0 ? ` · +${fmtMinutes(day.overload_seconds)}` : "",
+              })}
+            </Tag>
+          ) : null}
         </span>
       </div>
       {slots.map((s) => (
@@ -415,7 +652,9 @@ function DayAgenda({ day, today, sessions, activities, showActivity, onEdit, onA
           {s.kind === "session" ? (
             <div className="flex-1 rounded-md border-l-2 border-accent bg-surface px-3 py-2">
               <span className="block">{sessionLabel(s.session, activities, showActivity)}</span>
-              <span className="tnum text-[12px] text-success">{fmtMinutes(dur(s.session))} · registrado</span>
+              <span className="tnum text-[12px] text-success">
+                {tx("{{v0}} · registrado", { v0: fmtMinutes(dur(s.session)) })}
+              </span>
             </div>
           ) : (
             <TaskBlock task={s.task} onEdit={onEdit} />
@@ -425,15 +664,21 @@ function DayAgenda({ day, today, sessions, activities, showActivity, onEdit, onA
       {short && day.logged_seconds === 0 ? (
         <div className="flex gap-3 text-[14px]">
           <span className="w-11 shrink-0" />
-          <button type="button" className="flex-1 rounded-md border border-dashed border-pending px-3 py-2 text-left text-pending" onClick={() => onManual(day.local_date)}>
-            <span className="block">Sem registro</span>
-            <span className="tnum text-[12px]">{fmtMinutes(day.target_seconds)} · registrar se você estudou</span>
+          <button
+            type="button"
+            className="flex-1 rounded-md border border-dashed border-pending px-3 py-2 text-left text-pending"
+            onClick={() => onManual(day.local_date)}
+          >
+            <span className="block">{tx("Sem registro")}</span>
+            <span className="tnum text-[12px]">
+              {tx("{{v0}} · registrar se você estudou", { v0: fmtMinutes(day.target_seconds) })}
+            </span>
           </button>
         </div>
       ) : null}
       {checklist.length > 0 ? (
         <div className="flex flex-col">
-          <span className="kicker mb-1">Tarefas</span>
+          <span className="kicker mb-1">{tx("Tarefas")}</span>
           {checklist.map((t) => (
             <TaskCheckRow key={taskKey(t)} task={t} onEdit={onEdit} />
           ))}
@@ -442,13 +687,22 @@ function DayAgenda({ day, today, sessions, activities, showActivity, onEdit, onA
       {!past ? (
         <div className="flex gap-3 text-[14px] opacity-70 hover:opacity-100">
           <span className="tnum w-11 shrink-0 pt-2 text-neutral-500">{free}</span>
-          <button type="button" className="min-h-[44px] flex-1 rounded-md border border-dashed border-neutral-700 px-3 py-2 text-left text-neutral-400" onClick={() => onAdd(day.local_date, free)}>
-            Horário livre · adicionar sessão
+          <button
+            type="button"
+            className="min-h-[44px] flex-1 rounded-md border border-dashed border-neutral-700 px-3 py-2 text-left text-neutral-400"
+            onClick={() => onAdd(day.local_date, free)}
+          >
+            {tx("Horário livre · adicionar sessão")}
           </button>
         </div>
       ) : (
-        <Button variant="ghost" size="lg" className="self-start text-[13px]" onClick={() => onManual(day.local_date)}>
-          Registrar tempo neste dia
+        <Button
+          variant="ghost"
+          size="lg"
+          className="self-start text-[13px]"
+          onClick={() => onManual(day.local_date)}
+        >
+          {tx("Registrar tempo neste dia")}
         </Button>
       )}
     </>
@@ -461,8 +715,24 @@ function TaskBlock({ task, onEdit, compact }: { task: Task; onEdit: (t: Task) =>
   const base = Math.max(0, (task.estimated_seconds ?? 0) - task.recovery_seconds);
   const recoveryOnly = task.recovery_seconds > 0 && base === 0;
   return (
-    <div className={cn("flex min-w-0 items-stretch rounded-md border-l-2", compact ? "flex-none rounded-[6px]" : "flex-1", done ? "border-accent bg-accent-900" : recoveryOnly ? "border-pending bg-surface" : "border-neutral-600 bg-surface", task.status === "skipped" && "opacity-60")}>
-      <button type="button" className={cn("min-w-0 flex-1 text-left", compact ? "px-2 py-[6px]" : "px-3 py-2")} onClick={() => onEdit(task)} aria-label={`Editar ${task.title}`}>
+    <div
+      className={cn(
+        "flex min-w-0 items-stretch rounded-md border-l-2",
+        compact ? "flex-none rounded-[6px]" : "flex-1",
+        done
+          ? "border-accent bg-accent-900"
+          : recoveryOnly
+            ? "border-pending bg-surface"
+            : "border-neutral-600 bg-surface",
+        task.status === "skipped" && "opacity-60",
+      )}
+    >
+      <button
+        type="button"
+        className={cn("min-w-0 flex-1 text-left", compact ? "px-2 py-[6px]" : "px-3 py-2")}
+        onClick={() => onEdit(task)}
+        aria-label={tx("Editar {{v0}}", { v0: task.title })}
+      >
         <span className="block truncate">
           {task.title}
           {done ? " ✓" : ""}
@@ -472,20 +742,33 @@ function TaskBlock({ task, onEdit, compact }: { task: Task; onEdit: (t: Task) =>
           {task.estimated_seconds ? (
             task.recovery_seconds > 0 ? (
               <>
-                {base > 0 ? minutesOf(base) : ""} <span className="text-pending">+{minutesOf(task.recovery_seconds)}</span>
-                {compact ? "" : " de recuperação"}
+                {base > 0 ? minutesOf(base) : ""}{" "}
+                <span className="text-pending">+{minutesOf(task.recovery_seconds)}</span>
+                {compact ? "" : tx("de recuperação")}
               </>
             ) : (
               fmtMinutes(task.estimated_seconds)
             )
           ) : (
-            "sem duração"
+            tx("sem duração")
           )}
-          {!compact && taskMeta({ ...task, estimated_seconds: null, start_time: null }) ? ` · ${taskMeta({ ...task, estimated_seconds: null, start_time: null })}` : ""}
+          {!compact && taskMeta({ ...task, estimated_seconds: null, start_time: null })
+            ? ` · ${taskMeta({ ...task, estimated_seconds: null, start_time: null })}`
+            : ""}
         </span>
       </button>
       {task.status !== "skipped" ? (
-        <button type="button" className={cn("grid w-11 shrink-0 place-items-center rounded-r-md", done ? "text-accent" : "text-neutral-500 hover:text-accent")} disabled={isPending} onClick={() => void toggle(task, !done)} aria-label={`${done ? "Desfazer conclusão de" : "Concluir"} ${task.title}`} aria-pressed={done}>
+        <button
+          type="button"
+          className={cn(
+            "grid w-11 shrink-0 place-items-center rounded-r-md",
+            done ? "text-accent" : "text-neutral-500 hover:text-accent",
+          )}
+          disabled={isPending}
+          onClick={() => void toggle(task, !done)}
+          aria-label={`${done ? tx("Desfazer conclusão de") : tx("Concluir")} ${task.title}`}
+          aria-pressed={done}
+        >
           <Check size={16} weight={done ? "bold" : "regular"} aria-hidden />
         </button>
       ) : null}
@@ -494,7 +777,15 @@ function TaskBlock({ task, onEdit, compact }: { task: Task; onEdit: (t: Task) =>
 }
 
 /** Desktop (D2): sete colunas com cabeçalho de estado e blocos do dia em ordem de horário. */
-function WeekColumns({ days, today, pending, sessions, onEdit, onAdd, onManual }: DayProps & { days: CalendarDay[]; pending: number }) {
+function WeekColumns({
+  days,
+  today,
+  pending,
+  sessions,
+  onEdit,
+  onAdd,
+  onManual,
+}: DayProps & { days: CalendarDay[]; pending: number }) {
   return (
     <div className="hidden grid-cols-7 gap-2 text-[12px] desktop:grid" data-tour="plano-semana">
       {days.map((d) => {
@@ -505,28 +796,37 @@ function WeekColumns({ days, today, pending, sessions, onEdit, onAdd, onManual }
         const free = d.target_seconds === 0 && d.recovery_seconds === 0;
         const short = isShort(d, today);
         return (
-          <div key={d.local_date} className={cn("tnum text-center text-neutral-400", isToday && "text-accent", free && !isToday && "text-neutral-500")}>
+          <div
+            key={d.local_date}
+            className={cn(
+              "tnum text-center text-neutral-400",
+              isToday && "text-accent",
+              free && !isToday && "text-neutral-500",
+            )}
+          >
             {WEEKDAY_SHORT[weekdayMon(d.local_date)]}
-            <span className={cn("block text-[16px]", !isToday && !free && "text-primary")}>{dayNum(d.local_date)}</span>
+            <span className={cn("block text-[16px]", !isToday && !free && "text-primary")}>
+              {dayNum(d.local_date)}
+            </span>
             {d.is_paused ? (
-              <span>pausa</span>
+              <span>{tx("pausa")}</span>
             ) : d.local_date < today ? (
               free ? (
-                <span>{l > 0 ? `${l} · extra` : "livre"}</span>
+                <span>{l > 0 ? tx("{{v0}} · extra", { v0: l }) : "livre"}</span>
               ) : short ? (
                 <span className="text-pending">
-                  {l} · {t - l} {pending > 0 ? "a recuperar" : "abaixo da meta"}
+                  {l} · {t - l} {pending > 0 ? tx("a recuperar") : tx("abaixo da meta")}
                 </span>
               ) : (
-                <span className="text-success">{l} · concluído</span>
+                <span className="text-success">{tx("{{v0}} · concluído", { v0: l })}</span>
               )
             ) : isToday ? (
               <span>
                 {l} / {t}
-                {r > 0 ? <span className="text-pending"> +{r}</span> : null} · hoje
+                {r > 0 ? <span className="text-pending"> +{r}</span> : null} {tx("· hoje")}
               </span>
             ) : free ? (
-              <span>livre</span>
+              <span>{tx("livre")}</span>
             ) : (
               <span>
                 {t > 0 ? t : ""}
@@ -535,7 +835,7 @@ function WeekColumns({ days, today, pending, sessions, onEdit, onAdd, onManual }
             )}
             {d.over_capacity ? (
               <span className="flex items-center justify-center gap-1 text-pending">
-                <Warning size={12} aria-hidden /> sobrecarga
+                <Warning size={12} aria-hidden /> {tx("sobrecarga")}
               </span>
             ) : null}
           </div>
@@ -548,11 +848,21 @@ function WeekColumns({ days, today, pending, sessions, onEdit, onAdd, onManual }
           const checklist = sortTasks(d.tasks).filter((t) => t.kind !== "study");
           const short = isShort(d, today);
           return (
-            <div key={d.local_date} className={cn("flex min-w-0 flex-col gap-[6px] border-l border-divider pb-2 pl-[6px] pr-[2px]", isToday && "border-accent bg-[color-mix(in_srgb,var(--color-accent-900)_40%,transparent)]", i === 6 && "border-r")}>
+            <div
+              key={d.local_date}
+              className={cn(
+                "flex min-w-0 flex-col gap-[6px] border-l border-divider pb-2 pl-[6px] pr-[2px]",
+                isToday && "border-accent bg-[color-mix(in_srgb,var(--color-accent-900)_40%,transparent)]",
+                i === 6 && "border-r",
+              )}
+            >
               {slots.map((s) =>
                 s.kind === "session" ? (
-                  <div key={s.key} className="rounded-[6px] border-l-2 border-accent bg-accent-900 px-2 py-[6px]">
-                    <span className="block truncate">{s.session.note?.trim() || "Sessão"} ✓</span>
+                  <div
+                    key={s.key}
+                    className="rounded-[6px] border-l-2 border-accent bg-accent-900 px-2 py-[6px]"
+                  >
+                    <span className="block truncate">{s.session.note?.trim() || tx("Sessão")} ✓</span>
                     <span className="tnum block truncate text-neutral-400">
                       {s.time ? `${s.time} · ` : ""}
                       {fmtMinutes(dur(s.session))}
@@ -563,24 +873,43 @@ function WeekColumns({ days, today, pending, sessions, onEdit, onAdd, onManual }
                 ),
               )}
               {short && d.logged_seconds === 0 ? (
-                <button type="button" className="rounded-[6px] border border-dashed border-pending px-2 py-[6px] text-left text-pending" onClick={() => onManual(d.local_date)}>
-                  <span className="block">Sem registro</span>
-                  <span className="tnum">{fmtMinutes(d.target_seconds)} · registrar</span>
+                <button
+                  type="button"
+                  className="rounded-[6px] border border-dashed border-pending px-2 py-[6px] text-left text-pending"
+                  onClick={() => onManual(d.local_date)}
+                >
+                  <span className="block">{tx("Sem registro")}</span>
+                  <span className="tnum">
+                    {tx("{{v0}} · registrar", { v0: fmtMinutes(d.target_seconds) })}
+                  </span>
                 </button>
               ) : null}
-              {d.recovery_seconds > 0 && d.local_date >= today && !d.tasks.some((t) => t.recovery_seconds > 0) ? (
+              {d.recovery_seconds > 0 &&
+              d.local_date >= today &&
+              !d.tasks.some((t) => t.recovery_seconds > 0) ? (
                 <div className="recovery-stripes rounded-[6px] border-l-2 border-pending px-2 py-[6px]">
                   <span className="rounded-[4px] bg-canvas px-1">
-                    Recuperação <span className="tnum text-pending">+{minutesOf(d.recovery_seconds)}</span>
+                    {tx("Recuperação")}{" "}
+                    <span className="tnum text-pending">+{minutesOf(d.recovery_seconds)}</span>
                   </span>
                 </div>
               ) : null}
               {checklist.map((t) => (
-                <TaskCheckRow key={taskKey(t)} task={t} onEdit={onEdit} className="min-h-[36px] gap-[6px] text-[12px]" />
+                <TaskCheckRow
+                  key={taskKey(t)}
+                  task={t}
+                  onEdit={onEdit}
+                  className="min-h-[36px] gap-[6px] text-[12px]"
+                />
               ))}
               {d.local_date >= today ? (
-                <button type="button" className="mt-auto min-h-[36px] rounded-[6px] border border-dashed border-neutral-700 px-2 py-[6px] text-left text-neutral-400 opacity-70 hover:opacity-100" onClick={() => onAdd(d.local_date, freeSlotTime(slots))} aria-label={`Adicionar sessão em ${fmtDayShort(d.local_date)}`}>
-                  + adicionar sessão
+                <button
+                  type="button"
+                  className="mt-auto min-h-[36px] rounded-[6px] border border-dashed border-neutral-700 px-2 py-[6px] text-left text-neutral-400 opacity-70 hover:opacity-100"
+                  onClick={() => onAdd(d.local_date, freeSlotTime(slots))}
+                  aria-label={tx("Adicionar sessão em {{v0}}", { v0: fmtDayShort(d.local_date) })}
+                >
+                  {tx("+ adicionar sessão")}
                 </button>
               ) : null}
             </div>
@@ -591,7 +920,16 @@ function WeekColumns({ days, today, pending, sessions, onEdit, onAdd, onManual }
   );
 }
 
-function WeekList({ days, today, pending, sessions, onEdit, onAdd, onManual, canRegister }: DayProps & { days: CalendarDay[]; pending: number; canRegister: boolean }) {
+function WeekList({
+  days,
+  today,
+  pending,
+  sessions,
+  onEdit,
+  onAdd,
+  onManual,
+  canRegister,
+}: DayProps & { days: CalendarDay[]; pending: number; canRegister: boolean }) {
   return (
     <div className="flex flex-col gap-[10px] desktop:max-w-[760px]" data-tour="plano-semana">
       {days.map((d) => {
@@ -603,58 +941,89 @@ function WeekList({ days, today, pending, sessions, onEdit, onAdd, onManual, can
         const short = isShort(d, today);
         const past = d.local_date < today;
         const tasks = sortTasks(d.tasks);
-        const registered = sessions.filter((s) => s.local_date === d.local_date && s.status === "finished" && dur(s) > 0);
+        const registered = sessions.filter(
+          (s) => s.local_date === d.local_date && s.status === "finished" && dur(s) > 0,
+        );
         const name = `${capitalize(WEEKDAY_SHORT[weekdayMon(d.local_date)])}, ${dayNum(d.local_date)}`;
         return (
-          <Card key={d.local_date} className={cn("gap-1 px-[14px] py-3 text-[14px]", isToday && "shadow-inset-accent", free && !isToday && tasks.length === 0 && l === 0 && "opacity-60")}>
+          <Card
+            key={d.local_date}
+            className={cn(
+              "gap-1 px-[14px] py-3 text-[14px]",
+              isToday && "shadow-inset-accent",
+              free && !isToday && tasks.length === 0 && l === 0 && "opacity-60",
+            )}
+          >
             <div className="flex items-baseline justify-between gap-2">
               <span className="font-medium">
                 {name}
-                {isToday ? " · hoje" : ""}
+                {isToday ? tx("· hoje") : ""}
               </span>
               <span className="tnum flex items-center gap-1 text-[12px] text-neutral-400">
                 {d.is_paused ? (
-                  "pausa planejada"
+                  tx("pausa planejada")
                 ) : past ? (
                   free ? (
-                    l > 0 ? `${l} min · extra` : "dia livre"
+                    l > 0 ? (
+                      tx("{{v0}} min · extra", { v0: l })
+                    ) : (
+                      tx("dia livre")
+                    )
                   ) : short ? (
                     <span className="text-pending">
-                      {l} / {t} · {t - l} min {pending > 0 ? "a recuperar" : "abaixo da meta"}
+                      {tx("{{v0}} / {{v1}} · {{v2}} min {{v3}}", {
+                        v0: l,
+                        v1: t,
+                        v2: t - l,
+                        v3: pending > 0 ? tx("a recuperar") : tx("abaixo da meta"),
+                      })}
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-success">
                       <Check size={12} weight="bold" aria-hidden />
-                      {l} / {t} · concluído
+                      {tx("{{v0}} / {{v1}} · concluído", { v0: l, v1: t })}
                     </span>
                   )
                 ) : isToday ? (
                   <span className="text-neutral-300">
                     {l} / {t}
-                    {r > 0 ? ` · +${r} recuperação` : ""}
+                    {r > 0 ? " " + tx("· +{{v0}} recuperação", { v0: r }) : ""}
                   </span>
                 ) : free ? (
-                  "dia livre"
+                  tx("dia livre")
                 ) : (
                   <>
                     {t > 0 ? t : ""}
                     {r > 0 ? <span className="text-pending">+{r}</span> : null}
-                    {t === 0 && r > 0 ? " recuperação" : ""}
+                    {t === 0 && r > 0 ? tx("recuperação") : ""}
                   </>
                 )}
                 {d.over_capacity ? (
                   <span className="ml-1 inline-flex items-center gap-[2px] text-pending">
-                    <Warning size={12} aria-hidden /> sobrecarga
+                    <Warning size={12} aria-hidden /> {tx("sobrecarga")}
                   </span>
                 ) : null}
               </span>
             </div>
-            {registered.length > 0 ? <span className="tnum text-[12px] text-neutral-400">{registered.map((s) => `${s.started_at ? `${fmtTime(s.started_at)} ` : ""}${s.note?.trim() || "Sessão"} ✓`).join(" · ")}</span> : null}
+            {registered.length > 0 ? (
+              <span className="tnum text-[12px] text-neutral-400">
+                {registered
+                  .map(
+                    (s) =>
+                      `${s.started_at ? `${fmtTime(s.started_at)} ` : ""}${s.note?.trim() || tx("Sessão")} ✓`,
+                  )
+                  .join(" · ")}
+              </span>
+            ) : null}
             {short && canRegister ? (
               <span className="text-[12px] text-neutral-400">
-                Você estudou e esqueceu de registrar?{" "}
-                <button type="button" className="min-h-[32px] text-accent hover:underline" onClick={() => onManual(d.local_date)}>
-                  Registrar
+                {tx("Você estudou e esqueceu de registrar?")}{" "}
+                <button
+                  type="button"
+                  className="min-h-[32px] text-accent hover:underline"
+                  onClick={() => onManual(d.local_date)}
+                >
+                  {tx("Registrar")}
                 </button>
               </span>
             ) : null}
@@ -662,8 +1031,13 @@ function WeekList({ days, today, pending, sessions, onEdit, onAdd, onManual, can
               <TaskCheckRow key={taskKey(task)} task={task} onEdit={onEdit} className="min-h-[40px]" />
             ))}
             {!past ? (
-              <button type="button" className="min-h-[32px] self-start text-[12px] text-neutral-400 hover:text-accent" onClick={() => onAdd(d.local_date)} aria-label={`Adicionar tarefa em ${name}`}>
-                + adicionar
+              <button
+                type="button"
+                className="min-h-[32px] self-start text-[12px] text-neutral-400 hover:text-accent"
+                onClick={() => onAdd(d.local_date)}
+                aria-label={tx("Adicionar tarefa em {{v0}}", { v0: name })}
+              >
+                {tx("+ adicionar")}
               </button>
             ) : null}
           </Card>
@@ -680,40 +1054,57 @@ function SeriesList({ series, activities }: { series: Series[]; activities: Acti
   if (active.length === 0) return null;
   return (
     <section className="flex flex-col gap-2 desktop:max-w-[760px]">
-      <h2 className="kicker m-0 font-normal">Tarefas que se repetem</h2>
+      <h2 className="kicker m-0 font-normal">{tx("Tarefas que se repetem")}</h2>
       <Card className="gap-1 px-[14px] py-2 text-[14px]">
         {active.map((s) => (
           <div key={s.id} className="flex items-center justify-between gap-2">
             <span className="flex min-w-0 flex-col py-1">
               <span className="truncate">{s.title}</span>
               <span className="tnum text-[12px] text-neutral-400">
-                {[s.weekdays.length === 7 ? "todos os dias" : s.weekdays.map((d) => WEEKDAY_SHORT[d]).join(", "), s.start_time?.slice(0, 5), s.estimated_seconds ? fmtMinutes(s.estimated_seconds) : null, s.end_date ? `até ${fmtDayShort(s.end_date)}` : null, activities.length > 1 ? activities.find((a) => a.id === s.activity_id)?.title : null]
+                {[
+                  s.weekdays.length === 7
+                    ? tx("todos os dias")
+                    : s.weekdays.map((d) => WEEKDAY_SHORT[d]).join(", "),
+                  s.start_time?.slice(0, 5),
+                  s.estimated_seconds ? fmtMinutes(s.estimated_seconds) : null,
+                  s.end_date ? tx("até {{v0}}", { v0: fmtDayShort(s.end_date) }) : null,
+                  activities.length > 1 ? activities.find((a) => a.id === s.activity_id)?.title : null,
+                ]
                   .filter(Boolean)
                   .join(" · ")}
               </span>
             </span>
-            <Button variant="ghost-muted" size="sm" className="min-h-[44px] px-2" onClick={() => setConfirm(s)}>
-              Excluir série
+            <Button
+              variant="ghost-muted"
+              size="sm"
+              className="min-h-[44px] px-2"
+              onClick={() => setConfirm(s)}
+            >
+              {tx("Excluir série")}
             </Button>
           </div>
         ))}
-        <span className="pb-1 text-[12px] text-neutral-500">Para mudar horário ou dias de uma série, toque em uma das ocorrências no plano.</span>
+        <span className="pb-1 text-[12px] text-neutral-500">
+          {tx("Para mudar horário ou dias de uma série, toque em uma das ocorrências no plano.")}
+        </span>
       </Card>
       <ConfirmDialog
         open={!!confirm}
         onOpenChange={(o) => !o && setConfirm(null)}
-        title={`Excluir a série "${confirm?.title ?? ""}"?`}
-        description="As próximas ocorrências saem do plano. Tarefas já concluídas continuam no histórico."
-        confirmLabel="Excluir série"
+        title={tx('Excluir a série "{{v0}}"?', { v0: confirm?.title ?? "" })}
+        description={tx(
+          "As próximas ocorrências saem do plano. Tarefas já concluídas continuam no histórico.",
+        )}
+        confirmLabel={tx("Excluir série")}
         danger
         loading={remove.isPending}
         onConfirm={async () => {
           if (!confirm) return;
           try {
             await remove.mutateAsync(confirm.id);
-            toast.success("Série excluída");
+            toast.success(tx("Série excluída"));
           } catch (err) {
-            toast.error("Não foi possível excluir a série", errorMessage(err));
+            toast.error(tx("Não foi possível excluir a série"), errorMessage(err));
           }
           setConfirm(null);
         }}

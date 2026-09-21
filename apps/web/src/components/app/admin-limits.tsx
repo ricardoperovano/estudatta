@@ -1,11 +1,15 @@
 /** Editor dos limites conhecidos do catálogo (mesmas regras de `validate_limits` no servidor). */
+import { t as tx } from "@/i18n";
 import * as React from "react";
 import { KNOWN_LIMIT_KEYS } from "@/api/admin";
 import { fmtValue, humanize } from "@/components/app/admin-format";
 import { Button, Input, Select } from "@/components/ui";
 
 type LimitKey = (typeof KNOWN_LIMIT_KEYS)[number];
-type Spec = { kind: "int_or_null" | "int"; min: number } | { kind: "bool" } | { kind: "choice"; options: readonly string[] };
+type Spec =
+  | { kind: "int_or_null" | "int"; min: number }
+  | { kind: "bool" }
+  | { kind: "choice"; options: readonly string[] };
 
 const SPECS: Record<LimitKey, Spec> = {
   max_active_activities: { kind: "int_or_null", min: 1 },
@@ -22,20 +26,20 @@ const SPECS: Record<LimitKey, Spec> = {
 };
 
 const LABEL: Record<LimitKey, string> = {
-  max_active_activities: "Objetivos ativos (máximo)",
-  materials_storage_mb: "Armazenamento de materiais (MB)",
-  max_materials: "Materiais (máximo)",
-  ai_daily_actions: "Ações de IA por dia",
-  ai_monthly_actions: "Ações de IA por mês",
-  tata_voice_monthly: "Falas do Tatá com voz natural por mês",
-  auto_planning: "Distribuição automática de tarefas",
-  reports: "Relatórios",
-  recovery_distribution: "Distribuição de tempo a recuperar",
-  csv_export: "Exportação CSV",
+  max_active_activities: tx("Objetivos ativos (máximo)"),
+  materials_storage_mb: tx("Armazenamento de materiais (MB)"),
+  max_materials: tx("Materiais (máximo)"),
+  ai_daily_actions: tx("Ações de IA por dia"),
+  ai_monthly_actions: tx("Ações de IA por mês"),
+  tata_voice_monthly: tx("Falas do Tatá com voz natural por mês"),
+  auto_planning: tx("Distribuição automática de tarefas"),
+  reports: tx("Relatórios"),
+  recovery_distribution: tx("Distribuição de tempo a recuperar"),
+  csv_export: tx("Exportação CSV"),
   reminders: "Lembretes",
 };
 
-const CHOICE_LABEL: Record<string, string> = { basic: "básico", full: "completo" };
+const CHOICE_LABEL: Record<string, string> = { basic: tx("básico"), full: "completo" };
 
 type Limits = Record<string, unknown>;
 
@@ -57,15 +61,29 @@ export function LimitsEditor({ value, onChange, idPrefix }: Props) {
   return (
     <div className="flex flex-col gap-2">
       {KNOWN_LIMIT_KEYS.map((key) => (
-        <LimitRow key={key} id={`${idPrefix}-${key}`} limitKey={key} present={key in value} value={value[key]} onSet={(v) => set(key, v)} onUnset={() => unset(key)} />
+        <LimitRow
+          key={key}
+          id={`${idPrefix}-${key}`}
+          limitKey={key}
+          present={key in value}
+          value={value[key]}
+          onSet={(v) => set(key, v)}
+          onUnset={() => unset(key)}
+        />
       ))}
       {unknownKeys.map((k) => (
-        <div key={k} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-error-tint p-2 text-[13px]">
+        <div
+          key={k}
+          className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-error-tint p-2 text-[13px]"
+        >
           <span>
-            <code>{k}</code> = {fmtValue(value[k])} — limite desconhecido; o servidor recusa ao salvar.
+            <code>{k}</code>{" "}
+            {tx("= {{v0}} — limite desconhecido; o servidor recusa ao salvar.", {
+              v0: fmtValue(value[k]),
+            })}
           </span>
           <Button variant="danger" size="sm" onClick={() => unset(k)}>
-            Remover
+            {tx("Remover")}
           </Button>
         </div>
       ))}
@@ -105,19 +123,32 @@ function LimitRow({ id, limitKey, present, value, onSet, onUnset }: RowProps) {
         <span className="block text-[11px] text-neutral-400">{humanize(limitKey)}</span>
       </label>
       <Select id={id} value={mode} onChange={(e) => onMode(e.target.value)}>
-        <option value="unset">Não definido</option>
+        <option value="unset">{tx("Não definido")}</option>
         {spec.kind === "bool" ? (
           <>
-            <option value="true">Sim</option>
-            <option value="false">Não</option>
+            <option value="true">{tx("Sim")}</option>
+            <option value="false">{tx("Não")}</option>
           </>
         ) : null}
-        {spec.kind === "choice" ? spec.options.map((o) => <option key={o} value={o}>{CHOICE_LABEL[o] ?? o}</option>) : null}
-        {spec.kind === "int_or_null" ? <option value="null">Sem limite</option> : null}
-        {spec.kind === "int_or_null" || spec.kind === "int" ? <option value="value">Valor</option> : null}
+        {spec.kind === "choice"
+          ? spec.options.map((o) => (
+              <option key={o} value={o}>
+                {CHOICE_LABEL[o] ?? o}
+              </option>
+            ))
+          : null}
+        {spec.kind === "int_or_null" ? <option value="null">{tx("Sem limite")}</option> : null}
+        {spec.kind === "int_or_null" || spec.kind === "int" ? (
+          <option value="value">{tx("Valor")}</option>
+        ) : null}
       </Select>
       {(spec.kind === "int_or_null" || spec.kind === "int") && mode === "value" ? (
-        <IntInput label={`${LABEL[limitKey]}: valor`} min={spec.min} value={typeof value === "number" ? value : spec.min} onChange={onSet} />
+        <IntInput
+          label={tx("{{v0}}: valor", { v0: LABEL[limitKey] })}
+          min={spec.min}
+          value={typeof value === "number" ? value : spec.min}
+          onChange={onSet}
+        />
       ) : (
         <span className="hidden tablet:block" />
       )}
@@ -126,7 +157,17 @@ function LimitRow({ id, limitKey, present, value, onSet, onUnset }: RowProps) {
 }
 
 /** Texto livre enquanto digita; só propaga inteiros válidos (≥ min). */
-function IntInput({ label, min, value, onChange }: { label: string; min: number; value: number; onChange: (n: number) => void }) {
+function IntInput({
+  label,
+  min,
+  value,
+  onChange,
+}: {
+  label: string;
+  min: number;
+  value: number;
+  onChange: (n: number) => void;
+}) {
   const [text, setText] = React.useState(String(value));
   const valid = /^\d+$/.test(text) && Number(text) >= min;
   return (
@@ -136,7 +177,7 @@ function IntInput({ label, min, value, onChange }: { label: string; min: number;
       className="tnum"
       value={text}
       invalid={!valid}
-      title={valid ? undefined : `Inteiro a partir de ${min}`}
+      title={valid ? undefined : tx("Inteiro a partir de {{v0}}", { v0: min })}
       onChange={(e) => {
         const t = e.target.value;
         setText(t);

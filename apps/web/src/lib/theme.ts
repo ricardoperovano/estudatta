@@ -27,14 +27,21 @@ export function hasStoredTheme(): boolean {
 }
 
 export function isDark(theme: Theme): boolean {
-  return theme === "dark" || (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  return (
+    theme === "dark" ||
+    (theme === "system" &&
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches)
+  );
 }
 
 export function applyTheme(theme: Theme) {
   const root = document.documentElement;
   if (theme === "system") root.removeAttribute("data-theme");
   else root.setAttribute("data-theme", theme);
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", isDark(theme) ? "#161826" : "#f3f5fe");
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute("content", isDark(theme) ? "#161826" : "#f3f5fe");
   listeners.forEach((l) => l());
 }
 

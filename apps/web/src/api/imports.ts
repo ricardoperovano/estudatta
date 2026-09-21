@@ -1,4 +1,5 @@
 /** Importação de conteúdo programático (texto, CSV, PDF): jobs, proposta editável, confirmação e IA opcional. */
+import { t as tx, intlLocale } from "@/i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, unwrap, rawFetch, rawJson, ApiError } from "./client";
 import type { components } from "./schema";
@@ -48,7 +49,7 @@ export function isImportInProgress(status: string | undefined | null): boolean {
   return status === "queued" || status === "processing";
 }
 
-export const SOURCE_LABELS: Record<string, string> = { text: "Texto", csv: "CSV", pdf: "PDF" };
+export const SOURCE_LABELS: Record<string, string> = { text: tx("Texto"), csv: "CSV", pdf: "PDF" };
 
 export function sourceLabel(source: string): string {
   return SOURCE_LABELS[source] ?? source;
@@ -57,8 +58,11 @@ export function sourceLabel(source: string): string {
 /** "2,4 MB" / "830 KB" */
 export function fmtFileSize(bytes: number | null | undefined): string {
   if (bytes == null) return "";
-  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB`;
-  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+  if (bytes >= 1024 * 1024)
+    return tx("{{v0}} MB", {
+      v0: (bytes / 1024 / 1024).toLocaleString(intlLocale, { maximumFractionDigits: 1 }),
+    });
+  if (bytes >= 1024) return tx("{{v0}} KB", { v0: Math.round(bytes / 1024) });
   return `${bytes} B`;
 }
 
@@ -82,7 +86,12 @@ function normalizeSubtopic(raw: unknown): ProposalSubtopic | null {
   const r = asRecord(raw);
   if (!r) return null;
   const title = typeof r.title === "string" ? r.title : "";
-  return { title, page: asPage(r.page), page_to: asPage(r.page_to), estimated_minutes: asMinutes(r.estimated_minutes) };
+  return {
+    title,
+    page: asPage(r.page),
+    page_to: asPage(r.page_to),
+    estimated_minutes: asMinutes(r.estimated_minutes),
+  };
 }
 
 /** Converte o `proposal` bruto do job (dicionário sem tipo) em uma proposta segura para edição. */
@@ -139,7 +148,10 @@ export function useImports(activityId?: string | null, enabled = true) {
   return useQuery({
     queryKey: importKeys.list(activityId),
     enabled,
-    queryFn: async () => unwrap(await api.GET("/api/v1/imports", { params: { query: { activity_id: activityId ?? null } } })) as ImportOut[],
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/imports", { params: { query: { activity_id: activityId ?? null } } }),
+      ) as ImportOut[],
     staleTime: 10_000,
   });
 }
@@ -149,9 +161,13 @@ export function useImport(id: string | null | undefined) {
   return useQuery({
     queryKey: importKeys.one(id || ""),
     enabled: !!id,
-    queryFn: async () => unwrap(await api.GET("/api/v1/imports/{import_id}", { params: { path: { import_id: id! } } })) as ImportOut,
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/imports/{import_id}", { params: { path: { import_id: id! } } }),
+      ) as ImportOut,
     refetchInterval: (q) => (isImportInProgress(q.state.data?.status) ? 2000 : false),
-    refetchOnWindowFocus: (q) => isImportInProgress(q.state.data?.status) || q.state.data?.status === "needs_review",
+    refetchOnWindowFocus: (q) =>
+      isImportInProgress(q.state.data?.status) || q.state.data?.status === "needs_review",
   });
 }
 
@@ -205,7 +221,12 @@ export function useUpdateImport() {
   const invalidate = useInvalidateImports();
   return useMutation({
     mutationFn: async ({ id, proposal }: { id: string; proposal: Proposal }) =>
-      unwrap(await api.PATCH("/api/v1/imports/{import_id}", { params: { path: { import_id: id } }, body: { proposal } })) as ImportOut,
+      unwrap(
+        await api.PATCH("/api/v1/imports/{import_id}", {
+          params: { path: { import_id: id } },
+          body: { proposal },
+        }),
+      ) as ImportOut,
     onSuccess: (job) => invalidate(job),
   });
 }
@@ -215,7 +236,12 @@ export function useConfirmImport() {
   const invalidate = useInvalidateImports();
   return useMutation({
     mutationFn: async ({ id, proposal }: { id: string; proposal: Proposal }) =>
-      unwrap(await api.POST("/api/v1/imports/{import_id}/confirm", { params: { path: { import_id: id } }, body: { proposal } })) as ImportConfirmOut,
+      unwrap(
+        await api.POST("/api/v1/imports/{import_id}/confirm", {
+          params: { path: { import_id: id } },
+          body: { proposal },
+        }),
+      ) as ImportConfirmOut,
     onSuccess: (out) => {
       invalidate(out.import);
       // matérias/tópicos novos aparecem no objetivo, no progresso de conteúdo e nos relatórios
@@ -229,7 +255,10 @@ export function useConfirmImport() {
 export function useCancelImport() {
   const invalidate = useInvalidateImports();
   return useMutation({
-    mutationFn: async (id: string) => unwrap(await api.POST("/api/v1/imports/{import_id}/cancel", { params: { path: { import_id: id } } })) as ImportOut,
+    mutationFn: async (id: string) =>
+      unwrap(
+        await api.POST("/api/v1/imports/{import_id}/cancel", { params: { path: { import_id: id } } }),
+      ) as ImportOut,
     onSuccess: (job) => invalidate(job),
   });
 }
@@ -251,7 +280,12 @@ export function isAiDisabledError(e: unknown): boolean {
 /** Baixa o modelo de CSV pelo cliente autenticado e dispara o download no navegador. */
 export async function downloadImportTemplate(): Promise<void> {
   const res = await rawFetch("/api/v1/imports/template.csv");
-  if (!res.ok) throw new ApiError(res.status, "http_error", "Não foi possível baixar o modelo agora. Tente de novo.");
+  if (!res.ok)
+    throw new ApiError(
+      res.status,
+      "http_error",
+      tx("Não foi possível baixar o modelo agora. Tente de novo."),
+    );
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -266,17 +300,21 @@ export async function downloadImportTemplate(): Promise<void> {
 
 // --- Mensagens de erro ------------------------------------------------------------
 
-const PLAN_UNCHANGED = "Nada do seu plano foi alterado.";
+const PLAN_UNCHANGED = tx("Nada do seu plano foi alterado.");
 
 /** Garante que a mensagem termine com "Nada do seu plano foi alterado." (padrão do design). */
-export function withPlanUnchanged(message: string | null | undefined, fallback = "Não foi possível processar o conteúdo."): string {
+export function withPlanUnchanged(
+  message: string | null | undefined,
+  fallback = tx("Não foi possível processar o conteúdo."),
+): string {
   const base = (message || fallback).trim();
   if (base.toLowerCase().includes(PLAN_UNCHANGED.toLowerCase())) return base;
   return `${base.replace(/\s+$/, "")}${/[.!?]$/.test(base) ? "" : "."} ${PLAN_UNCHANGED}`;
 }
 
-export const OCR_EXPLANATION =
-  "Este PDF parece ser só imagem, sem texto selecionável. O reconhecimento de texto (OCR) não está habilitado. Envie uma versão com texto pesquisável ou cole o sumário como texto.";
+export const OCR_EXPLANATION = tx(
+  "Este PDF parece ser só imagem, sem texto selecionável. O reconhecimento de texto (OCR) não está habilitado. Envie uma versão com texto pesquisável ou cole o sumário como texto.",
+);
 
 /** Explicação extra por código de erro (além da mensagem do servidor). */
 export function importErrorHelp(code: string | null | undefined): string | null {
@@ -284,15 +322,15 @@ export function importErrorHelp(code: string | null | undefined): string | null 
     case "no_text_layer":
       return OCR_EXPLANATION;
     case "csv_header":
-      return "Baixe o modelo de CSV para conferir os nomes das colunas.";
+      return tx("Baixe o modelo de CSV para conferir os nomes das colunas.");
     case "queue_unavailable":
-      return "Enquanto isso, você pode colar o sumário como texto: esse caminho não depende da fila.";
+      return tx("Enquanto isso, você pode colar o sumário como texto: esse caminho não depende da fila.");
     default:
       return null;
   }
 }
 
-export const AI_UNAVAILABLE_NOTE = "Sugestão automática de estrutura não está disponível neste ambiente.";
+export const AI_UNAVAILABLE_NOTE = tx("Sugestão automática de estrutura não está disponível neste ambiente.");
 
 export function aiReasonLabel(reason: string | null | undefined): string | null {
   switch (reason) {
@@ -302,15 +340,17 @@ export function aiReasonLabel(reason: string | null | undefined): string | null 
     case "ai_disabled":
       return null;
     case "ai_plan":
-      return "A IA para organizar o conteúdo está nos planos Essencial e Completo. Você pode revisar e organizar manualmente.";
+      return tx(
+        "A IA para organizar o conteúdo está nos planos Essencial e Completo. Você pode revisar e organizar manualmente.",
+      );
     case "ai_quota":
-      return "Você usou todas as sugestões de hoje. Amanhã a cota renova.";
+      return tx("Você usou todas as sugestões de hoje. Amanhã a cota renova.");
     case "ai_monthly_quota":
-      return "Você usou todas as sugestões deste mês. A cota renova no dia 1º.";
+      return tx("Você usou todas as sugestões deste mês. A cota renova no dia 1º.");
     case "ai_budget":
-      return "O limite geral de uso foi atingido por hoje.";
+      return tx("O limite geral de uso foi atingido por hoje.");
     default:
-      return `Motivo: ${reason}.`;
+      return tx("Motivo: {{v0}}.", { v0: reason });
   }
 }
 
@@ -357,7 +397,12 @@ export function toEditor(p: Proposal): EditorSubject[] {
       title: t.title,
       pages: fmtPages(t.page, t.page_to),
       estimated_minutes: t.estimated_minutes ?? null,
-      children: t.children.map((c) => ({ key: editorKey(), title: c.title, pages: fmtPages(c.page, c.page_to), estimated_minutes: c.estimated_minutes ?? null })),
+      children: t.children.map((c) => ({
+        key: editorKey(),
+        title: c.title,
+        pages: fmtPages(c.page, c.page_to),
+        estimated_minutes: c.estimated_minutes ?? null,
+      })),
     })),
   }));
 }
@@ -371,7 +416,10 @@ export function fromEditor(subjects: EditorSubject[], stats?: Record<string, unk
   return {
     subjects: subjects.map((s) => ({
       title: s.title.trim(),
-      topics: s.topics.map((t) => ({ ...fromEditorSubtopic(t), children: t.children.map(fromEditorSubtopic) })),
+      topics: s.topics.map((t) => ({
+        ...fromEditorSubtopic(t),
+        children: t.children.map(fromEditorSubtopic),
+      })),
     })),
     stats: stats ?? null,
   };
@@ -385,15 +433,31 @@ export function countEditor(subjects: EditorSubject[]): { subjects: number; topi
 
 /** Problemas que impedem salvar/confirmar (mensagem em pt-BR) ou null. */
 export function editorProblem(subjects: EditorSubject[]): string | null {
-  if (subjects.length === 0) return "A proposta está vazia. Adicione ao menos uma matéria antes de confirmar.";
+  if (subjects.length === 0)
+    return tx("A proposta está vazia. Adicione ao menos uma matéria antes de confirmar.");
   const { subjects: ns, topics } = countEditor(subjects);
-  if (ns > MAX_PROPOSAL_SUBJECTS) return `A proposta tem ${ns} matérias; o limite é ${MAX_PROPOSAL_SUBJECTS}.`;
-  if (topics > MAX_PROPOSAL_TOPICS) return `A proposta tem ${topics} tópicos; o limite é ${MAX_PROPOSAL_TOPICS}.`;
+  if (ns > MAX_PROPOSAL_SUBJECTS)
+    return tx("A proposta tem {{v0}} matérias; o limite é {{v1}}.", {
+      v0: ns,
+      v1: MAX_PROPOSAL_SUBJECTS,
+    });
+  if (topics > MAX_PROPOSAL_TOPICS)
+    return tx("A proposta tem {{v0}} tópicos; o limite é {{v1}}.", {
+      v0: topics,
+      v1: MAX_PROPOSAL_TOPICS,
+    });
   for (const s of subjects) {
-    if (!s.title.trim()) return "Há uma matéria sem título. Preencha ou remova a linha.";
+    if (!s.title.trim()) return tx("Há uma matéria sem título. Preencha ou remova a linha.");
     for (const t of s.topics) {
-      if (!t.title.trim()) return `Há um tópico sem título em "${s.title.trim()}". Preencha ou remova a linha.`;
-      for (const c of t.children) if (!c.title.trim()) return `Há um subtópico sem título em "${t.title.trim()}". Preencha ou remova a linha.`;
+      if (!t.title.trim())
+        return tx('Há um tópico sem título em "{{v0}}". Preencha ou remova a linha.', {
+          v0: s.title.trim(),
+        });
+      for (const c of t.children)
+        if (!c.title.trim())
+          return tx('Há um subtópico sem título em "{{v0}}". Preencha ou remova a linha.', {
+            v0: t.title.trim(),
+          });
     }
   }
   return null;

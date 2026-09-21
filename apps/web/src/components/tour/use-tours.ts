@@ -17,7 +17,10 @@ export function useToursSeen(): { seen: Set<string>; loaded: boolean } {
   const prefs = usePreferences();
   const localSeen = useTourStore((s) => s.localSeen);
   const server = prefs.data?.tours_seen;
-  return React.useMemo(() => ({ seen: new Set([...(server ?? []), ...localSeen]), loaded: !!prefs.data }), [server, localSeen, prefs.data]);
+  return React.useMemo(
+    () => ({ seen: new Set([...(server ?? []), ...localSeen]), loaded: !!prefs.data }),
+    [server, localSeen, prefs.data],
+  );
 }
 
 export function useMarkTourSeen() {

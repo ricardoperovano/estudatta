@@ -106,7 +106,20 @@ export const LANGUAGE_NAMES: Record<LanguageCode, string> = {
 };
 
 /** Mais procurados, na ordem em que aparecem no topo da lista. */
-export const POPULAR_LANGUAGES: LanguageCode[] = ["en", "es", "fr", "de", "it", "ja", "zh", "ko", "ru", "ar", "bzs", "pt"];
+export const POPULAR_LANGUAGES: LanguageCode[] = [
+  "en",
+  "es",
+  "fr",
+  "de",
+  "it",
+  "ja",
+  "zh",
+  "ko",
+  "ru",
+  "ar",
+  "bzs",
+  "pt",
+];
 
 /** Demais idiomas em ordem alfabética; "Outro idioma" por último. */
 export const OTHER_LANGUAGES: LanguageCode[] = (Object.keys(LANGUAGE_NAMES) as LanguageCode[])

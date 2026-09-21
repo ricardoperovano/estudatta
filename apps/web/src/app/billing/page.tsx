@@ -1,3 +1,4 @@
+import { t, intlLocale } from "@/i18n";
 import * as React from "react";
 import { useSearchParams } from "react-router";
 import { Check } from "@phosphor-icons/react";
@@ -27,7 +28,7 @@ import { planosTour } from "@/tours/planos";
 
 function fmtDateLong(d: string | null | undefined): string {
   if (!d) return "";
-  return parseDate(d).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" });
+  return parseDate(d).toLocaleDateString(intlLocale, { day: "numeric", month: "long", year: "numeric" });
 }
 
 /** Planos e assinatura. O plano só muda quando o servidor confirma o pagamento; voltar do checkout nunca ativa nada. */
@@ -53,11 +54,11 @@ export default function BillingPage() {
       {
         onSuccess: (info) => {
           setCoupon(info);
-          toast("success", "Cupom aplicado", info.description);
+          toast("success", t("Cupom aplicado"), info.description);
         },
         onError: (e) => {
           setCoupon(null);
-          toast("error", "Cupom não aplicado", errorMessage(e));
+          toast("error", t("Cupom não aplicado"), errorMessage(e));
         },
       },
     );
@@ -76,7 +77,12 @@ export default function BillingPage() {
   // (Asaas); nenhum deles ativa nada: só a confirmação do provedor libera o plano
   const retStatus = params.get("status");
   const checkoutReturn =
-    params.get("checkout") ?? (params.get("retorno") === "checkout" ? (retStatus === "cancelado" || retStatus === "expirado" ? "falhou" : "sucesso") : null);
+    params.get("checkout") ??
+    (params.get("retorno") === "checkout"
+      ? retStatus === "cancelado" || retStatus === "expirado"
+        ? "falhou"
+        : "sucesso"
+      : null);
   const clearReturn = () => {
     const next = new URLSearchParams(params);
     next.delete("checkout");
@@ -87,8 +93,8 @@ export default function BillingPage() {
 
   const onVerify = () =>
     verify.mutate(undefined, {
-      onSuccess: (s) => toast("info", "Situação verificada", s.message ?? undefined),
-      onError: (e) => toast("error", "Não foi possível verificar agora", errorMessage(e)),
+      onSuccess: (s) => toast("info", t("Situação verificada"), s.message ?? undefined),
+      onError: (e) => toast("error", t("Não foi possível verificar agora"), errorMessage(e)),
     });
 
   const onSubscribe = (plan: PublicPlan) => {
@@ -100,12 +106,16 @@ export default function BillingPage() {
           if (out.checkout_url) window.location.assign(out.checkout_url);
           else {
             setRedirectingTo(null);
-            toast("error", "Não foi possível abrir o pagamento", "O link de pagamento não foi gerado. Tente de novo em instantes.");
+            toast(
+              "error",
+              t("Não foi possível abrir o pagamento"),
+              t("O link de pagamento não foi gerado. Tente de novo em instantes."),
+            );
           }
         },
         onError: (e) => {
           setRedirectingTo(null);
-          toast("error", "Não foi possível iniciar a assinatura", errorMessage(e));
+          toast("error", t("Não foi possível iniciar a assinatura"), errorMessage(e));
         },
       },
     );
@@ -114,14 +124,17 @@ export default function BillingPage() {
   const state = sub.data;
   const billingMode = state?.billing_mode ?? plans.data?.billing_mode ?? null;
   const currentCode = state?.entitlements.plan_code ?? null;
-  const hasPaidSubscription = !!state?.subscription && ["active", "past_due", "paused"].includes(state.subscription.status);
+  const hasPaidSubscription =
+    !!state?.subscription && ["active", "past_due", "paused"].includes(state.subscription.status);
 
   return (
     <div className="flex flex-col gap-[14px] desktop:max-w-[1000px] desktop:gap-8">
       <header>
-        <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">Planos</h1>
+        <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">
+          {t("Planos")}
+        </h1>
         <p className="mt-2 max-w-[56ch] text-[14px] text-neutral-400 desktop:text-[15px]">
-          Comece grátis com um objetivo. Amplie quando quiser acompanhar mais coisas ao mesmo tempo.
+          {t("Comece grátis com um objetivo. Amplie quando quiser acompanhar mais coisas ao mesmo tempo.")}
         </p>
       </header>
 
@@ -130,39 +143,55 @@ export default function BillingPage() {
           kind="syncing"
           actions={
             <>
-              <Button size="sm" variant="primary" loading={verify.isPending} disabled={!online} onClick={onVerify}>
-                Verificar situação
+              <Button
+                size="sm"
+                variant="primary"
+                loading={verify.isPending}
+                disabled={!online}
+                onClick={onVerify}
+              >
+                {t("Verificar situação")}
               </Button>
               <Button size="sm" variant="ghost-muted" onClick={clearReturn}>
-                Fechar
+                {t("Fechar")}
               </Button>
             </>
           }
         >
-          <strong className="font-medium">Pagamento em confirmação.</strong> Recebemos seu retorno do pagamento e estamos aguardando a confirmação. O plano muda assim que ela chegar; isso pode
-          levar alguns minutos.
+          <strong className="font-medium">{t("Pagamento em confirmação.")}</strong>{" "}
+          {t(
+            "Recebemos seu retorno do pagamento e estamos aguardando a confirmação. O plano muda assim que ela chegar; isso pode levar alguns minutos.",
+          )}
         </Banner>
       ) : checkoutReturn ? (
         <Banner
           kind="info"
           actions={
             <Button size="sm" variant="ghost-muted" onClick={clearReturn}>
-              Fechar
+              {t("Fechar")}
             </Button>
           }
         >
           {checkoutReturn === "pendente"
-            ? "O pagamento ficou pendente. Nada muda no seu plano até a confirmação."
-            : "O pagamento não foi concluído. Nada foi cobrado e seu plano continua o mesmo."}
+            ? t("O pagamento ficou pendente. Nada muda no seu plano até a confirmação.")
+            : t("O pagamento não foi concluído. Nada foi cobrado e seu plano continua o mesmo.")}
         </Banner>
       ) : null}
 
-      {!online ? <Banner kind="offline">Sem conexão: os planos mostrados podem estar desatualizados, e assinar ou cancelar precisa de internet.</Banner> : null}
+      {!online ? (
+        <Banner kind="offline">
+          {t(
+            "Sem conexão: os planos mostrados podem estar desatualizados, e assinar ou cancelar precisa de internet.",
+          )}
+        </Banner>
+      ) : null}
 
       <Card className="gap-3 p-4" data-tour="planos-cupom">
         <div className="flex flex-col gap-0.5">
-          <span className="text-[15px] font-medium">Tem um cupom?</span>
-          <span className="text-[13px] text-neutral-400">Cupons de desconto valem ao assinar; cupons de dias grátis liberam o plano na hora.</span>
+          <span className="text-[15px] font-medium">{t("Tem um cupom?")}</span>
+          <span className="text-[13px] text-neutral-400">
+            {t("Cupons de desconto valem ao assinar; cupons de dias grátis liberam o plano na hora.")}
+          </span>
         </div>
         <form
           className="flex flex-wrap gap-2"
@@ -172,20 +201,25 @@ export default function BillingPage() {
           }}
         >
           <label className="sr-only" htmlFor="cupom">
-            Código do cupom
+            {t("Código do cupom")}
           </label>
           <Input
             id="cupom"
             value={couponInput}
             onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-            placeholder="CÓDIGO"
+            placeholder={t("CÓDIGO")}
             className="min-w-[160px] flex-1 uppercase"
             autoCapitalize="characters"
             spellCheck={false}
             disabled={!online}
           />
-          <Button type="submit" variant="secondary" loading={checkCoupon.isPending} disabled={!online || !couponInput.trim()}>
-            Aplicar
+          <Button
+            type="submit"
+            variant="secondary"
+            loading={checkCoupon.isPending}
+            disabled={!online || !couponInput.trim()}
+          >
+            {t("Aplicar")}
           </Button>
         </form>
         {coupon ? (
@@ -204,16 +238,16 @@ export default function BillingPage() {
                     onSuccess: (s) => {
                       setCoupon(null);
                       setCouponInput("");
-                      toast("success", "Plano liberado", s.message ?? undefined);
+                      toast("success", t("Plano liberado"), s.message ?? undefined);
                     },
-                    onError: (e) => toast("error", "Não foi possível usar o cupom", errorMessage(e)),
+                    onError: (e) => toast("error", t("Não foi possível usar o cupom"), errorMessage(e)),
                   })
                 }
               >
-                Liberar {coupon.value} dias grátis
+                {t("Liberar {{v0}} dias grátis", { v0: coupon.value })}
               </Button>
             ) : (
-              <span className="text-[12px]">Escolha o plano abaixo: o valor já sai com desconto.</span>
+              <span className="text-[12px]">{t("Escolha o plano abaixo: o valor já sai com desconto.")}</span>
             )}
           </div>
         ) : null}
@@ -224,11 +258,13 @@ export default function BillingPage() {
           kind="error"
           actions={
             <Button size="sm" variant="secondary" onClick={() => sub.refetch()}>
-              Tentar de novo
+              {t("Tentar de novo")}
             </Button>
           }
         >
-          Não foi possível carregar a situação da sua assinatura. {errorMessage(sub.error, "")}
+          {t("Não foi possível carregar a situação da sua assinatura. {{v0}}", {
+            v0: errorMessage(sub.error, ""),
+          })}
         </Banner>
       ) : state ? (
         <SubscriptionCard state={state} online={online} onVerify={onVerify} verifying={verify.isPending} />
@@ -236,33 +272,36 @@ export default function BillingPage() {
 
       <div className="self-start" data-tour="planos-periodicidade">
         <Seg<BillingInterval>
-          label="Periodicidade"
+          label={t("Periodicidade")}
           value={interval}
           onChange={setInterval}
           options={[
-            { value: "month", label: "Mensal" },
-            { value: "year", label: "Anual" },
+            { value: "month", label: t("Mensal") },
+            { value: "year", label: t("Anual") },
           ]}
         />
       </div>
 
       {plans.isPending ? (
         <div className="flex justify-center py-16" role="status">
-          <Spinner className="h-6 w-6" label="Carregando planos" />
+          <Spinner className="h-6 w-6" label={t("Carregando planos")} />
         </div>
       ) : plans.isError ? (
         <Banner
           kind="error"
           actions={
             <Button size="sm" variant="secondary" onClick={() => plans.refetch()}>
-              Tentar de novo
+              {t("Tentar de novo")}
             </Button>
           }
         >
-          Não foi possível carregar os planos. {errorMessage(plans.error, "")}
+          {t("Não foi possível carregar os planos. {{v0}}", { v0: errorMessage(plans.error, "") })}
         </Banner>
       ) : plans.data.plans.length === 0 ? (
-        <EmptyState title="Nenhum plano disponível no momento." description="Você continua usando o Estudatta normalmente." />
+        <EmptyState
+          title={t("Nenhum plano disponível no momento.")}
+          description={t("Você continua usando o Estudatta normalmente.")}
+        />
       ) : (
         <div className="grid items-start gap-[14px] tablet:grid-cols-2 desktop:grid-cols-3 desktop:gap-4">
           {plans.data.plans.map((plan, i, all) => (
@@ -274,7 +313,11 @@ export default function BillingPage() {
               billingMode={billingMode}
               isCurrent={currentCode === plan.code}
               hasPaidSubscription={hasPaidSubscription}
-              pendingCheckoutUrl={state?.subscription?.status === "pending" && state.subscription.plan_code === plan.code ? state.subscription.checkout_url : null}
+              pendingCheckoutUrl={
+                state?.subscription?.status === "pending" && state.subscription.plan_code === plan.code
+                  ? state.subscription.checkout_url
+                  : null
+              }
               online={online}
               loading={redirectingTo === plan.code}
               disabled={redirectingTo !== null}
@@ -292,9 +335,16 @@ export default function BillingPage() {
 function PriceFootnote({ plans, billingMode }: { plans: PublicPlan[]; billingMode: string | null }) {
   const undefinedPrice = plans.some((p) => !isFreePlan(p) && p.prices.some((pr) => pr.amount_cents == null));
   const lines: string[] = [];
-  if (undefinedPrice) lines.push("Sem desconto, promoção ou garantia enquanto o preço não estiver definido.");
-  if (billingMode === "disabled") lines.push("As assinaturas ainda não estão abertas. Ninguém é cobrado e o plano gratuito segue funcionando por inteiro.");
-  if (billingMode === "test") lines.push("Ambiente de testes: pagamentos feitos aqui não geram cobrança real.");
+  if (undefinedPrice)
+    lines.push(t("Sem desconto, promoção ou garantia enquanto o preço não estiver definido."));
+  if (billingMode === "disabled")
+    lines.push(
+      t(
+        "As assinaturas ainda não estão abertas. Ninguém é cobrado e o plano gratuito segue funcionando por inteiro.",
+      ),
+    );
+  if (billingMode === "test")
+    lines.push(t("Ambiente de testes: pagamentos feitos aqui não geram cobrança real."));
   if (lines.length === 0) return null;
   return (
     <p className="text-[12px] text-neutral-500 desktop:text-[13px]" data-tour="planos-aviso">
@@ -317,7 +367,19 @@ interface PlanCardProps {
   tour?: boolean;
 }
 
-function PlanCard({ plan, interval, billingMode, isCurrent, hasPaidSubscription, pendingCheckoutUrl, online, loading, disabled, onSubscribe, tour }: PlanCardProps) {
+function PlanCard({
+  plan,
+  interval,
+  billingMode,
+  isCurrent,
+  hasPaidSubscription,
+  pendingCheckoutUrl,
+  online,
+  loading,
+  disabled,
+  onSubscribe,
+  tour,
+}: PlanCardProps) {
   const free = isFreePlan(plan);
   const price = priceFor(plan, interval);
   const amount = free ? 0 : (price?.amount_cents ?? null);
@@ -329,59 +391,85 @@ function PlanCard({ plan, interval, billingMode, isCurrent, hasPaidSubscription,
   if (free) {
     action = isCurrent ? (
       <Button variant="secondary" size="lg" disabled className="mt-2">
-        <Check size={16} aria-hidden /> Seu plano atual
+        <Check size={16} aria-hidden /> {t("Seu plano atual")}
       </Button>
     ) : (
       <Button variant="secondary" size="lg" disabled className="mt-2">
-        Incluído em qualquer plano
+        {t("Incluído em qualquer plano")}
       </Button>
     );
-    if (!isCurrent && hasPaidSubscription) note = "Para voltar ao gratuito, cancele a renovação acima. O acesso continua até o fim do período já pago.";
+    if (!isCurrent && hasPaidSubscription)
+      note = t(
+        "Para voltar ao gratuito, cancele a renovação acima. O acesso continua até o fim do período já pago.",
+      );
   } else if (isCurrent) {
     action = (
       <Button variant="secondary" size="lg" disabled className="mt-2">
-        <Check size={16} aria-hidden /> Seu plano atual
+        <Check size={16} aria-hidden /> {t("Seu plano atual")}
       </Button>
     );
   } else if (billingMode === "disabled") {
     action = (
       <Button variant="primary" size="lg" disabled className="mt-2 min-h-[48px] desktop:min-h-[44px]">
-        Assinar quando disponível
+        {t("Assinar quando disponível")}
       </Button>
     );
-    note = "As assinaturas ainda não estão abertas. Quando abrirem, este botão leva ao pagamento.";
+    note = t("As assinaturas ainda não estão abertas. Quando abrirem, este botão leva ao pagamento.");
   } else if (!price || price.amount_cents == null) {
     action = (
       <Button variant="primary" size="lg" disabled className="mt-2 min-h-[48px] desktop:min-h-[44px]">
-        Assinar quando disponível
+        {t("Assinar quando disponível")}
       </Button>
     );
-    note = price ? "O valor deste plano ainda não foi definido. Não é possível assinar antes disso." : `Este plano ainda não tem opção ${interval === "year" ? "anual" : "mensal"}.`;
+    note = price
+      ? t("O valor deste plano ainda não foi definido. Não é possível assinar antes disso.")
+      : t("Este plano ainda não tem opção {{v0}}.", { v0: interval === "year" ? "anual" : "mensal" });
   } else if (pendingCheckoutUrl) {
     action = (
       <Button asChild variant="primary" size="lg" className="mt-2 min-h-[48px] desktop:min-h-[44px]">
-        <a href={pendingCheckoutUrl}>Continuar pagamento</a>
+        <a href={pendingCheckoutUrl}>{t("Continuar pagamento")}</a>
       </Button>
     );
-    note = "Você já começou esta assinatura. O plano só muda depois que o pagamento for confirmado.";
+    note = t("Você já começou esta assinatura. O plano só muda depois que o pagamento for confirmado.");
   } else {
     action = (
-      <Button variant="primary" size="lg" className="mt-2 min-h-[48px] desktop:min-h-[44px]" loading={loading} disabled={disabled || !online} onClick={onSubscribe}>
-        Assinar {plan.name}
+      <Button
+        variant="primary"
+        size="lg"
+        className="mt-2 min-h-[48px] desktop:min-h-[44px]"
+        loading={loading}
+        disabled={disabled || !online}
+        onClick={onSubscribe}
+      >
+        {t("Assinar {{v0}}", { v0: plan.name })}
       </Button>
     );
-    note = online ? "Você será levado à página de pagamento. O plano muda quando o pagamento for confirmado." : "Assinar precisa de conexão com a internet.";
+    note = online
+      ? t("Você será levado à página de pagamento. O plano muda quando o pagamento for confirmado.")
+      : t("Assinar precisa de conexão com a internet.");
   }
 
   return (
-    <Card accent={plan.recommended} as="article" className="gap-2 p-4 desktop:gap-3 desktop:p-6" aria-label={`Plano ${plan.name}`} data-tour={tour ? "planos-plano" : undefined}>
+    <Card
+      accent={plan.recommended}
+      as="article"
+      className="gap-2 p-4 desktop:gap-3 desktop:p-6"
+      aria-label={t("Plano {{v0}}", { v0: plan.name })}
+      data-tour={tour ? "planos-plano" : undefined}
+    >
       <div className="flex items-center justify-between gap-2">
-        <span className={cn("text-[17px] font-medium desktop:text-[20px]", plan.recommended && "text-accent")}>{plan.name}</span>
-        {plan.recommended ? <Tag variant="accent">Recomendado</Tag> : null}
+        <span
+          className={cn("text-[17px] font-medium desktop:text-[20px]", plan.recommended && "text-accent")}
+        >
+          {plan.name}
+        </span>
+        {plan.recommended ? <Tag variant="accent">{t("Recomendado")}</Tag> : null}
       </div>
       <span className="tnum text-[25px] font-medium leading-tight desktop:text-[32px]">
-        {free ? "R$ 0" : amount == null ? "Valor a definir" : fmtBRL(amount)}
-        {!free ? <span className="ml-1.5 text-[13px] font-normal text-neutral-400 desktop:text-[14px]">{unit}</span> : null}
+        {free ? "R$ 0" : amount == null ? t("Valor a definir") : fmtBRL(amount)}
+        {!free ? (
+          <span className="ml-1.5 text-[13px] font-normal text-neutral-400 desktop:text-[14px]">{unit}</span>
+        ) : null}
       </span>
       {plan.description ? <p className="text-[13px] text-neutral-400">{plan.description}</p> : null}
       {features.length ? (
@@ -397,7 +485,17 @@ function PlanCard({ plan, interval, billingMode, isCurrent, hasPaidSubscription,
   );
 }
 
-function SubscriptionCard({ state, online, onVerify, verifying }: { state: SubscriptionState; online: boolean; onVerify: () => void; verifying: boolean }) {
+function SubscriptionCard({
+  state,
+  online,
+  onVerify,
+  verifying,
+}: {
+  state: SubscriptionState;
+  online: boolean;
+  onVerify: () => void;
+  verifying: boolean;
+}) {
   const cancel = useCancelSubscription();
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [showHistory, setShowHistory] = React.useState(false);
@@ -411,24 +509,44 @@ function SubscriptionCard({ state, online, onVerify, verifying }: { state: Subsc
     cancel.mutate(undefined, {
       onSuccess: (next) => {
         setConfirmOpen(false);
-        toast("success", "Renovação cancelada", next.message ?? undefined);
+        toast("success", t("Renovação cancelada"), next.message ?? undefined);
       },
-      onError: (e) => toast("error", "Não foi possível cancelar agora", errorMessage(e)),
+      onError: (e) => toast("error", t("Não foi possível cancelar agora"), errorMessage(e)),
     });
 
   return (
-    <Card as="section" elev="sm" className="gap-3 p-4 desktop:p-6" aria-label="Sua assinatura" data-tour="planos-atual">
+    <Card
+      as="section"
+      elev="sm"
+      className="gap-3 p-4 desktop:p-6"
+      aria-label={t("Sua assinatura")}
+      data-tour="planos-atual"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-col">
-          <span className="kicker">Seu plano</span>
+          <span className="kicker">{t("Seu plano")}</span>
           <span className="text-[17px] font-medium desktop:text-[20px]">{ent.plan_name}</span>
         </div>
-        <Tag variant={statusVariant(s, state.cancel_at_period_end)}>{s ? (state.cancel_at_period_end && s.status === "active" ? "Renovação cancelada" : subscriptionStatusLabel(s.status)) : sourceLabel(ent.source)}</Tag>
+        <Tag variant={statusVariant(s, state.cancel_at_period_end)}>
+          {s
+            ? state.cancel_at_period_end && s.status === "active"
+              ? t("Renovação cancelada")
+              : subscriptionStatusLabel(s.status)
+            : sourceLabel(ent.source)}
+        </Tag>
       </div>
 
       <div className="flex flex-col gap-1 text-[14px] text-neutral-300">
         {!s ? (
-          <span>{ent.source === "promo" || ent.source === "admin" ? `Acesso de cortesia${ent.current_period_end ? ` até ${fmtDateLong(ent.current_period_end)}` : ""}. Nada é cobrado.` : "Você não tem assinatura. Nada é cobrado."}</span>
+          <span>
+            {ent.source === "promo" || ent.source === "admin"
+              ? t("Acesso de cortesia{{v0}}. Nada é cobrado.", {
+                  v0: ent.current_period_end
+                    ? " " + t("até {{v0}}", { v0: fmtDateLong(ent.current_period_end) })
+                    : "",
+                })
+              : t("Você não tem assinatura. Nada é cobrado.")}
+          </span>
         ) : (
           <>
             <span>
@@ -436,13 +554,27 @@ function SubscriptionCard({ state, online, onVerify, verifying }: { state: Subsc
               {s.interval ? ` · ${s.interval === "year" ? "anual" : "mensal"}` : ""}
               {s.amount_cents != null ? ` · ${fmtBRL(s.amount_cents)}` : ""}
             </span>
-            {s.status === "pending" ? <span>Estamos aguardando a confirmação do pagamento. O plano só muda depois dela.</span> : null}
-            {s.status === "past_due" ? <span className="text-pending">O último pagamento não foi confirmado. Verifique seu meio de pagamento para manter o plano.</span> : null}
-            {state.next_charge_at && !state.cancel_at_period_end ? <span>Próxima cobrança em {fmtDateLong(state.next_charge_at)}.</span> : null}
+            {s.status === "pending" ? (
+              <span>{t("Estamos aguardando a confirmação do pagamento. O plano só muda depois dela.")}</span>
+            ) : null}
+            {s.status === "past_due" ? (
+              <span className="text-pending">
+                {t(
+                  "O último pagamento não foi confirmado. Verifique seu meio de pagamento para manter o plano.",
+                )}
+              </span>
+            ) : null}
+            {state.next_charge_at && !state.cancel_at_period_end ? (
+              <span>{t("Próxima cobrança em {{v0}}.", { v0: fmtDateLong(state.next_charge_at) })}</span>
+            ) : null}
             {state.cancel_at_period_end || s.status === "cancelled" ? (
               <span>
-                Renovação cancelada: você não será cobrado de novo.
-                {s.current_period_end ? ` O acesso ao plano continua até ${fmtDateLong(s.current_period_end)}.` : ""}
+                {t("Renovação cancelada: você não será cobrado de novo. {{v0}}", {
+                  v0: s.current_period_end
+                    ? " " +
+                      t("O acesso ao plano continua até {{v0}}.", { v0: fmtDateLong(s.current_period_end) })
+                    : "",
+                })}
               </span>
             ) : null}
           </>
@@ -454,27 +586,43 @@ function SubscriptionCard({ state, online, onVerify, verifying }: { state: Subsc
         <div className="flex flex-wrap gap-2">
           {s.status === "pending" && s.checkout_url ? (
             <Button asChild variant="primary" size="lg">
-              <a href={s.checkout_url}>Continuar pagamento</a>
+              <a href={s.checkout_url}>{t("Continuar pagamento")}</a>
             </Button>
           ) : null}
           {canVerify ? (
             <Button variant="secondary" size="lg" loading={verifying} disabled={!online} onClick={onVerify}>
-              Verificar situação
+              {t("Verificar situação")}
             </Button>
           ) : null}
           {canCancel ? (
-            <Button variant="ghost-muted" size="lg" className="px-3" disabled={!online} onClick={() => setConfirmOpen(true)}>
-              {s.status === "pending" ? "Desistir desta assinatura" : "Cancelar renovação"}
+            <Button
+              variant="ghost-muted"
+              size="lg"
+              className="px-3"
+              disabled={!online}
+              onClick={() => setConfirmOpen(true)}
+            >
+              {s.status === "pending" ? t("Desistir desta assinatura") : t("Cancelar renovação")}
             </Button>
           ) : null}
         </div>
       ) : null}
-      {s && !canVerify && state.billing_mode === "disabled" ? <p className="text-[12px] text-neutral-400">A verificação com o provedor de pagamento não está disponível neste ambiente.</p> : null}
+      {s && !canVerify && state.billing_mode === "disabled" ? (
+        <p className="text-[12px] text-neutral-400">
+          {t("A verificação com o provedor de pagamento não está disponível neste ambiente.")}
+        </p>
+      ) : null}
 
       {pastHistory.length ? (
         <div className="flex flex-col gap-2">
-          <Button variant="ghost" size="sm" className="self-start" aria-expanded={showHistory} onClick={() => setShowHistory((v) => !v)}>
-            {showHistory ? "Ocultar histórico" : `Ver histórico (${pastHistory.length})`}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="self-start"
+            aria-expanded={showHistory}
+            onClick={() => setShowHistory((v) => !v)}
+          >
+            {showHistory ? t("Ocultar histórico") : t("Ver histórico ({{v0}})", { v0: pastHistory.length })}
           </Button>
           {showHistory ? (
             <ul className="flex flex-col divide-y divide-divider text-[13px]">
@@ -486,7 +634,7 @@ function SubscriptionCard({ state, online, onVerify, verifying }: { state: Subsc
                   </span>
                   <span className="text-neutral-400">
                     {subscriptionStatusLabel(h.status)}
-                    {h.created_at ? ` · desde ${fmtDateLong(h.created_at)}` : ""}
+                    {h.created_at ? " " + t("· desde {{v0}}", { v0: fmtDateLong(h.created_at) }) : ""}
                   </span>
                 </li>
               ))}
@@ -498,14 +646,19 @@ function SubscriptionCard({ state, online, onVerify, verifying }: { state: Subsc
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title={s?.status === "pending" ? "Desistir desta assinatura?" : "Cancelar a renovação?"}
+        title={s?.status === "pending" ? t("Desistir desta assinatura?") : t("Cancelar a renovação?")}
         description={
           s?.status === "pending"
-            ? "O pagamento ainda não foi confirmado. Ao desistir, nada será cobrado."
-            : `Você não será cobrado de novo.${s?.current_period_end ? ` O acesso ao plano continua até ${fmtDateLong(s.current_period_end)}.` : ""} Seus dados e seu histórico ficam como estão.`
+            ? t("O pagamento ainda não foi confirmado. Ao desistir, nada será cobrado.")
+            : t("Você não será cobrado de novo.{{v0}} Seus dados e seu histórico ficam como estão.", {
+                v0: s?.current_period_end
+                  ? " " +
+                    t("O acesso ao plano continua até {{v0}}.", { v0: fmtDateLong(s.current_period_end) })
+                  : "",
+              })
         }
-        confirmLabel={s?.status === "pending" ? "Desistir" : "Cancelar renovação"}
-        cancelLabel="Voltar"
+        confirmLabel={s?.status === "pending" ? t("Desistir") : t("Cancelar renovação")}
+        cancelLabel={t("Voltar")}
         loading={cancel.isPending}
         onConfirm={onCancel}
       />
@@ -513,7 +666,10 @@ function SubscriptionCard({ state, online, onVerify, verifying }: { state: Subsc
   );
 }
 
-function statusVariant(s: Subscription | null, cancelAtEnd: boolean): "success" | "pending" | "neutral" | "error" {
+function statusVariant(
+  s: Subscription | null,
+  cancelAtEnd: boolean,
+): "success" | "pending" | "neutral" | "error" {
   if (!s) return "neutral";
   if (s.status === "active") return cancelAtEnd ? "neutral" : "success";
   if (s.status === "pending" || s.status === "past_due" || s.status === "paused") return "pending";
@@ -521,7 +677,7 @@ function statusVariant(s: Subscription | null, cancelAtEnd: boolean): "success" 
 }
 
 function sourceLabel(source: string): string {
-  if (source === "promo" || source === "admin") return "Cortesia";
-  if (source === "subscription") return "Assinatura";
-  return "Gratuito";
+  if (source === "promo" || source === "admin") return t("Cortesia");
+  if (source === "subscription") return t("Assinatura");
+  return t("Gratuito");
 }

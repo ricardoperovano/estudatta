@@ -2,6 +2,7 @@
  * Materiais sem nada guardado: convite, três jeitos de adicionar (cada um abre o formulário
  * no tipo certo) e um cartão de exemplo apagado.
  */
+import { t } from "@/i18n";
 import { BookBookmark, Books, FilePdf, LinkSimple, type Icon } from "@phosphor-icons/react";
 import { Tag } from "@/components/ui";
 import { cn } from "@/lib/utils";
@@ -15,21 +16,21 @@ const KINDS: { kind: Kind; icon: Icon; title: string; hint: string; tint: string
     kind: "pdf",
     icon: FilePdf,
     title: "PDF",
-    hint: "Apostila, edital, slides da aula",
+    hint: t("Apostila, edital, slides da aula"),
     tint: "bg-error-tint text-error",
   },
   {
     kind: "link",
     icon: LinkSimple,
-    title: "Link",
-    hint: "Vídeo, curso on-line, artigo",
+    title: t("Link"),
+    hint: t("Vídeo, curso on-line, artigo"),
     tint: "bg-info-tint text-info",
   },
   {
     kind: "physical",
     icon: BookBookmark,
-    title: "Livro físico",
-    hint: "Anote as páginas e onde parou",
+    title: t("Livro físico"),
+    hint: t("Anote as páginas e onde parou"),
     tint: "bg-success-tint text-success",
   },
 ];
@@ -39,19 +40,22 @@ export function NoMaterials({ filtered, onAdd }: { filtered?: boolean; onAdd: (k
     <div className="grid gap-4 desktop:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] desktop:gap-6">
       <div className="flex min-w-0 flex-col gap-4 desktop:gap-6">
         <EmptyHero
-          kicker={filtered ? "Nada neste objetivo" : "Seus materiais"}
-          title={filtered ? "Nenhum material neste objetivo ainda" : "Tudo o que você estuda, num lugar só"}
+          kicker={filtered ? t("Nada neste objetivo") : t("Seus materiais")}
+          title={
+            filtered ? t("Nenhum material neste objetivo ainda") : t("Tudo o que você estuda, num lugar só")
+          }
           mood="focus"
           icon={Books}
         >
           <p className="m-0">
-            Guarde PDFs, links e livros e vincule cada um aos tópicos, com as páginas. Na hora de estudar,
-            você sabe de onde continuar.
+            {t(
+              "Guarde PDFs, links e livros e vincule cada um aos tópicos, com as páginas. Na hora de estudar, você sabe de onde continuar.",
+            )}
           </p>
         </EmptyHero>
         <section aria-labelledby="tipos-material" className="rise-in flex flex-col gap-3">
           <h2 id="tipos-material" className="text-[15px] font-medium">
-            O que você quer guardar?
+            {t("O que você quer guardar?")}
           </h2>
           <ul className="m-0 grid list-none gap-2.5 p-0 tablet:grid-cols-3">
             {KINDS.map((k) => {
@@ -71,7 +75,9 @@ export function NoMaterials({ filtered, onAdd }: { filtered?: boolean; onAdd: (k
                     </span>
                     <span className="min-w-0 leading-tight">
                       <span className="block text-[14px] font-medium">
-                        Adicionar {k.title === "Livro físico" ? "livro físico" : k.title}
+                        {t("Adicionar {{v0}}", {
+                          v0: k.title === "Livro físico" ? t("livro físico") : k.title,
+                        })}
                       </span>
                       <span className="mt-0.5 block text-[12px] text-neutral-400">{k.hint}</span>
                     </span>
@@ -84,24 +90,28 @@ export function NoMaterials({ filtered, onAdd }: { filtered?: boolean; onAdd: (k
       </div>
       <ExamplePreview
         className="desktop:self-start"
-        title="Assim fica um material"
-        summary="PDF Gramática essencial, páginas 12 a 30, do objetivo Inglês, com 3 tópicos vinculados e anotado onde parou: página 18."
-        note="Toque no material para abrir, anotar onde parou e ligar aos tópicos com o intervalo de páginas."
+        title={t("Assim fica um material")}
+        summary={t(
+          "PDF Gramática essencial, páginas 12 a 30, do objetivo Inglês, com 3 tópicos vinculados e anotado onde parou: página 18.",
+        )}
+        note={t(
+          "Toque no material para abrir, anotar onde parou e ligar aos tópicos com o intervalo de páginas.",
+        )}
       >
         <div className="flex flex-col gap-2">
           <div className="flex flex-col gap-1 rounded-md bg-surface px-[14px] py-3 text-[14px] shadow-sm">
             <div className="flex items-center justify-between gap-3">
-              <span className="min-w-0 truncate">Gramática essencial · PDF</span>
+              <span className="min-w-0 truncate">{t("Gramática essencial · PDF")}</span>
               <Tag variant="neutral" className="tnum shrink-0">
                 p. 12–30
               </Tag>
             </div>
-            <span className="text-[12px] text-neutral-400">Inglês · 3 tópicos vinculados</span>
-            <span className="text-[12px] text-neutral-400">Parei em: p. 18</span>
+            <span className="text-[12px] text-neutral-400">{t("Inglês · 3 tópicos vinculados")}</span>
+            <span className="text-[12px] text-neutral-400">{t("Parei em: p. 18")}</span>
           </div>
           <div className="flex flex-col gap-1 rounded-md bg-surface px-[14px] py-3 text-[14px] shadow-sm">
-            <span className="min-w-0 truncate">Aula de listening · Link</span>
-            <span className="text-[12px] text-neutral-400">Inglês · 1 tópico vinculado</span>
+            <span className="min-w-0 truncate">{t("Aula de listening · Link")}</span>
+            <span className="text-[12px] text-neutral-400">{t("Inglês · 1 tópico vinculado")}</span>
           </div>
         </div>
       </ExamplePreview>

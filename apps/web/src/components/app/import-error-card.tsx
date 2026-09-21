@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { Warning } from "@phosphor-icons/react";
 import { Button, Card } from "@/components/ui";
 import { importErrorHelp, withPlanUnchanged } from "@/api/imports";
@@ -17,9 +18,20 @@ interface Props {
 }
 
 /** Cartão de erro de importação (tela 15 do design): contorno de erro, aviso, título 14/500, mensagem 13 e duas ações de 40px. */
-export function ImportErrorCard({ fileName, message, code, onRetry, retryLabel = "Tentar outro arquivo", onPasteText, pasteLabel = "Colar como texto", className }: Props) {
+export function ImportErrorCard({
+  fileName,
+  message,
+  code,
+  onRetry,
+  retryLabel = t("Tentar outro arquivo"),
+  onPasteText,
+  pasteLabel = t("Colar como texto"),
+  className,
+}: Props) {
   const help = importErrorHelp(code);
-  const title = fileName ? `Não foi possível importar "${fileName}"` : "Não foi possível importar o conteúdo";
+  const title = fileName
+    ? t('Não foi possível importar "{{v0}}"', { v0: fileName })
+    : t("Não foi possível importar o conteúdo");
   return (
     <Card role="alert" className={cn("gap-[10px] p-[14px] shadow-inset-error", className)}>
       <div className="flex items-start gap-[10px]">

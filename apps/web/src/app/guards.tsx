@@ -1,8 +1,9 @@
+import { t } from "@/i18n";
 import { Navigate, Outlet, useLocation } from "react-router";
 import { useSession } from "@/api/session";
 import { Spinner } from "@/components/ui";
 
-export function FullPageLoading({ label = "Carregando" }: { label?: string }) {
+export function FullPageLoading({ label = t("Carregando") }: { label?: string }) {
   return (
     <div className="grid min-h-dvh place-items-center bg-canvas" role="status" aria-label={label}>
       <Spinner className="h-6 w-6" />
@@ -16,7 +17,8 @@ export function RequireAuth() {
   const loc = useLocation();
   if (isPending) return <FullPageLoading />;
   if (!data) return <Navigate to="/entrar" replace state={{ from: loc.pathname + loc.search }} />;
-  if (!data.user.onboarding_completed_at && !loc.pathname.startsWith("/onboarding")) return <Navigate to="/onboarding" replace />;
+  if (!data.user.onboarding_completed_at && !loc.pathname.startsWith("/onboarding"))
+    return <Navigate to="/onboarding" replace />;
   return <Outlet />;
 }
 

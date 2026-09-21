@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { Question } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useTourStore } from "./store";
@@ -18,8 +19,8 @@ export function TourHelpButton({ className, inline = false }: { className?: stri
         inline ? "" : "fixed right-5 top-4 z-30 hidden tablet:flex",
         className,
       )}
-      aria-label={`Ver o tour desta página: ${page.title}`}
-      title="Ver o tour desta página"
+      aria-label={t("Ver o tour desta página: {{v0}}", { v0: page.title })}
+      title={t("Ver o tour desta página")}
     >
       <Question size={18} weight="bold" aria-hidden />
     </button>

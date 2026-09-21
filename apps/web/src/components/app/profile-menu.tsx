@@ -2,6 +2,7 @@
  * Menu de perfil: avatar com a inicial, nome e e-mail, atalhos de conta e "Sair" sempre à mão.
  * Aparece na barra lateral (tablet/desktop) e no cabeçalho do celular.
  */
+import { t } from "@/i18n";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Link } from "react-router";
 import { CreditCard, Gear, ShieldCheck, SignOut, Sparkle, UserCircle } from "@phosphor-icons/react";
@@ -20,12 +21,24 @@ export function Avatar({ size = 32, className }: { size?: number; className?: st
   const user = useUser();
   const url = avatarUrl(user);
   if (url) {
-    return <img src={url} alt="" width={size} height={size} className={cn("shrink-0 rounded-full object-cover", className)} style={{ width: size, height: size }} />;
+    return (
+      <img
+        src={url}
+        alt=""
+        width={size}
+        height={size}
+        className={cn("shrink-0 rounded-full object-cover", className)}
+        style={{ width: size, height: size }}
+      />
+    );
   }
   return (
     <span
       aria-hidden
-      className={cn("flex shrink-0 items-center justify-center rounded-full bg-accent-800 font-semibold text-accent-100", className)}
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-full bg-accent-800 font-semibold text-accent-100",
+        className,
+      )}
       style={{ width: size, height: size, fontSize: Math.round(size * 0.44) }}
     >
       {initial(user?.name, user?.email)}
@@ -33,10 +46,17 @@ export function Avatar({ size = 32, className }: { size?: number; className?: st
   );
 }
 
-const item =
-  "flex cursor-pointer select-none items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[14px] text-primary outline-none data-[highlighted]:bg-accent-900 data-[highlighted]:text-accent";
+const item = t(
+  "flex cursor-pointer select-none items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[14px] text-primary outline-none data-[highlighted]:bg-accent-900 data-[highlighted]:text-accent",
+);
 
-export function ProfileMenu({ trigger, align = "end" }: { trigger: React.ReactNode; align?: "start" | "end" | "center" }) {
+export function ProfileMenu({
+  trigger,
+  align = "end",
+}: {
+  trigger: React.ReactNode;
+  align?: "start" | "end" | "center";
+}) {
   const user = useUser();
   const online = useOnline();
   const { leave, dialog } = useLogoutFlow(online);
@@ -55,29 +75,29 @@ export function ProfileMenu({ trigger, align = "end" }: { trigger: React.ReactNo
             <div className="flex items-center gap-3 px-3 py-2.5">
               <Avatar size={40} />
               <div className="min-w-0">
-                <p className="m-0 truncate text-[14px] font-medium">{user.name || "Sua conta"}</p>
+                <p className="m-0 truncate text-[14px] font-medium">{user.name || t("Sua conta")}</p>
                 <p className="m-0 truncate text-[12px] text-neutral-400">{user.email}</p>
               </div>
             </div>
             <DropdownMenu.Separator className="my-1 h-px bg-divider" />
             <DropdownMenu.Item asChild className={item}>
               <Link to="/app/preferencias#conta">
-                <UserCircle size={18} aria-hidden /> Minha conta
+                <UserCircle size={18} aria-hidden /> {t("Minha conta")}
               </Link>
             </DropdownMenu.Item>
             <DropdownMenu.Item asChild className={item}>
               <Link to="/app/preferencias">
-                <Gear size={18} aria-hidden /> Preferências
+                <Gear size={18} aria-hidden /> {t("Preferências")}
               </Link>
             </DropdownMenu.Item>
             <DropdownMenu.Item asChild className={item}>
               <Link to="/app/planos">
-                <CreditCard size={18} aria-hidden /> Meu plano
+                <CreditCard size={18} aria-hidden /> {t("Meu plano")}
               </Link>
             </DropdownMenu.Item>
             <DropdownMenu.Item asChild className={item}>
               <Link to="/app/conquistas">
-                <Sparkle size={18} aria-hidden /> Conquistas
+                <Sparkle size={18} aria-hidden /> {t("Conquistas")}
               </Link>
             </DropdownMenu.Item>
             {user.role === "admin" ? (
@@ -85,14 +105,20 @@ export function ProfileMenu({ trigger, align = "end" }: { trigger: React.ReactNo
                 <DropdownMenu.Separator className="my-1 h-px bg-divider" />
                 <DropdownMenu.Item asChild className={item}>
                   <Link to="/admin">
-                    <ShieldCheck size={18} aria-hidden /> Painel administrativo
+                    <ShieldCheck size={18} aria-hidden /> {t("Painel administrativo")}
                   </Link>
                 </DropdownMenu.Item>
               </>
             ) : null}
             <DropdownMenu.Separator className="my-1 h-px bg-divider" />
-            <DropdownMenu.Item className={cn(item, "text-error data-[highlighted]:bg-error-tint data-[highlighted]:text-error")} onSelect={leave}>
-              <SignOut size={18} aria-hidden /> Sair da conta
+            <DropdownMenu.Item
+              className={cn(
+                item,
+                "text-error data-[highlighted]:bg-error-tint data-[highlighted]:text-error",
+              )}
+              onSelect={leave}
+            >
+              <SignOut size={18} aria-hidden /> {t("Sair da conta")}
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>

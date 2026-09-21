@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { uuid } from "./utils";
 
 const KEY = "estudatta.device_id";
@@ -25,7 +26,11 @@ export function detectTimezone(): string {
 }
 
 /** O app está aberto como app instalado (tela inicial / janela própria), não numa aba do navegador. */
-export function isStandalone(win: Pick<Window, "matchMedia" | "navigator"> | undefined = typeof window === "undefined" ? undefined : window): boolean {
+export function isStandalone(
+  win: Pick<Window, "matchMedia" | "navigator"> | undefined = typeof window === "undefined"
+    ? undefined
+    : window,
+): boolean {
   if (!win) return false;
   try {
     if (win.matchMedia?.("(display-mode: standalone)").matches) return true;
@@ -75,7 +80,9 @@ function parseVer(v: string | undefined): number | null {
 export function iosVersion(ua: string = currentUA(), hints: DeviceHints = currentHints()): number | null {
   if (!isIOS(ua, hints)) return null;
   const os = parseVer(/OS (\d+[_.]\d+)/.exec(ua)?.[1] ?? /OS (\d+) like/.exec(ua)?.[1]);
-  const safari = /(?:CriOS|FxiOS|EdgiOS)/.test(ua) ? null : parseVer(/Version\/(\d+(?:\.\d+)?)/.exec(ua)?.[1]);
+  const safari = /(?:CriOS|FxiOS|EdgiOS)/.test(ua)
+    ? null
+    : parseVer(/Version\/(\d+(?:\.\d+)?)/.exec(ua)?.[1]);
   const macOs = /Macintosh/.test(ua) ? null : os; // iPad em modo desktop traz "Mac OS X 10_15"
   const v = Math.max(macOs ?? 0, safari ?? 0);
   return v > 0 ? v : null;
@@ -126,7 +133,8 @@ export interface InstallEnv {
   pushCapable: boolean;
 }
 
-const IN_APP = /FBAN|FBAV|FB_IAB|Instagram|Line\/|TikTok|musical_ly|BytedanceWebview|Snapchat|Twitter|LinkedInApp|Pinterest/i;
+const IN_APP =
+  /FBAN|FBAV|FB_IAB|Instagram|Line\/|TikTok|musical_ly|BytedanceWebview|Snapchat|Twitter|LinkedInApp|Pinterest/i;
 
 export function isInAppBrowser(ua: string = currentUA()): boolean {
   return IN_APP.test(ua) || /; wv\)/.test(ua);
@@ -145,16 +153,30 @@ export function detectInstallEnv(ua: string = currentUA(), hints: DeviceHints = 
   const group: PlatformGroup = ios ? "ios" : android ? "android" : "desktop";
   const base = { group, mobile: ios || android, iosVersion: iv, pushCapable };
 
-  if ((ios || android) && isInAppBrowser(ua)) return { ...base, platform: "in-app", browser: "navegador do app" };
+  if ((ios || android) && isInAppBrowser(ua))
+    return { ...base, platform: "in-app", browser: t("navegador do app") };
 
   if (ios) {
-    const other = /CriOS/.test(ua) ? "Chrome" : /FxiOS/.test(ua) ? "Firefox" : /EdgiOS/.test(ua) ? "Edge" : /OPiOS|OPT\//.test(ua) ? "Opera" : /DuckDuckGo/.test(ua) ? "DuckDuckGo" : /GSA\//.test(ua) ? "Google" : null;
+    const other = /CriOS/.test(ua)
+      ? t("Chrome")
+      : /FxiOS/.test(ua)
+        ? t("Firefox")
+        : /EdgiOS/.test(ua)
+          ? t("Edge")
+          : /OPiOS|OPT\//.test(ua)
+            ? t("Opera")
+            : /DuckDuckGo/.test(ua)
+              ? "DuckDuckGo"
+              : /GSA\//.test(ua)
+                ? t("Google")
+                : null;
     if (!other) return { ...base, platform: "ios-safari", browser: "Safari" };
     return { ...base, platform: pushCapable ? "ios-other" : "ios-other-legacy", browser: other };
   }
 
   if (android) {
-    if (/SamsungBrowser/.test(ua)) return { ...base, platform: "android-samsung", browser: "Samsung Internet" };
+    if (/SamsungBrowser/.test(ua))
+      return { ...base, platform: "android-samsung", browser: t("Samsung Internet") };
     if (/Firefox\//.test(ua)) return { ...base, platform: "android-firefox", browser: "Firefox" };
     if (/EdgA\//.test(ua)) return { ...base, platform: "android-other", browser: "Edge" };
     if (/OPR\/|Opera/.test(ua)) return { ...base, platform: "android-other", browser: "Opera" };
@@ -174,10 +196,18 @@ export function detectInstallEnv(ua: string = currentUA(), hints: DeviceHints = 
 }
 
 /** Plataforma de instalação deste navegador (atalho de `detectInstallEnv`). */
-export function detectInstallPlatform(ua: string = currentUA(), hints: DeviceHints = currentHints()): InstallPlatform {
+export function detectInstallPlatform(
+  ua: string = currentUA(),
+  hints: DeviceHints = currentHints(),
+): InstallPlatform {
   return detectInstallEnv(ua, hints).platform;
 }
 
 export function supportsPush(): boolean {
-  return typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  return (
+    typeof window !== "undefined" &&
+    "serviceWorker" in navigator &&
+    "PushManager" in window &&
+    "Notification" in window
+  );
 }

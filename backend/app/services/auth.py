@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.errors import ApiError, Conflict, Unauthorized, ValidationFailed
+from app.core.i18n import normalize_locale
 from app.core.security import (
     generate_token,
     hash_password,
@@ -51,6 +52,7 @@ def create_user(
     timezone: str = "America/Sao_Paulo",
     google_sub: str | None = None,
     email_verified: bool = False,
+    locale: str = "pt-BR",
 ) -> User:
     email = normalize_email(email)
     if db.execute(select(User).where(User.email == email)).scalar_one_or_none() is not None:
@@ -64,6 +66,7 @@ def create_user(
         password_hash=hash_password(password) if password else None,
         name=name.strip()[:120],
         timezone=timezone,
+        locale=normalize_locale(locale) or "pt-BR",
         google_sub=google_sub,
         email_verified_at=utcnow() if email_verified else None,
     )

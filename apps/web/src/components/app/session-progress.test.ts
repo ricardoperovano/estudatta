@@ -18,12 +18,28 @@ describe("session-progress", () => {
 
   it("formata o marcador", () => {
     expect(fmtBookmark(null)).toBeNull();
-    expect(fmtBookmark({ id: "1", title: "Dom Casmurro", kind: "physical", current_page: 42, pages_total: 200, last_position: null, percent: 21 })).toBe(
-      "Dom Casmurro · p. 42 de 200",
-    );
-    expect(fmtBookmark({ id: "1", title: "Livro", kind: "physical", current_page: null, pages_total: null, last_position: null, percent: null })).toBe(
-      "Livro · ainda sem marcador",
-    );
+    expect(
+      fmtBookmark({
+        id: "1",
+        title: "Dom Casmurro",
+        kind: "physical",
+        current_page: 42,
+        pages_total: 200,
+        last_position: null,
+        percent: 21,
+      }),
+    ).toBe("Dom Casmurro · p. 42 de 200");
+    expect(
+      fmtBookmark({
+        id: "1",
+        title: "Livro",
+        kind: "physical",
+        current_page: null,
+        pages_total: null,
+        last_position: null,
+        percent: null,
+      }),
+    ).toBe("Livro · ainda sem marcador");
   });
 
   it("valida páginas lidas", () => {

@@ -1,4 +1,5 @@
 /** Estado da conversa com o Tatá fora do componente: mensagens em sessionStorage, perguntas rápidas e a linha de cotas. */
+import { t } from "@/i18n";
 import type { TataMood } from "./TataSvg";
 
 export interface ChatMessage {
@@ -11,14 +12,24 @@ export interface ChatMessage {
 export const CHAT_STORE_KEY = "estudatta.tata.chat";
 export const CHAT_KEEP = 20;
 
-export const QUICK_QUESTIONS = ["Como está meu dia?", "O que eu estudo agora?", "Tenho revisões hoje?", "Estou sem ânimo", "Como funciona a recuperação?"];
+export const QUICK_QUESTIONS = [
+  t("Como está meu dia?"),
+  t("O que eu estudo agora?"),
+  t("Tenho revisões hoje?"),
+  t("Estou sem ânimo"),
+  t("Como funciona a recuperação?"),
+];
 
 export function readStored(): ChatMessage[] {
   try {
     const raw = sessionStorage.getItem(CHAT_STORE_KEY);
     if (!raw) return [];
     const list = JSON.parse(raw) as ChatMessage[];
-    return Array.isArray(list) ? list.filter((m) => m && (m.role === "user" || m.role === "tata") && typeof m.text === "string").slice(-CHAT_KEEP) : [];
+    return Array.isArray(list)
+      ? list
+          .filter((m) => m && (m.role === "user" || m.role === "tata") && typeof m.text === "string")
+          .slice(-CHAT_KEEP)
+      : [];
   } catch {
     return [];
   }
@@ -35,6 +46,9 @@ export function writeStored(list: ChatMessage[]) {
 
 /** "N conversas restantes hoje · M no mês" (sem o mês quando o plano não limita por mês). */
 export function creditsLine(remainingToday: number, remainingMonth: number | null): string {
-  const today = `${remainingToday} ${remainingToday === 1 ? "conversa restante" : "conversas restantes"} hoje`;
-  return remainingMonth === null ? today : `${today} · ${remainingMonth} no mês`;
+  const today = t("{{v0}} {{v1}} hoje", {
+    v0: remainingToday,
+    v1: remainingToday === 1 ? t("conversa restante") : t("conversas restantes"),
+  });
+  return remainingMonth === null ? today : t("{{v0}} · {{v1}} no mês", { v0: today, v1: remainingMonth });
 }

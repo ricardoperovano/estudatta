@@ -1,10 +1,21 @@
+import { t } from "@/i18n";
 import { LanguageSelect } from "@/components/app/language-select";
 import { DEFAULT_LANGUAGE, languageShortName, type LanguageCode } from "@/lib/languages";
 import * as React from "react";
 import { useNavigate } from "react-router";
 import { ArrowRight } from "@phosphor-icons/react";
 import { Symbol } from "@/components/app/brand";
-import { Banner, Button, DayPicker, DurationStepper, Field, Input, RadioGroup, RadioItem, Seg } from "@/components/ui";
+import {
+  Banner,
+  Button,
+  DayPicker,
+  DurationStepper,
+  Field,
+  Input,
+  RadioGroup,
+  RadioItem,
+  Seg,
+} from "@/components/ui";
 import { useCompleteOnboarding, useCreateActivity } from "@/api/queries";
 import { useUser } from "@/api/session";
 import { errorMessage, api, unwrap } from "@/api/client";
@@ -14,12 +25,19 @@ import { cn } from "@/lib/utils";
 
 type Category = "idioma" | "concurso" | "outro_estudo" | "leitura" | "pratica" | "personalizado";
 const categories: { value: Category; label: string; sample: string }[] = [
-  { value: "idioma", label: "Idiomas (inglês, espanhol, Libras…)", sample: "Inglês" },
-  { value: "concurso", label: "Concurso", sample: "Concurso" },
-  { value: "outro_estudo", label: "Outro estudo", sample: "Faculdade" },
-  { value: "pratica", label: "Atividade ou rotina", sample: "Violão" },
+  { value: "idioma", label: t("Idiomas (inglês, espanhol, Libras…)"), sample: t("Inglês") },
+  { value: "concurso", label: t("Concurso"), sample: "Concurso" },
+  { value: "outro_estudo", label: t("Outro estudo"), sample: "Faculdade" },
+  { value: "pratica", label: t("Atividade ou rotina"), sample: t("Violão") },
 ];
-const kickerOf: Record<Category, string> = { idioma: "Idiomas", concurso: "Concurso", outro_estudo: "Estudo", leitura: "Leitura", pratica: "Prática", personalizado: "Atividade" };
+const kickerOf: Record<Category, string> = {
+  idioma: "Idiomas",
+  concurso: "Concurso",
+  outro_estudo: "Estudo",
+  leitura: "Leitura",
+  pratica: t("Prática"),
+  personalizado: "Atividade",
+};
 
 /**
  * Onboarding em 4 etapas curtas (progresso 2px): o que acompanhar → nome e resultado →
@@ -40,7 +58,9 @@ export default function OnboardingPage() {
   const [days, setDays] = React.useState([0, 1, 2, 3, 4]);
   const [start, setStart] = React.useState(todayIso());
   const [reminder, setReminder] = React.useState("19:30");
-  const [policy, setPolicy] = React.useState<"accumulate_suggest" | "accumulate" | "none">("accumulate_suggest");
+  const [policy, setPolicy] = React.useState<"accumulate_suggest" | "accumulate" | "none">(
+    "accumulate_suggest",
+  );
   const [tone, setTone] = React.useState<"acolhedor" | "direto" | "firme">("acolhedor");
   const [limit, setLimit] = React.useState(120);
   const [error, setError] = React.useState<string | null>(null);
@@ -51,7 +71,15 @@ export default function OnboardingPage() {
     setError(null);
     try {
       await create.mutateAsync({
-        title: (title || (category === "idioma" ? languageShortName(language) : category ? categories.find((c) => c.value === category)?.sample : "") || "Estudo").trim(),
+        title: (
+          title ||
+          (category === "idioma"
+            ? languageShortName(language)
+            : category
+              ? categories.find((c) => c.value === category)?.sample
+              : "") ||
+          t("Estudo")
+        ).trim(),
         category: category || "outro_estudo",
         language: category === "idioma" ? language : null,
         tracking_mode: category === "pratica" && !skipDetails ? "time" : "time",
@@ -66,7 +94,9 @@ export default function OnboardingPage() {
       });
       try {
         await api.PATCH("/api/v1/me/preferences", { body: { tone } });
-        await api.PATCH("/api/v1/notifications/preferences", { body: { reminder_time: reminder, reminder_days: days } as never });
+        await api.PATCH("/api/v1/notifications/preferences", {
+          body: { reminder_time: reminder, reminder_days: days } as never,
+        });
       } catch {
         /* preferências podem ser ajustadas depois */
       }
@@ -93,8 +123,10 @@ export default function OnboardingPage() {
       <div className="glow-top-right flex min-h-dvh flex-col">
         <div className="mx-auto flex w-full max-w-[440px] flex-1 flex-col gap-[18px] px-5 pb-6 pt-[max(64px,calc(40px+env(safe-area-inset-top,0px)))]">
           <Symbol size={40} />
-          <h1 className="mt-2 text-[32px] leading-[1.1]">O que você quer acompanhar?</h1>
-          <p className="text-[15px] text-neutral-300">Você define a meta. O plano mostra o que fazer hoje e como retomar se atrasar.</p>
+          <h1 className="mt-2 text-[32px] leading-[1.1]">{t("O que você quer acompanhar?")}</h1>
+          <p className="text-[15px] text-neutral-300">
+            {t("Você define a meta. O plano mostra o que fazer hoje e como retomar se atrasar.")}
+          </p>
           <div className="mt-2 flex flex-col gap-2">
             {categories.map((c, i) => (
               <Button
@@ -112,9 +144,17 @@ export default function OnboardingPage() {
               </Button>
             ))}
           </div>
-          <p className="mb-6 mt-auto text-[13px] text-neutral-500">Você organiza aqui o estudo que acontece em cursos, livros, vídeos e aulas. Sem promessas de aprovação ou fluência.</p>
-          <button type="button" onClick={skipAll} className="self-start text-[13px] text-neutral-500 underline-offset-4 hover:underline">
-            Pular por agora
+          <p className="mb-6 mt-auto text-[13px] text-neutral-500">
+            {t(
+              "Você organiza aqui o estudo que acontece em cursos, livros, vídeos e aulas. Sem promessas de aprovação ou fluência.",
+            )}
+          </p>
+          <button
+            type="button"
+            onClick={skipAll}
+            className="self-start text-[13px] text-neutral-500 underline-offset-4 hover:underline"
+          >
+            {t("Pular por agora")}
           </button>
         </div>
       </div>
@@ -123,7 +163,14 @@ export default function OnboardingPage() {
 
   const kicker = category ? kickerOf[category] : "";
   const progress = (
-    <div className="flex gap-1" aria-label={`Etapa ${step} de 3`} role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={3}>
+    <div
+      className="flex gap-1"
+      aria-label={t("Etapa {{v0}} de 3", { v0: step })}
+      role="progressbar"
+      aria-valuenow={step}
+      aria-valuemin={1}
+      aria-valuemax={3}
+    >
       {[1, 2, 3].map((i) => (
         <div key={i} className={cn("h-[2px] flex-1", i <= step ? "bg-accent" : "bg-neutral-800")} />
       ))}
@@ -139,51 +186,130 @@ export default function OnboardingPage() {
 
         {step === 1 ? (
           <>
-            <h1 className="text-[25px] leading-[1.15]">{category === "idioma" ? "Qual idioma?" : "Dê um nome ao objetivo"}</h1>
+            <h1 className="text-[25px] leading-[1.15]">
+              {category === "idioma" ? t("Qual idioma?") : t("Dê um nome ao objetivo")}
+            </h1>
             {category === "idioma" ? (
-              <Field label="Idioma" htmlFor="ob-language" hint="Mais de 90 idiomas. O nome do objetivo acompanha a escolha, e você pode mudar.">
+              <Field
+                label={t("Idioma")}
+                htmlFor="ob-language"
+                hint={t("Mais de 90 idiomas. O nome do objetivo acompanha a escolha, e você pode mudar.")}
+              >
                 <LanguageSelect id="ob-language" value={language} onChange={setLanguage} />
               </Field>
             ) : null}
-            <Field label="Nome" htmlFor="ob-title">
-              <Input id="ob-title" autoFocus={category !== "idioma"} placeholder={category === "idioma" ? (languageShortName(language) ?? "") : categories.find((c) => c.value === category)?.sample} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />
+            <Field label={t("Nome")} htmlFor="ob-title">
+              <Input
+                id="ob-title"
+                autoFocus={category !== "idioma"}
+                placeholder={
+                  category === "idioma"
+                    ? (languageShortName(language) ?? "")
+                    : categories.find((c) => c.value === category)?.sample
+                }
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                maxLength={120}
+              />
             </Field>
-            <Field label="Resultado desejado (opcional)" htmlFor="ob-outcome" hint="Ex.: conversar com segurança, passar na prova, terminar o livro.">
-              <Input id="ob-outcome" value={outcome} onChange={(e) => setOutcome(e.target.value)} maxLength={300} />
+            <Field
+              label={t("Resultado desejado (opcional)")}
+              htmlFor="ob-outcome"
+              hint={t("Ex.: conversar com segurança, passar na prova, terminar o livro.")}
+            >
+              <Input
+                id="ob-outcome"
+                value={outcome}
+                onChange={(e) => setOutcome(e.target.value)}
+                maxLength={300}
+              />
             </Field>
-            <Field label="Prazo final (opcional)" htmlFor="ob-deadline" hint="A data de uma prova, por exemplo.">
-              <Input id="ob-deadline" type="date" min={todayIso()} value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+            <Field
+              label={t("Prazo final (opcional)")}
+              htmlFor="ob-deadline"
+              hint={t("A data de uma prova, por exemplo.")}
+            >
+              <Input
+                id="ob-deadline"
+                type="date"
+                min={todayIso()}
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+              />
             </Field>
           </>
         ) : null}
 
         {step === 2 ? (
           <>
-            <h1 className="text-[25px] leading-[1.15]">Quanto tempo por dia?</h1>
+            <h1 className="text-[25px] leading-[1.15]">{t("Quanto tempo por dia?")}</h1>
             <DurationStepper minutes={minutes} onChange={setMinutes} size="lg" className="py-2" />
-            <Field label="Dias ativos" hint={`${Math.floor(weekMinutes / 60)} h${weekMinutes % 60 ? ` ${weekMinutes % 60} min` : ""} por semana`}>
+            <Field
+              label={t("Dias ativos")}
+              hint={t("{{v0}} h{{v1}} por semana", {
+                v0: Math.floor(weekMinutes / 60),
+                v1: weekMinutes % 60 ? " " + t("{{v0}} min", { v0: weekMinutes % 60 }) : "",
+              })}
+            >
               <DayPicker value={days} onChange={setDays} />
             </Field>
-            <Field label="Começar em" htmlFor="ob-start">
-              <Input id="ob-start" type="date" min={addDaysIso(todayIso(), -366)} value={start} onChange={(e) => setStart(e.target.value)} />
+            <Field label={t("Começar em")} htmlFor="ob-start">
+              <Input
+                id="ob-start"
+                type="date"
+                min={addDaysIso(todayIso(), -366)}
+                value={start}
+                onChange={(e) => setStart(e.target.value)}
+              />
             </Field>
-            <Field label="Lembrete" htmlFor="ob-reminder" hint="Nos dias ativos. Você ajusta o tom e o silêncio depois.">
-              <Input id="ob-reminder" type="time" value={reminder} onChange={(e) => setReminder(e.target.value)} />
+            <Field
+              label={t("Lembrete")}
+              htmlFor="ob-reminder"
+              hint={t("Nos dias ativos. Você ajusta o tom e o silêncio depois.")}
+            >
+              <Input
+                id="ob-reminder"
+                type="time"
+                value={reminder}
+                onChange={(e) => setReminder(e.target.value)}
+              />
             </Field>
-            <Field label="Se um dia ficar sem registro" hint="Acumular é o padrão: o tempo que faltou vira pendência visível e você decide como recuperar.">
-              <RadioGroup value={policy} onValueChange={(v) => setPolicy(v as typeof policy)} className="flex flex-col">
-                <RadioItem value="accumulate_suggest" label="Distribuir o tempo nos próximos dias" />
-                <RadioItem value="accumulate" label="Acumular e eu decido quando recuperar" />
-                <RadioItem value="none" label="Só me avisar, sem acumular" />
+            <Field
+              label={t("Se um dia ficar sem registro")}
+              hint={t(
+                "Acumular é o padrão: o tempo que faltou vira pendência visível e você decide como recuperar.",
+              )}
+            >
+              <RadioGroup
+                value={policy}
+                onValueChange={(v) => setPolicy(v as typeof policy)}
+                className="flex flex-col"
+              >
+                <RadioItem value="accumulate_suggest" label={t("Distribuir o tempo nos próximos dias")} />
+                <RadioItem value="accumulate" label={t("Acumular e eu decido quando recuperar")} />
+                <RadioItem value="none" label={t("Só me avisar, sem acumular")} />
               </RadioGroup>
             </Field>
             <details className="text-[13px] text-neutral-400">
-              <summary className="cursor-pointer">Opções avançadas</summary>
+              <summary className="cursor-pointer">{t("Opções avançadas")}</summary>
               <div className="mt-2 flex flex-col gap-2">
-                <Field label="Limite confortável por dia (minutos)" htmlFor="ob-limit" hint="Usado para não sugerir recuperação além do que cabe.">
-                  <Input id="ob-limit" type="number" min={minutes} max={1440} value={limit} onChange={(e) => setLimit(Number(e.target.value) || minutes)} />
+                <Field
+                  label={t("Limite confortável por dia (minutos)")}
+                  htmlFor="ob-limit"
+                  hint={t("Usado para não sugerir recuperação além do que cabe.")}
+                >
+                  <Input
+                    id="ob-limit"
+                    type="number"
+                    min={minutes}
+                    max={1440}
+                    value={limit}
+                    onChange={(e) => setLimit(Number(e.target.value) || minutes)}
+                  />
                 </Field>
-                <span>Fuso horário detectado: {tz}. Você pode mudar em Preferências.</span>
+                <span>
+                  {t("Fuso horário detectado: {{v0}}. Você pode mudar em Preferências.", { v0: tz })}
+                </span>
               </div>
             </details>
           </>
@@ -191,32 +317,65 @@ export default function OnboardingPage() {
 
         {step === 3 ? (
           <>
-            <h1 className="text-[25px] leading-[1.15]">Como quer ser lembrado?</h1>
-            <Field label="Tom das mensagens">
-              <Seg block size="lg" label="Tom das mensagens" value={tone} onChange={setTone} options={[{ value: "acolhedor", label: "Acolhedor" }, { value: "direto", label: "Direto" }, { value: "firme", label: "Firme" }]} />
+            <h1 className="text-[25px] leading-[1.15]">{t("Como quer ser lembrado?")}</h1>
+            <Field label={t("Tom das mensagens")}>
+              <Seg
+                block
+                size="lg"
+                label={t("Tom das mensagens")}
+                value={tone}
+                onChange={setTone}
+                options={[
+                  { value: "acolhedor", label: t("Acolhedor") },
+                  { value: "direto", label: t("Direto") },
+                  { value: "firme", label: t("Firme") },
+                ]}
+              />
             </Field>
             <div className="flex items-start gap-[10px] rounded-md bg-surface p-3">
               <Symbol size={20} className="mt-0.5" />
               <div className="text-[14px]">
-                <span className="block text-[12px] text-neutral-400">Exemplo · {tone}</span>
-                {tone === "acolhedor" ? "Hoje dá para retomar. Vamos começar com 15 minutos?" : tone === "direto" ? `Faltam ${minutes} minutos para sua meta de hoje.` : "Você reservou este horário para estudar. Comece a sessão agora ou reagende."}
+                <span className="block text-[12px] text-neutral-400">
+                  {t("Exemplo · {{v0}}", { v0: tone })}
+                </span>
+                {tone === "acolhedor"
+                  ? t("Hoje dá para retomar. Vamos começar com 15 minutos?")
+                  : tone === "direto"
+                    ? t("Faltam {{v0}} minutos para sua meta de hoje.", { v0: minutes })
+                    : t("Você reservou este horário para estudar. Comece a sessão agora ou reagende.")}
               </div>
             </div>
-            <p className="text-[13px] text-neutral-400">Matérias, tópicos e materiais podem ser adicionados depois, na tela do objetivo. Você não precisa importar nada para começar.</p>
+            <p className="text-[13px] text-neutral-400">
+              {t(
+                "Matérias, tópicos e materiais podem ser adicionados depois, na tela do objetivo. Você não precisa importar nada para começar.",
+              )}
+            </p>
           </>
         ) : null}
 
         <div className="mt-auto flex gap-2 pb-6 pt-4">
           <Button type="button" variant="ghost" size="lg" onClick={() => setStep(step - 1)}>
-            Voltar
+            {t("Voltar")}
           </Button>
           {step < 3 ? (
-            <Button type="button" size="lg" className="flex-1" onClick={() => setStep(step + 1)} disabled={step === 2 && days.length === 0}>
-              Continuar
+            <Button
+              type="button"
+              size="lg"
+              className="flex-1"
+              onClick={() => setStep(step + 1)}
+              disabled={step === 2 && days.length === 0}
+            >
+              {t("Continuar")}
             </Button>
           ) : (
-            <Button type="button" size="lg" className="flex-1" loading={create.isPending || complete.isPending} onClick={() => finish()}>
-              Concluir
+            <Button
+              type="button"
+              size="lg"
+              className="flex-1"
+              loading={create.isPending || complete.isPending}
+              onClick={() => finish()}
+            >
+              {t("Concluir")}
             </Button>
           )}
         </div>

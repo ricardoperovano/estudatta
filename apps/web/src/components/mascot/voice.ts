@@ -5,6 +5,7 @@
  * neste aparelho em localStorage; no iOS o primeiro áudio precisa de um toque, e é o toque no
  * interruptor que libera. A voz respeita o mascote desligado e as falas ocultas (`useTataVoice`).
  */
+import { locale as uiLocale } from "@/i18n";
 import * as React from "react";
 import { fetchTataVoice, VOICE_FALLBACK_CODES } from "@/api/tata";
 import { ApiError } from "@/api/client";
@@ -75,13 +76,21 @@ export interface VoiceLike {
   default?: boolean;
 }
 
-/** pt-BR primeiro (a padrão do sistema, se houver), depois qualquer português; senão a padrão (null). */
-export function pickVoice<T extends VoiceLike>(voices: readonly T[]): T | null {
+/**
+ * Voz no idioma da interface: a variante exata primeiro (pt-BR / en-US, a padrão do sistema se
+ * houver), depois qualquer voz do mesmo idioma; senão a padrão (null).
+ */
+export function pickVoice<T extends VoiceLike>(
+  voices: readonly T[],
+  lang: string = uiLocale === "en" ? "en-US" : "pt-BR",
+): T | null {
   const norm = (l: string) => (l || "").toLowerCase().replace("_", "-");
-  const br = voices.filter((v) => norm(v.lang) === "pt-br" || norm(v.lang).startsWith("pt-br"));
-  if (br.length) return br.find((v) => v.default) ?? br[0];
-  const pt = voices.filter((v) => norm(v.lang).startsWith("pt"));
-  if (pt.length) return pt.find((v) => v.default) ?? pt[0];
+  const exact = norm(lang);
+  const base = exact.split("-")[0];
+  const same = voices.filter((v) => norm(v.lang) === exact || norm(v.lang).startsWith(exact));
+  if (same.length) return same.find((v) => v.default) ?? same[0];
+  const any = voices.filter((v) => norm(v.lang).startsWith(base));
+  if (any.length) return any.find((v) => v.default) ?? any[0];
   return null;
 }
 
@@ -155,7 +164,7 @@ function speakWithDevice(text: string, mySeq: number): void {
       // com a voz escolhida o idioma vem dela; definir os dois faz o Chrome no Linux
       // (speech-dispatcher) falar duas vezes em alguns sistemas
       if (v) u.voice = v;
-      else u.lang = "pt-BR";
+      else u.lang = uiLocale === "en" ? "en-US" : "pt-BR";
       u.onstart = () => mySeq === seq && setSpeaking(true);
       u.onend = () => mySeq === seq && setSpeaking(false);
       u.onerror = () => mySeq === seq && setSpeaking(false);

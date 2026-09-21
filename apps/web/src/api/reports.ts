@@ -1,4 +1,5 @@
 /** Relatório de constância: resumo por período, histórico editável de sessões, progresso de conteúdo e exportação CSV. */
+import { t } from "@/i18n";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, rawFetch, unwrap, ApiError } from "./client";
 import type { components } from "./schema";
@@ -17,14 +18,23 @@ export type ReportPeriod = "week" | "month" | "quarter";
 
 export const reportKeys = {
   all: ["reports"] as const,
-  summary: (period: string, date: string, activityId: string | null) => ["reports", "summary", period, date, activityId] as const,
+  summary: (period: string, date: string, activityId: string | null) =>
+    ["reports", "summary", period, date, activityId] as const,
   sessions: (f: Record<string, unknown>) => ["reports", "sessions", f] as const,
   content: (activityId: string) => ["reports", "content", activityId] as const,
   revisions: (sessionId: string) => ["sessions", sessionId, "revisions"] as const,
 };
 
-async function fetchSummary(period: "week" | "month", date: string, activityId: string | null): Promise<SummaryOut> {
-  return unwrap(await api.GET("/api/v1/reports/summary", { params: { query: { period, date, activity_id: activityId ?? undefined } } }));
+async function fetchSummary(
+  period: "week" | "month",
+  date: string,
+  activityId: string | null,
+): Promise<SummaryOut> {
+  return unwrap(
+    await api.GET("/api/v1/reports/summary", {
+      params: { query: { period, date, activity_id: activityId ?? undefined } },
+    }),
+  );
 }
 
 /** Primeiro dia do mês que contém `iso`, deslocado `offset` meses. */
@@ -90,7 +100,10 @@ export function mergeSummaries(parts: SummaryOut[]): SummaryOut {
     per_day: parts.flatMap((p) => p.per_day),
     sessions_count: sessions,
     avg_session_seconds: sessions ? Math.round(totalDuration / sessions) : 0,
-    reading: parts.map((p) => p.reading).filter(Boolean).join(" "),
+    reading: parts
+      .map((p) => p.reading)
+      .filter(Boolean)
+      .join(" "),
   };
 }
 
@@ -125,13 +138,27 @@ export function useReportSummary(period: ReportPeriod, date: string, activityId:
   } as const;
 }
 
-export function useReportSessions(f: { start: string; end: string; activity_id: string | null; limit?: number; offset?: number }) {
+export function useReportSessions(f: {
+  start: string;
+  end: string;
+  activity_id: string | null;
+  limit?: number;
+  offset?: number;
+}) {
   return useQuery({
     queryKey: reportKeys.sessions(f),
     queryFn: async () =>
       unwrap(
         await api.GET("/api/v1/reports/sessions", {
-          params: { query: { start: f.start, end: f.end, activity_id: f.activity_id ?? undefined, limit: f.limit ?? 50, offset: f.offset ?? 0 } },
+          params: {
+            query: {
+              start: f.start,
+              end: f.end,
+              activity_id: f.activity_id ?? undefined,
+              limit: f.limit ?? 50,
+              offset: f.offset ?? 0,
+            },
+          },
         }),
       ) as ReportSessionOut[],
     staleTime: 30_000,
@@ -142,7 +169,10 @@ export function useContentReports(activityIds: string[]) {
   return useQueries({
     queries: activityIds.map((id) => ({
       queryKey: reportKeys.content(id),
-      queryFn: async () => unwrap(await api.GET("/api/v1/reports/content", { params: { query: { activity_id: id } } })) as ContentReportOut,
+      queryFn: async () =>
+        unwrap(
+          await api.GET("/api/v1/reports/content", { params: { query: { activity_id: id } } }),
+        ) as ContentReportOut,
       staleTime: 60_000,
     })),
   });
@@ -152,7 +182,12 @@ export function useSessionRevisions(sessionId: string | null) {
   return useQuery({
     queryKey: reportKeys.revisions(sessionId || ""),
     enabled: !!sessionId,
-    queryFn: async () => unwrap(await api.GET("/api/v1/sessions/{session_id}/revisions", { params: { path: { session_id: sessionId! } } })) as SessionRevisionOut[],
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/sessions/{session_id}/revisions", {
+          params: { path: { session_id: sessionId! } },
+        }),
+      ) as SessionRevisionOut[],
   });
 }
 
@@ -171,7 +206,9 @@ export function useUpdateSession() {
   const invalidate = useInvalidateReports();
   return useMutation({
     mutationFn: async ({ id, body }: { id: string; body: SessionUpdate }) =>
-      unwrap(await api.PATCH("/api/v1/sessions/{session_id}", { params: { path: { session_id: id } }, body })),
+      unwrap(
+        await api.PATCH("/api/v1/sessions/{session_id}", { params: { path: { session_id: id } }, body }),
+      ),
     onSuccess: invalidate,
   });
 }
@@ -180,7 +217,11 @@ export function useDeleteSession() {
   const invalidate = useInvalidateReports();
   return useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason: string | null }) =>
-      unwrap(await api.DELETE("/api/v1/sessions/{session_id}", { params: { path: { session_id: id }, query: { reason: reason || undefined } } })),
+      unwrap(
+        await api.DELETE("/api/v1/sessions/{session_id}", {
+          params: { path: { session_id: id }, query: { reason: reason || undefined } },
+        }),
+      ),
     onSuccess: invalidate,
   });
 }
@@ -189,7 +230,7 @@ export function useDeleteSession() {
 export async function downloadFile(path: string, fallbackName: string): Promise<void> {
   const res = await rawFetch(path);
   if (!res.ok) {
-    let msg = `Erro ${res.status}`;
+    let msg = t("Erro {{v0}}", { v0: res.status });
     let code = "http_error";
     try {
       const body = (await res.json()) as { error?: { message?: string; code?: string } };

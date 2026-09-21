@@ -31,7 +31,11 @@ export function Tag({ className, variant = "neutral", icon, children, ...props }
   const ic = icon === false ? null : (icon ?? icons[variant]);
   return (
     <span
-      className={cn("inline-flex items-center gap-1 rounded-[6px] px-[10px] py-[3px] text-[11px] tracking-[0.02em] whitespace-nowrap", styles[variant], className)}
+      className={cn(
+        "inline-flex items-center gap-1 whitespace-nowrap rounded-[6px] px-[10px] py-[3px] text-[11px] tracking-[0.02em]",
+        styles[variant],
+        className,
+      )}
       {...props}
     >
       {ic}

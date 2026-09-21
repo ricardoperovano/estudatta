@@ -26,7 +26,9 @@ registerRoute(
   ({ url, request }) =>
     request.method === "GET" &&
     url.pathname.startsWith("/api/v1/") &&
-    /^\/api\/v1\/(dashboard|activities|tasks|calendar|reports|notifications|materials|subjects)/.test(url.pathname) &&
+    /^\/api\/v1\/(dashboard|activities|tasks|calendar|reports|notifications|materials|subjects)/.test(
+      url.pathname,
+    ) &&
     !url.pathname.startsWith("/api/v1/files"),
   new NetworkFirst({
     cacheName: "estudatta-api-read",
@@ -38,7 +40,10 @@ registerRoute(
 // Fontes/ícones
 registerRoute(
   ({ request }) => request.destination === "font" || request.destination === "image",
-  new CacheFirst({ cacheName: "estudatta-static", plugins: [new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 })] }),
+  new CacheFirst({
+    cacheName: "estudatta-static",
+    plugins: [new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 })],
+  }),
 );
 
 self.addEventListener("message", (event) => {

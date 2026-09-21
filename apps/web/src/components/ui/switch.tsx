@@ -11,7 +11,7 @@ export function Switch({ className, label, ...props }: Props) {
     <SwitchPrimitive.Root
       aria-label={label}
       className={cn(
-        "relative inline-flex h-[26px] w-[44px] shrink-0 cursor-pointer items-center rounded-full bg-neutral-800 transition-colors duration-base data-[state=checked]:bg-accent disabled:opacity-45",
+        "relative inline-flex h-[26px] w-[44px] shrink-0 cursor-pointer items-center rounded-full bg-neutral-800 transition-colors duration-base disabled:opacity-45 data-[state=checked]:bg-accent",
         className,
       )}
       {...props}

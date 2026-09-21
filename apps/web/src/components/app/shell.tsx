@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Outlet, useLocation } from "react-router";
@@ -44,12 +45,22 @@ export function AppShell() {
   return (
     <div className="app-backdrop flex min-h-dvh">
       <Sidebar />
-      <div className={"flex min-w-0 flex-1 flex-col tablet:pb-0 " + (fullScreen ? "pb-[env(safe-area-inset-bottom,0px)]" : "pb-[calc(var(--layout-bottom-nav-height)+env(safe-area-inset-bottom,0px))]")}>
+      <div
+        className={
+          "flex min-w-0 flex-1 flex-col tablet:pb-0" +
+          (fullScreen
+            ? "pb-[env(safe-area-inset-bottom,0px)]"
+            : "pb-[calc(var(--layout-bottom-nav-height)+env(safe-area-inset-bottom,0px))]")
+        }
+      >
         <MobileHeader />
         {!online ? (
           <div className="px-gutter pt-3">
             <Banner kind="offline">
-              <strong className="font-medium">Sem internet.</strong> Suas sessões ficam salvas neste aparelho. Vamos sincronizar quando você voltar à internet.
+              <strong className="font-medium">{t("Sem internet.")}</strong>{" "}
+              {t(
+                "Suas sessões ficam salvas neste aparelho. Vamos sincronizar quando você voltar à internet.",
+              )}
             </Banner>
           </div>
         ) : sync.status === "error" && sync.pending > 0 ? (
@@ -58,11 +69,11 @@ export function AppShell() {
               kind="error"
               actions={
                 <Button size="sm" variant="secondary" onClick={() => user && syncNow(user.id)}>
-                  Sincronizar agora
+                  {t("Sincronizar agora")}
                 </Button>
               }
             >
-              Não foi possível sincronizar {sync.pending} registro(s). Nada foi perdido.
+              {t("Não foi possível sincronizar {{v0}} registro(s). Nada foi perdido.", { v0: sync.pending })}
             </Banner>
           </div>
         ) : null}
@@ -72,11 +83,11 @@ export function AppShell() {
               kind="info"
               actions={
                 <Button size="sm" variant="primary" onClick={pwa.apply}>
-                  Atualizar agora
+                  {t("Atualizar agora")}
                 </Button>
               }
             >
-              Uma nova versão do Estudatta está pronta. Ela entra sozinha quando você sair da sessão.
+              {t("Uma nova versão do Estudatta está pronta. Ela entra sozinha quando você sair da sessão.")}
             </Banner>
           </div>
         ) : null}
@@ -84,7 +95,9 @@ export function AppShell() {
           className={cn(
             "mx-auto w-full max-w-content flex-1 px-gutter pb-6 max-xs:px-3 desktop:px-12 desktop:pt-10",
             // no celular o cabeçalho ocupa o topo; o cronômetro em tela cheia compensa este respiro
-            fullScreen ? "pt-[max(56px,calc(24px+env(safe-area-inset-top,0px)))]" : "pt-4 tablet:pt-[max(56px,calc(24px+env(safe-area-inset-top,0px)))] desktop:pt-10",
+            fullScreen
+              ? "pt-[max(56px,calc(24px+env(safe-area-inset-top,0px)))]"
+              : "pt-4 tablet:pt-[max(56px,calc(24px+env(safe-area-inset-top,0px)))] desktop:pt-10",
           )}
         >
           <Outlet />

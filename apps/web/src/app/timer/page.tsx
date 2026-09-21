@@ -1,3 +1,4 @@
+import { t as tx } from "@/i18n";
 import * as React from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -121,7 +122,7 @@ export default function TimerPage() {
       session_id: serverActive.id,
       client_uuid: serverActive.client_uuid || uuid(),
       activity_id: serverActive.activity_id,
-      activity_title: act?.title || "Objetivo",
+      activity_title: act?.title || tx("Objetivo"),
       subject_id: serverActive.subject_id,
       topic_id: serverActive.topic_id,
       study_type: serverActive.study_type,
@@ -157,7 +158,7 @@ export default function TimerPage() {
     if (!user) return;
     const id = activityId || cards[0]?.activity.id || activities.data?.[0]?.id;
     if (!id) {
-      setError("Crie um objetivo antes de começar uma sessão.");
+      setError(tx("Crie um objetivo antes de começar uma sessão."));
       return;
     }
     setError(null);
@@ -170,7 +171,7 @@ export default function TimerPage() {
       session_id: null,
       client_uuid,
       activity_id: id,
-      activity_title: act?.title || card?.activity.title || "Objetivo",
+      activity_title: act?.title || card?.activity.title || tx("Objetivo"),
       subject_id: subjectParam,
       topic_id: topicParam,
       study_type: studyType,
@@ -220,7 +221,10 @@ export default function TimerPage() {
           },
           client_uuid,
         );
-        toast.offline("Sessão iniciada neste aparelho", "Vamos sincronizar quando você voltar à internet.");
+        toast.offline(
+          tx("Sessão iniciada neste aparelho"),
+          tx("Vamos sincronizar quando você voltar à internet."),
+        );
       } else setError(errorMessage(e));
     } finally {
       setStarting(false);
@@ -306,8 +310,10 @@ export default function TimerPage() {
           return;
         }
         toast.success(
-          `${fmtMinutes(s.duration_seconds || 0)} registrados`,
-          s.status === "discarded" ? "Sessão sem tempo válido foi descartada." : "A pendência foi ajustada.",
+          tx("{{v0}} registrados", { v0: fmtMinutes(s.duration_seconds || 0) }),
+          s.status === "discarded"
+            ? tx("Sessão sem tempo válido foi descartada.")
+            : tx("A pendência foi ajustada."),
         );
         nav("/app");
       } else {
@@ -319,7 +325,10 @@ export default function TimerPage() {
           intervals: timer.intervals.map((i) => ({ ...i, ended_at: i.ended_at ?? at })),
         });
         await clearTimer(user.id);
-        toast.offline("Sessão encerrada neste aparelho", "Vamos sincronizar quando você voltar à internet.");
+        toast.offline(
+          tx("Sessão encerrada neste aparelho"),
+          tx("Vamos sincronizar quando você voltar à internet."),
+        );
         nav("/app");
       }
     } catch (e) {
@@ -332,7 +341,10 @@ export default function TimerPage() {
           ...extra,
         });
         await clearTimer(user.id);
-        toast.offline("Sessão encerrada neste aparelho", "Vamos sincronizar quando você voltar à internet.");
+        toast.offline(
+          tx("Sessão encerrada neste aparelho"),
+          tx("Vamos sincronizar quando você voltar à internet."),
+        );
         nav("/app");
       } else setError(errorMessage(e));
     } finally {
@@ -382,7 +394,7 @@ export default function TimerPage() {
     const chosen = activityId || list[0]?.id || "";
     return (
       <div className="mx-auto flex max-w-[440px] flex-col gap-4">
-        <h1 className="text-[25px]">Começar sessão</h1>
+        <h1 className="text-[25px]">{tx("Começar sessão")}</h1>
         {error ? <Banner kind="error">{error}</Banner> : null}
         {conflict || fromOtherDevice ? (
           <Banner
@@ -390,24 +402,24 @@ export default function TimerPage() {
             actions={
               <>
                 <Button size="sm" variant="secondary" onClick={takeOver}>
-                  Continuar neste aparelho
+                  {tx("Continuar neste aparelho")}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => nav("/app")}>
-                  Deixar como está
+                  {tx("Deixar como está")}
                 </Button>
               </>
             }
           >
-            Há uma sessão em andamento em outro aparelho. Você pode continuá-la aqui; nada é perdido.
+            {tx("Há uma sessão em andamento em outro aparelho. Você pode continuá-la aqui; nada é perdido.")}
           </Banner>
         ) : null}
         {list.length === 0 ? (
           <Banner kind="info">
-            Nenhum objetivo ativo. <Link to="/app/objetivos/novo">Criar objetivo</Link>
+            {tx("Nenhum objetivo ativo.")} <Link to="/app/objetivos/novo">{tx("Criar objetivo")}</Link>
           </Banner>
         ) : (
           <>
-            <Field label="Objetivo" htmlFor="t-activity" data-tour="sessao-objetivo">
+            <Field label={tx("Objetivo")} htmlFor="t-activity" data-tour="sessao-objetivo">
               <Select id="t-activity" value={chosen} onChange={(e) => setActivityId(e.target.value)}>
                 {list.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -422,8 +434,8 @@ export default function TimerPage() {
               </p>
             ) : null}
             <fieldset className="flex flex-col gap-2" data-tour="sessao-tipo">
-              <legend className="mb-2 text-[13px] text-neutral-300">Tipo de estudo</legend>
-              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Tipo de estudo">
+              <legend className="mb-2 text-[13px] text-neutral-300">{tx("Tipo de estudo")}</legend>
+              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={tx("Tipo de estudo")}>
                 {STUDY_TYPES.map((t) => (
                   <button
                     key={t.value}
@@ -447,10 +459,10 @@ export default function TimerPage() {
               </div>
             </fieldset>
             <Button size="xl" block loading={starting} onClick={start} autoFocus data-tour="sessao-comecar">
-              Começar sessão
+              {tx("Começar sessão")}
             </Button>
             <Button variant="ghost" size="lg" onClick={() => nav("/app?registrar=1")}>
-              Registrar manualmente
+              {tx("Registrar manualmente")}
             </Button>
           </>
         )}
@@ -476,7 +488,7 @@ export default function TimerPage() {
     <div className="glow-center -mx-gutter -mt-[max(56px,calc(24px+env(safe-area-inset-top,0px)))] flex min-h-dvh flex-col items-center gap-4 px-4 pb-6 pt-[max(56px,calc(24px+env(safe-area-inset-top,0px)))] text-center max-xs:-mx-3 desktop:-mx-12 desktop:-mt-10 desktop:min-h-dvh desktop:pt-10">
       <div className="flex w-full max-w-[560px] items-center justify-between">
         <Button variant="ghost-muted" size="md" onClick={() => nav("/app")}>
-          Minimizar
+          {tx("Minimizar")}
         </Button>
         <Tag variant="neutral">{label}</Tag>
       </div>
@@ -487,7 +499,7 @@ export default function TimerPage() {
       ) : null}
       {!timer.synced ? (
         <Banner kind="offline" className="w-full max-w-[560px] text-left">
-          Sessão salva neste aparelho. Vamos sincronizar quando você voltar à internet.
+          {tx("Sessão salva neste aparelho. Vamos sincronizar quando você voltar à internet.")}
         </Banner>
       ) : null}
       <TataCompanion
@@ -499,7 +511,9 @@ export default function TimerPage() {
         scene={{ kind: "timer", status: timer.status, elapsed, pausedFor, goalReached }}
       />
       <div className="flex flex-col items-center gap-[10px]" data-tour="sessao-relogio">
-        <span className="kicker text-neutral-400">{timer.status === "active" ? "Em sessão" : "Pausada"}</span>
+        <span className="kicker text-neutral-400">
+          {timer.status === "active" ? tx("Em sessão") : tx("Pausada")}
+        </span>
         <span
           className="tnum text-[72px] font-semibold leading-none tracking-[-0.02em] desktop:text-[96px]"
           aria-live="off"
@@ -509,8 +523,11 @@ export default function TimerPage() {
         {card?.summary && card.summary.next_step_seconds > 0 ? (
           <span className="tnum text-[14px] text-neutral-300">
             {remainingToday > 0
-              ? `Faltam ${fmtRemaining(remainingToday)} para os ${fmtMinutes(card.summary.next_step_seconds)} de hoje`
-              : "Meta de hoje alcançada nesta sessão"}
+              ? tx("Faltam {{v0}} para os {{v1}} de hoje", {
+                  v0: fmtRemaining(remainingToday),
+                  v1: fmtMinutes(card.summary.next_step_seconds),
+                })
+              : tx("Meta de hoje alcançada nesta sessão")}
           </span>
         ) : null}
         <div
@@ -519,7 +536,7 @@ export default function TimerPage() {
           aria-valuenow={Math.round(progress * 100)}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-label="Progresso da meta de hoje"
+          aria-label={tx("Progresso da meta de hoje")}
         >
           <div
             className="h-full bg-accent transition-[width] duration-slow"
@@ -537,7 +554,7 @@ export default function TimerPage() {
               onClick={() => transition("pause")}
               loading={busy}
             >
-              Pausar
+              {tx("Pausar")}
             </Button>
           ) : (
             <Button
@@ -547,7 +564,7 @@ export default function TimerPage() {
               onClick={() => transition("resume")}
               loading={busy}
             >
-              Retomar
+              {tx("Retomar")}
             </Button>
           )}
           <Button
@@ -557,19 +574,21 @@ export default function TimerPage() {
             onClick={() => setFinishOpen(true)}
             disabled={busy}
           >
-            Encerrar
+            {tx("Encerrar")}
           </Button>
         </div>
         <Button variant="ghost" size="sm" onClick={() => setAdjustOpen(true)}>
-          Ajustar tempo ou trocar conteúdo
+          {tx("Ajustar tempo ou trocar conteúdo")}
         </Button>
       </div>
 
       <Dialog open={finishOpen} onOpenChange={setFinishOpen}>
         <DialogContent
           mode="sheet"
-          title="Encerrar sessão"
-          description={`${fmtMinutes(elapsed)} de foco serão registrados. Pausas não contam.`}
+          title={tx("Encerrar sessão")}
+          description={tx("{{v0}} de foco serão registrados. Pausas não contam.", {
+            v0: fmtMinutes(elapsed),
+          })}
         >
           <FinishForm
             onConfirm={finish}
@@ -584,18 +603,19 @@ export default function TimerPage() {
       <Dialog open={adjustOpen} onOpenChange={setAdjustOpen}>
         <DialogContent
           mode="sheet"
-          title="Ajustar sessão"
-          description="Você pode encerrar agora e corrigir a duração, ou descartar."
+          title={tx("Ajustar sessão")}
+          description={tx("Você pode encerrar agora e corrigir a duração, ou descartar.")}
         >
           <div className="flex flex-col gap-2 text-left text-[14px] text-neutral-300">
             <p>
-              Trocar o conteúdo: ao encerrar, informe o que estudou na observação. A edição completa (matéria,
-              tópico, páginas) fica no histórico de sessões.
+              {tx(
+                "Trocar o conteúdo: ao encerrar, informe o que estudou na observação. A edição completa (matéria, tópico, páginas) fica no histórico de sessões.",
+              )}
             </p>
           </div>
           <DialogActions>
             <Button variant="ghost" onClick={discard} disabled={busy}>
-              Descartar sessão
+              {tx("Descartar sessão")}
             </Button>
             <Button
               variant="primary"
@@ -604,7 +624,7 @@ export default function TimerPage() {
                 setFinishOpen(true);
               }}
             >
-              Encerrar e ajustar
+              {tx("Encerrar e ajustar")}
             </Button>
           </DialogActions>
         </DialogContent>
@@ -674,22 +694,22 @@ function FinishForm({
       ) : null}
       <StudyFields compact idPrefix="t-study" value={study} onChange={setStudy} />
       {error ? <Banner kind="error">{error}</Banner> : null}
-      <Field label="O que você estudou (opcional)" htmlFor="f-note">
+      <Field label={tx("O que você estudou (opcional)")} htmlFor="f-note">
         <Input
           id="f-note"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder={reading ? "Capítulo 3 · até a p. 58" : "Vocabulário · lista 12"}
+          placeholder={reading ? tx("Capítulo 3 · até a p. 58") : tx("Vocabulário · lista 12")}
           maxLength={2000}
         />
       </Field>
       <NoteSuggestions category={activity?.category} note={note} onPick={setNote} />
       <DialogActions>
         <Button variant="ghost" onClick={onDiscard} disabled={busy}>
-          Descartar
+          {tx("Descartar")}
         </Button>
         <Button variant="primary" size="lg" onClick={submit} loading={busy}>
-          Registrar
+          {tx("Registrar")}
         </Button>
       </DialogActions>
     </div>
@@ -714,11 +734,11 @@ function ReviewDialog({ session, onDone }: { session: StudySession; onDone: () =
             duration_seconds: minutes * 60,
             resolve_review: true,
             clear_questions: false,
-            reason: "revisão de sessão longa",
+            reason: tx("revisão de sessão longa"),
           },
         }),
       );
-      toast.success(`${minutes} min registrados`);
+      toast.success(tx("{{v0}} min registrados", { v0: minutes }));
       onDone();
     } catch (e) {
       setError(errorMessage(e));
@@ -729,14 +749,16 @@ function ReviewDialog({ session, onDone }: { session: StudySession; onDone: () =
   return (
     <Dialog open onOpenChange={(o) => !o && onDone()}>
       <DialogContent
-        title="Confirme a duração"
-        description={`O cronômetro ficou aberto por ${fmtMinutes(session.duration_seconds || 0)}. Quanto desse tempo foi estudo de verdade?`}
+        title={tx("Confirme a duração")}
+        description={tx("O cronômetro ficou aberto por {{v0}}. Quanto desse tempo foi estudo de verdade?", {
+          v0: fmtMinutes(session.duration_seconds || 0),
+        })}
       >
         {error ? <Banner kind="error">{error}</Banner> : null}
         <Field
-          label="Minutos de estudo"
+          label={tx("Minutos de estudo")}
           htmlFor="rv-min"
-          hint="A sessão só entra no saldo depois desta confirmação. Nada foi apagado."
+          hint={tx("A sessão só entra no saldo depois desta confirmação. Nada foi apagado.")}
         >
           <Input
             id="rv-min"
@@ -749,10 +771,10 @@ function ReviewDialog({ session, onDone }: { session: StudySession; onDone: () =
         </Field>
         <DialogActions>
           <Button variant="ghost" onClick={onDone}>
-            Revisar depois
+            {tx("Revisar depois")}
           </Button>
           <Button variant="primary" onClick={confirm} loading={busy}>
-            Confirmar {minutes} min
+            {tx("Confirmar {{v0}} min", { v0: minutes })}
           </Button>
         </DialogActions>
       </DialogContent>

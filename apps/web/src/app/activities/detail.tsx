@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import * as React from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router";
 import { ArrowsClockwise, CaretLeft, ChartLineUp } from "@phosphor-icons/react";
@@ -72,21 +73,21 @@ export default function ActivityDetailPage() {
     const notFound = activity.error instanceof ApiError && activity.error.status === 404;
     return (
       <EmptyState
-        title={notFound ? "Objetivo não encontrado." : "Não foi possível carregar o objetivo."}
+        title={notFound ? t("Objetivo não encontrado.") : t("Não foi possível carregar o objetivo.")}
         description={
           notFound
-            ? "Ele pode ter sido excluído."
+            ? t("Ele pode ter sido excluído.")
             : online
-              ? "Tente de novo em instantes."
-              : "Sem conexão: o objetivo aparece quando você voltar à internet."
+              ? t("Tente de novo em instantes.")
+              : t("Sem conexão: o objetivo aparece quando você voltar à internet.")
         }
         action={
           notFound ? (
             <Button asChild>
-              <Link to="/app/objetivos">Ver objetivos</Link>
+              <Link to="/app/objetivos">{t("Ver objetivos")}</Link>
             </Button>
           ) : (
-            <Button onClick={() => activity.refetch()}>Tentar de novo</Button>
+            <Button onClick={() => activity.refetch()}>{t("Tentar de novo")}</Button>
           )
         }
       />
@@ -109,11 +110,13 @@ export default function ActivityDetailPage() {
         to="/app/objetivos"
         className="inline-flex min-h-[32px] items-center gap-1 self-start text-[13px] text-neutral-400 no-underline hover:text-primary desktop:hidden"
       >
-        <CaretLeft size={14} aria-hidden /> Objetivos
+        <CaretLeft size={14} aria-hidden /> {t("Objetivos")}
       </Link>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-[14px]">
-          <span className="kicker-accent">Objetivo · {categoryLabel(act.category, act.language)}</span>
+          <span className="kicker-accent">
+            {t("Objetivo · {{v0}}", { v0: categoryLabel(act.category, act.language) })}
+          </span>
           <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">
             {act.title}
           </h1>
@@ -122,11 +125,11 @@ export default function ActivityDetailPage() {
           <div className="hidden gap-2 desktop:flex">
             {pending > 0 ? (
               <Button asChild variant="secondary" size="lg">
-                <Link to={`/app/objetivos/${act.id}/recuperar`}>Distribuir pendência</Link>
+                <Link to={`/app/objetivos/${act.id}/recuperar`}>{t("Distribuir pendência")}</Link>
               </Button>
             ) : null}
             <Button asChild variant="primary" size="lg">
-              <Link to={`/app/sessao?objetivo=${act.id}`}>Começar sessão</Link>
+              <Link to={`/app/sessao?objetivo=${act.id}`}>{t("Começar sessão")}</Link>
             </Button>
           </div>
         ) : null}
@@ -134,11 +137,16 @@ export default function ActivityDetailPage() {
 
       {act.status !== "active" ? (
         <Tag variant="neutral" className="self-start">
-          {act.status === "paused" ? "Objetivo pausado · nada entra como pendência" : "Objetivo arquivado"}
+          {act.status === "paused"
+            ? t("Objetivo pausado · nada entra como pendência")
+            : t("Objetivo arquivado")}
         </Tag>
       ) : currentPause ? (
         <Tag variant="neutral" className="self-start">
-          Pausa planejada · {fmtDayShort(currentPause.start_date)} a {fmtDayShort(currentPause.end_date)}
+          {t("Pausa planejada · {{v0}} a {{v1}}", {
+            v0: fmtDayShort(currentPause.start_date),
+            v1: fmtDayShort(currentPause.end_date),
+          })}
         </Tag>
       ) : null}
 
@@ -155,13 +163,13 @@ export default function ActivityDetailPage() {
                 void month.refetch();
               }}
             >
-              Tentar de novo
+              {t("Tentar de novo")}
             </Button>
           }
         >
           {online
-            ? "Não foi possível carregar o saldo deste objetivo."
-            : "Sem conexão: o saldo aparece quando você voltar à internet."}
+            ? t("Não foi possível carregar o saldo deste objetivo.")
+            : t("Sem conexão: o saldo aparece quando você voltar à internet.")}
         </Banner>
       ) : null}
 
@@ -169,33 +177,36 @@ export default function ActivityDetailPage() {
         <div className="tnum flex gap-4 desktop:gap-8">
           <Figure
             value={week.data ? fmtMinutes(weekLogged) : dash}
-            label={hasTime ? `esta semana / ${fmtMinutes(weekTarget)}` : "esta semana"}
+            label={hasTime ? t("esta semana / {{v0}}", { v0: fmtMinutes(weekTarget) }) : t("esta semana")}
           />
           <Figure
             value={month.data ? String(month.data.sessions_count) : dash}
-            label={month.data?.sessions_count === 1 ? "sessão no mês" : "sessões no mês"}
+            label={month.data?.sessions_count === 1 ? t("sessão no mês") : t("sessões no mês")}
           />
           <Figure
             value={balance.data ? fmtMinutes(pending) : dash}
-            label="a recuperar"
+            label={t("a recuperar")}
             pending={pending > 0}
           />
         </div>
         <Bar
           value={weekTarget > 0 ? weekLogged / weekTarget : 0}
           height={6}
-          label={`${fmtMinutes(weekLogged)} de ${fmtMinutes(weekTarget)} nesta semana`}
+          label={t("{{v0}} de {{v1}} nesta semana", {
+            v0: fmtMinutes(weekLogged),
+            v1: fmtMinutes(weekTarget),
+          })}
         />
       </div>
 
       {act.status === "active" ? (
         <div className="flex items-center justify-between gap-2 desktop:hidden">
           <Button asChild variant="primary" size="lg" className="flex-1">
-            <Link to={`/app/sessao?objetivo=${act.id}`}>Começar sessão</Link>
+            <Link to={`/app/sessao?objetivo=${act.id}`}>{t("Começar sessão")}</Link>
           </Button>
           {pending > 0 ? (
             <Button asChild variant="ghost" size="lg" className="text-[13px]">
-              <Link to={`/app/objetivos/${act.id}/recuperar`}>Distribuir pendência</Link>
+              <Link to={`/app/objetivos/${act.id}/recuperar`}>{t("Distribuir pendência")}</Link>
             </Button>
           ) : null}
         </div>
@@ -208,12 +219,12 @@ export default function ActivityDetailPage() {
           <div className="flex flex-wrap gap-2 self-start" data-tour="objetivo-atalhos">
             <Button asChild variant="secondary" size="lg">
               <Link to={`/app/objetivos/${act.id}/simulados`}>
-                <ChartLineUp size={16} aria-hidden /> Simulados
+                <ChartLineUp size={16} aria-hidden /> {t("Simulados")}
               </Link>
             </Button>
             <Button asChild variant="secondary" size="lg">
               <Link to={`/app/revisoes?objetivo=${act.id}`}>
-                <ArrowsClockwise size={16} aria-hidden /> Revisões
+                <ArrowsClockwise size={16} aria-hidden /> {t("Revisões")}
               </Link>
             </Button>
           </div>
@@ -222,10 +233,10 @@ export default function ActivityDetailPage() {
 
       <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-[14px]">
         <TabsList data-tour="objetivo-abas">
-          <TabsTrigger value="materias">Matérias</TabsTrigger>
-          <TabsTrigger value="materiais">Materiais</TabsTrigger>
-          <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
-          <TabsTrigger value="config">Configurações</TabsTrigger>
+          <TabsTrigger value="materias">{t("Matérias")}</TabsTrigger>
+          <TabsTrigger value="materiais">{t("Materiais")}</TabsTrigger>
+          <TabsTrigger value="tarefas">{t("Tarefas")}</TabsTrigger>
+          <TabsTrigger value="config">{t("Configurações")}</TabsTrigger>
         </TabsList>
         <TabsContent value="materias" className="max-w-[760px] outline-none">
           <SubjectTree activityId={act.id} />

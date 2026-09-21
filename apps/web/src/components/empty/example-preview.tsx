@@ -2,6 +2,7 @@
  * Prévia honesta de como a página vai ficar: moldura tracejada com o selo "Exemplo" e o
  * conteúdo apagado (sem cliques, fora da leitura de tela). Nada aqui é dado da pessoa.
  */
+import { t } from "@/i18n";
 import * as React from "react";
 import { Eye } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
@@ -15,7 +16,7 @@ export function ExampleTag({ className }: { className?: string }) {
       )}
     >
       <Eye size={12} weight="bold" aria-hidden />
-      Exemplo
+      {t("Exemplo")}
     </span>
   );
 }
@@ -50,7 +51,7 @@ export function ExamplePreview({ title, summary, note, children, className }: Pr
       <div className="pointer-events-none select-none opacity-75 saturate-[0.85]" aria-hidden inert>
         {children}
       </div>
-      <p className="sr-only">Exemplo ilustrativo: {summary}</p>
+      <p className="sr-only">{t("Exemplo ilustrativo: {{v0}}", { v0: summary })}</p>
       {note ? <p className="m-0 text-[12px] leading-[1.45] text-neutral-400">{note}</p> : null}
     </figure>
   );

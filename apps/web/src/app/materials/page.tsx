@@ -1,3 +1,4 @@
+import { t as tx, intlLocale } from "@/i18n";
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
 import { ArrowSquareOut, DownloadSimple, Plus, Trash, X } from "@phosphor-icons/react";
@@ -67,11 +68,17 @@ function parsePage(v: string): number | null | undefined {
 function checkPdf(file: File, maxMb: number): { message: string; code: string } | null {
   const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
   if (!isPdf)
-    return { message: "O arquivo não é um PDF válido. Envie um PDF ou adicione só o link.", code: "not_pdf" };
-  if (file.size === 0) return { message: "Arquivo vazio.", code: "empty_file" };
+    return {
+      message: tx("O arquivo não é um PDF válido. Envie um PDF ou adicione só o link."),
+      code: "not_pdf",
+    };
+  if (file.size === 0) return { message: tx("Arquivo vazio."), code: "empty_file" };
   if (file.size > maxMb * 1024 * 1024)
     return {
-      message: `O arquivo tem ${Math.round(file.size / 1024 / 1024)} MB; o limite é ${maxMb} MB.`,
+      message: tx("O arquivo tem {{v0}} MB; o limite é {{v1}} MB.", {
+        v0: Math.round(file.size / 1024 / 1024),
+        v1: maxMb,
+      }),
       code: "file_too_large",
     };
   return null;
@@ -114,7 +121,7 @@ export default function MaterialsPage() {
       { file, title, activityId },
       {
         onSuccess: (m) => {
-          toast("success", "Material adicionado", m.title);
+          toast("success", tx("Material adicionado"), m.title);
           setOpenId(m.id);
         },
         onError: (e) =>
@@ -133,21 +140,24 @@ export default function MaterialsPage() {
   return (
     <div className="flex flex-col gap-[14px]">
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">Materiais</h1>
+        <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">
+          {tx("Materiais")}
+        </h1>
         <Button
           variant="primary"
           size="lg"
           onClick={() => setAdd({ kind: "pdf" })}
           data-tour="materiais-adicionar"
         >
-          <Plus size={16} aria-hidden /> Adicionar material
+          <Plus size={16} aria-hidden /> {tx("Adicionar material")}
         </Button>
       </header>
 
       {!online ? (
         <Banner kind="offline">
-          Sem conexão: adicionar, editar e abrir materiais precisa de internet. A lista mostra o que já estava
-          carregado.
+          {tx(
+            "Sem conexão: adicionar, editar e abrir materiais precisa de internet. A lista mostra o que já estava carregado.",
+          )}
         </Banner>
       ) : null}
 
@@ -170,9 +180,9 @@ export default function MaterialsPage() {
           fileName={failure.fileName}
           message={failure.message}
           code={failure.code}
-          retryLabel="Tentar outro arquivo"
+          retryLabel={tx("Tentar outro arquivo")}
           onRetry={() => retryInput.current?.click()}
-          pasteLabel="Adicionar só o link"
+          pasteLabel={tx("Adicionar só o link")}
           onPasteText={() => {
             setAdd({ kind: "link", title: failure.fileName.replace(/\.pdf$/i, "") });
             setFailure(null);
@@ -182,7 +192,7 @@ export default function MaterialsPage() {
 
       {activities.data && activities.data.length > 1 ? (
         <Field
-          label="Objetivo"
+          label={tx("Objetivo")}
           htmlFor="materials-filter"
           className="desktop:max-w-[320px]"
           data-tour="materiais-filtro"
@@ -192,7 +202,7 @@ export default function MaterialsPage() {
             value={activityFilter ?? ""}
             onChange={(e) => setFilter(e.target.value)}
           >
-            <option value="">Todos os objetivos</option>
+            <option value="">{tx("Todos os objetivos")}</option>
             {activities.data.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.title}
@@ -205,9 +215,9 @@ export default function MaterialsPage() {
       {uploadingName ? (
         <Card className="gap-1 px-[14px] py-3 text-[14px] opacity-70" role="status">
           <div className="flex items-center justify-between gap-3">
-            <span className="min-w-0 truncate">{uploadingName} · PDF</span>
+            <span className="min-w-0 truncate">{tx("{{v0}} · PDF", { v0: uploadingName })}</span>
             <span className="flex shrink-0 items-center gap-1.5 text-[12px] text-neutral-400">
-              <Spinner /> enviando
+              <Spinner /> {tx("enviando")}
             </span>
           </div>
         </Card>
@@ -215,18 +225,20 @@ export default function MaterialsPage() {
 
       {materials.isPending ? (
         <div className="flex justify-center py-16" role="status">
-          <Spinner className="h-6 w-6" label="Carregando materiais" />
+          <Spinner className="h-6 w-6" label={tx("Carregando materiais")} />
         </div>
       ) : materials.isError ? (
         <Banner
           kind="error"
           actions={
             <Button size="sm" variant="secondary" onClick={() => materials.refetch()}>
-              Tentar de novo
+              {tx("Tentar de novo")}
             </Button>
           }
         >
-          Não foi possível carregar os materiais. {errorMessage(materials.error, "")}
+          {tx("Não foi possível carregar os materiais. {{v0}}", {
+            v0: errorMessage(materials.error, ""),
+          })}
         </Banner>
       ) : materials.data.length === 0 && !uploadingName ? (
         <NoMaterials filtered={!!activityFilter} onAdd={(kind) => setAdd({ kind })} />
@@ -291,7 +303,9 @@ function MaterialCard({
   const n = (m.topics ?? []).length;
   const sub = [
     activityTitle,
-    n === 0 ? "sem tópicos vinculados" : `${n} ${n === 1 ? "tópico vinculado" : "tópicos vinculados"}`,
+    n === 0
+      ? tx("sem tópicos vinculados")
+      : `${n} ${n === 1 ? tx("tópico vinculado") : tx("tópicos vinculados")}`,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -300,7 +314,7 @@ function MaterialCard({
       type="button"
       onClick={onOpen}
       className="block w-full cursor-pointer rounded-md text-left"
-      aria-label={`Abrir ${m.title}`}
+      aria-label={tx("Abrir {{v0}}", { v0: m.title })}
     >
       <Card className="gap-1 px-[14px] py-3 text-[14px] transition-colors duration-base hover:shadow-sm">
         <div className="flex items-center justify-between gap-3">
@@ -315,7 +329,9 @@ function MaterialCard({
         </div>
         <span className="text-[12px] text-neutral-400">{sub}</span>
         {m.last_position ? (
-          <span className="text-[12px] text-neutral-400">Parei em: {m.last_position}</span>
+          <span className="text-[12px] text-neutral-400">
+            {tx("Parei em: {{v0}}", { v0: m.last_position })}
+          </span>
         ) : null}
       </Card>
     </button>
@@ -371,14 +387,14 @@ function AddMaterialSheet({
     e.preventDefault();
     const next: typeof errors = {};
     if (kind === "pdf") {
-      if (!file) next.file = "Escolha um arquivo PDF.";
+      if (!file) next.file = tx("Escolha um arquivo PDF.");
       setErrors(next);
       if (file) onPdf(file, title.trim() || undefined, activityId || null);
       return;
     }
-    if (!title.trim()) next.title = "Dê um nome ao material.";
+    if (!title.trim()) next.title = tx("Dê um nome ao material.");
     if (kind === "link") {
-      if (!url.trim()) next.url = "Informe o link.";
+      if (!url.trim()) next.url = tx("Informe o link.");
       setErrors(next);
       if (Object.keys(next).length) return;
       createLink.mutate(
@@ -390,7 +406,7 @@ function AddMaterialSheet({
         },
         {
           onSuccess: (m) => {
-            toast("success", "Material adicionado", m.title);
+            toast("success", tx("Material adicionado"), m.title);
             onCreated(m);
           },
           onError: (err) => {
@@ -404,7 +420,7 @@ function AddMaterialSheet({
       return;
     }
     const total = parsePage(pagesTotal);
-    if (total === undefined || total === 0) next.pages = "Use só números (ex.: 380).";
+    if (total === undefined || total === 0) next.pages = tx("Use só números (ex.: 380).");
     setErrors(next);
     if (Object.keys(next).length) return;
     createPhysical.mutate(
@@ -416,7 +432,7 @@ function AddMaterialSheet({
       },
       {
         onSuccess: (m) => {
-          toast("success", "Material adicionado", m.title);
+          toast("success", tx("Material adicionado"), m.title);
           onCreated(m);
         },
         onError: (err) => setErrors({ form: errorMessage(err) }),
@@ -426,10 +442,10 @@ function AddMaterialSheet({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent mode="sheet" title="Adicionar material">
+      <DialogContent mode="sheet" title={tx("Adicionar material")}>
         <form className="flex flex-col gap-[14px]" onSubmit={submit} noValidate>
           <Seg<AddKind>
-            label="Tipo de material"
+            label={tx("Tipo de material")}
             block
             size="lg"
             value={kind}
@@ -439,17 +455,17 @@ function AddMaterialSheet({
             }}
             options={[
               { value: "pdf", label: "PDF" },
-              { value: "link", label: "Link" },
-              { value: "physical", label: "Físico" },
+              { value: "link", label: tx("Link") },
+              { value: "physical", label: tx("Físico") },
             ]}
           />
 
           {kind === "pdf" ? (
             <Field
-              label="Arquivo PDF"
+              label={tx("Arquivo PDF")}
               htmlFor="material-file"
               error={errors.file}
-              hint={`Até ${maxMb} MB. O arquivo fica guardado só na sua conta.`}
+              hint={tx("Até {{v0}} MB. O arquivo fica guardado só na sua conta.", { v0: maxMb })}
             >
               <Input
                 id="material-file"
@@ -463,10 +479,10 @@ function AddMaterialSheet({
           ) : null}
 
           <Field
-            label={kind === "pdf" ? "Nome (opcional)" : "Nome"}
+            label={kind === "pdf" ? tx("Nome (opcional)") : tx("Nome")}
             htmlFor="material-title"
             error={errors.title}
-            hint={kind === "pdf" ? "Sem nome, usamos o nome do arquivo." : undefined}
+            hint={kind === "pdf" ? tx("Sem nome, usamos o nome do arquivo.") : undefined}
           >
             <Input
               id="material-title"
@@ -474,16 +490,16 @@ function AddMaterialSheet({
               maxLength={200}
               invalid={!!errors.title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={kind === "physical" ? "Ex.: English Grammar in Use" : undefined}
+              placeholder={kind === "physical" ? tx("Ex.: English Grammar in Use") : undefined}
             />
           </Field>
 
           {kind === "link" ? (
             <Field
-              label="Link"
+              label={tx("Link")}
               htmlFor="material-url"
               error={errors.url}
-              hint="Precisa começar com https:// para abrir em qualquer aparelho."
+              hint={tx("Precisa começar com https:// para abrir em qualquer aparelho.")}
             >
               <Input
                 id="material-url"
@@ -501,7 +517,7 @@ function AddMaterialSheet({
           ) : null}
 
           {kind === "physical" ? (
-            <Field label="Total de páginas (opcional)" htmlFor="material-pages" error={errors.pages}>
+            <Field label={tx("Total de páginas (opcional)")} htmlFor="material-pages" error={errors.pages}>
               <Input
                 id="material-pages"
                 inputMode="numeric"
@@ -514,7 +530,7 @@ function AddMaterialSheet({
           ) : null}
 
           {kind !== "pdf" ? (
-            <Field label="Anotação (opcional)" htmlFor="material-desc">
+            <Field label={tx("Anotação (opcional)")} htmlFor="material-desc">
               <Textarea
                 id="material-desc"
                 value={description}
@@ -527,16 +543,16 @@ function AddMaterialSheet({
 
           {activities.length ? (
             <Field
-              label="Objetivo"
+              label={tx("Objetivo")}
               htmlFor="material-activity"
-              hint="Vincular a um objetivo permite ligar o material aos tópicos dele."
+              hint={tx("Vincular a um objetivo permite ligar o material aos tópicos dele.")}
             >
               <Select
                 id="material-activity"
                 value={activityId}
                 onChange={(e) => setActivityId(e.target.value)}
               >
-                <option value="">Sem objetivo</option>
+                <option value="">{tx("Sem objetivo")}</option>
                 {activities.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.title}
@@ -547,14 +563,14 @@ function AddMaterialSheet({
           ) : null}
 
           {errors.form ? <Banner kind="error">{errors.form}</Banner> : null}
-          {!online ? <Banner kind="offline">Adicionar material precisa de conexão.</Banner> : null}
+          {!online ? <Banner kind="offline">{tx("Adicionar material precisa de conexão.")}</Banner> : null}
 
           <DialogActions>
             <Button type="button" variant="secondary" size="lg" onClick={onClose} disabled={busy}>
-              Cancelar
+              {tx("Cancelar")}
             </Button>
             <Button type="submit" variant="primary" size="lg" loading={busy} disabled={!online}>
-              {kind === "pdf" ? "Enviar PDF" : "Adicionar"}
+              {kind === "pdf" ? tx("Enviar PDF") : tx("Adicionar")}
             </Button>
           </DialogActions>
         </form>
@@ -584,24 +600,24 @@ function MaterialSheet({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent
         mode="sheet"
-        title={m?.title ?? "Material"}
+        title={m?.title ?? tx("Material")}
         description={m ? materialSubtitle(m) : undefined}
         className="tablet:w-[min(920px,calc(100%-32px))]"
       >
         {detail.isPending ? (
           <div className="flex justify-center py-12" role="status">
-            <Spinner className="h-6 w-6" label="Abrindo material" />
+            <Spinner className="h-6 w-6" label={tx("Abrindo material")} />
           </div>
         ) : detail.isError || !m ? (
           <Banner
             kind="error"
             actions={
               <Button size="sm" variant="secondary" onClick={() => detail.refetch()}>
-                Tentar de novo
+                {tx("Tentar de novo")}
               </Button>
             }
           >
-            Não foi possível abrir este material. {errorMessage(detail.error, "")}
+            {tx("Não foi possível abrir este material. {{v0}}", { v0: errorMessage(detail.error, "") })}
           </Banner>
         ) : (
           <>
@@ -631,7 +647,7 @@ function MaterialSheet({
         )}
         <DialogActions>
           <Button variant="secondary" size="lg" onClick={onClose}>
-            Fechar
+            {tx("Fechar")}
           </Button>
         </DialogActions>
       </DialogContent>
@@ -644,13 +660,13 @@ function materialSubtitle(m: MaterialDetail): string {
     materialKindLabel(m.kind) === "PDF"
       ? "PDF"
       : materialKindLabel(m.kind) === "link"
-        ? "Link"
-        : "Material físico",
+        ? tx("Link")
+        : tx("Material físico"),
   ];
   const pages = materialPagesLabel(m);
   if (pages) parts.push(pages);
   if (m.size_bytes)
-    parts.push(`${(m.size_bytes / 1024 / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB`);
+    parts.push(`${(m.size_bytes / 1024 / 1024).toLocaleString(intlLocale, { maximumFractionDigits: 1 })} MB`);
   return parts.join(" · ");
 }
 
@@ -680,25 +696,27 @@ function PdfViewer({
   if (!src)
     return (
       <Banner kind="error">
-        O arquivo deste material não está disponível agora. Seus vínculos e anotações continuam salvos.
+        {tx(
+          "O arquivo deste material não está disponível agora. Seus vínculos e anotações continuam salvos.",
+        )}
       </Banner>
     );
   return (
     <div className="flex flex-col gap-2">
       <iframe
         src={src}
-        title={`Leitor: ${m.title}`}
+        title={tx("Leitor: {{v0}}", { v0: m.title })}
         className="h-[52dvh] w-full rounded-md border border-divider bg-canvas desktop:h-[60dvh]"
       />
       <div className="flex flex-wrap items-center gap-2">
         <Button asChild variant="primary" size="lg">
           <a href={src} download={m.file_name ?? "material.pdf"}>
-            <DownloadSimple size={16} aria-hidden /> Baixar PDF
+            <DownloadSimple size={16} aria-hidden /> {tx("Baixar PDF")}
           </a>
         </Button>
         <Button asChild variant="secondary" size="lg">
           <a href={src} target="_blank" rel="noopener noreferrer">
-            <ArrowSquareOut size={16} aria-hidden /> Abrir em nova aba
+            <ArrowSquareOut size={16} aria-hidden /> {tx("Abrir em nova aba")}
           </a>
         </Button>
         <Button
@@ -709,15 +727,20 @@ function PdfViewer({
           disabled={!online}
           onClick={onReload}
         >
-          Recarregar leitor
+          {tx("Recarregar leitor")}
         </Button>
       </div>
       <p className="text-[12px] text-neutral-400">
-        Se o PDF não aparecer aqui, abra em nova aba. Por segurança, o acesso ao arquivo expira
-        {m.download_expires_in
-          ? ` em ${Math.max(1, Math.round(m.download_expires_in / 60))} min`
-          : " depois de um tempo"}
-        ; “Recarregar leitor” renova.
+        {tx(
+          tx(
+            "Se o PDF não aparecer aqui, abra em nova aba. Por segurança, o acesso ao arquivo expira {{v0}} ; “Recarregar leitor” renova.",
+          ),
+          {
+            v0: m.download_expires_in
+              ? " " + tx("em {{v0}} min", { v0: Math.max(1, Math.round(m.download_expires_in / 60)) })
+              : tx("depois de um tempo"),
+          },
+        )}
       </p>
     </div>
   );
@@ -749,13 +772,13 @@ function MaterialBody({ material: m, activities, online, onDeleted }: BodyProps)
     e.preventDefault();
     const from = parsePage(pageFrom);
     const to = parsePage(pageTo);
-    if (!title.trim()) return setError("O material precisa de um nome.");
-    if (from === undefined || to === undefined) return setError("Páginas: use só números.");
-    if (from != null && to != null && to < from) return setError("A página final vem antes da inicial.");
+    if (!title.trim()) return setError(tx("O material precisa de um nome."));
+    if (from === undefined || to === undefined) return setError(tx("Páginas: use só números."));
+    if (from != null && to != null && to < from) return setError(tx("A página final vem antes da inicial."));
     const cur = parsePage(currentPage);
-    if (cur === undefined) return setError("Página atual: use só números.");
+    if (cur === undefined) return setError(tx("Página atual: use só números."));
     if (cur != null && m.pages_total && cur > m.pages_total)
-      return setError("A página atual não pode passar do total de páginas.");
+      return setError(tx("A página atual não pode passar do total de páginas."));
     setError(null);
     update.mutate(
       {
@@ -773,7 +796,7 @@ function MaterialBody({ material: m, activities, online, onDeleted }: BodyProps)
         },
       },
       {
-        onSuccess: () => toast("success", "Material atualizado"),
+        onSuccess: () => toast("success", tx("Material atualizado")),
         onError: (err) => setError(errorMessage(err)),
       },
     );
@@ -785,7 +808,7 @@ function MaterialBody({ material: m, activities, online, onDeleted }: BodyProps)
         <div className="flex flex-col gap-1">
           <Button asChild variant="primary" size="lg" className="self-start">
             <a href={m.url} target="_blank" rel="noopener noreferrer">
-              <ArrowSquareOut size={16} aria-hidden /> Abrir link
+              <ArrowSquareOut size={16} aria-hidden /> {tx("Abrir link")}
             </a>
           </Button>
           <span className="break-all text-[12px] text-neutral-400">{m.url}</span>
@@ -795,12 +818,12 @@ function MaterialBody({ material: m, activities, online, onDeleted }: BodyProps)
       <TopicLinks material={m} online={online} />
 
       <form className="flex flex-col gap-3" onSubmit={save} noValidate>
-        <span className="kicker">Detalhes</span>
-        <Field label="Nome" htmlFor="m-title">
+        <span className="kicker">{tx("Detalhes")}</span>
+        <Field label={tx("Nome")} htmlFor="m-title">
           <Input id="m-title" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} />
         </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Página inicial" htmlFor="m-from">
+          <Field label={tx("Página inicial")} htmlFor="m-from">
             <Input
               id="m-from"
               inputMode="numeric"
@@ -809,7 +832,7 @@ function MaterialBody({ material: m, activities, online, onDeleted }: BodyProps)
               onChange={(e) => setPageFrom(e.target.value)}
             />
           </Field>
-          <Field label="Página final" htmlFor="m-to">
+          <Field label={tx("Página final")} htmlFor="m-to">
             <Input
               id="m-to"
               inputMode="numeric"
@@ -821,9 +844,9 @@ function MaterialBody({ material: m, activities, online, onDeleted }: BodyProps)
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Field
-            label="Página atual"
+            label={tx("Página atual")}
             htmlFor="m-cur"
-            hint="Marcador: avança quando você registra páginas lidas."
+            hint={tx("Marcador: avança quando você registra páginas lidas.")}
           >
             <Input
               id="m-cur"
@@ -833,7 +856,7 @@ function MaterialBody({ material: m, activities, online, onDeleted }: BodyProps)
               onChange={(e) => setCurrentPage(e.target.value)}
             />
           </Field>
-          <Field label="Onde parei" htmlFor="m-pos" hint="Ex.: unidade 12, aula 7.">
+          <Field label={tx("Onde parei")} htmlFor="m-pos" hint={tx("Ex.: unidade 12, aula 7.")}>
             <Input
               id="m-pos"
               value={lastPosition}
@@ -842,7 +865,7 @@ function MaterialBody({ material: m, activities, online, onDeleted }: BodyProps)
             />
           </Field>
         </div>
-        <Field label="Anotação" htmlFor="m-desc">
+        <Field label={tx("Anotação")} htmlFor="m-desc">
           <Textarea
             id="m-desc"
             value={description}
@@ -853,16 +876,16 @@ function MaterialBody({ material: m, activities, online, onDeleted }: BodyProps)
         </Field>
         {activities.length ? (
           <Field
-            label="Objetivo"
+            label={tx("Objetivo")}
             htmlFor="m-activity"
             hint={
               (m.topics ?? []).length && activityId !== (m.activity_id ?? "")
-                ? "Os tópicos já vinculados continuam vinculados."
+                ? tx("Os tópicos já vinculados continuam vinculados.")
                 : undefined
             }
           >
             <Select id="m-activity" value={activityId} onChange={(e) => setActivityId(e.target.value)}>
-              <option value="">Sem objetivo</option>
+              <option value="">{tx("Sem objetivo")}</option>
               {activities.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.title}
@@ -880,7 +903,7 @@ function MaterialBody({ material: m, activities, online, onDeleted }: BodyProps)
             disabled={!online}
             onClick={() => setConfirmDelete(true)}
           >
-            <Trash size={16} aria-hidden /> Excluir material
+            <Trash size={16} aria-hidden /> {tx("Excluir material")}
           </Button>
           <Button
             type="submit"
@@ -889,7 +912,7 @@ function MaterialBody({ material: m, activities, online, onDeleted }: BodyProps)
             loading={update.isPending}
             disabled={!dirty || !online}
           >
-            Salvar alterações
+            {tx("Salvar alterações")}
           </Button>
         </div>
       </form>
@@ -898,17 +921,20 @@ function MaterialBody({ material: m, activities, online, onDeleted }: BodyProps)
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
         danger
-        title="Excluir este material?"
-        description={`${m.kind === "pdf" ? "O arquivo é apagado da sua conta. " : ""}Os vínculos com tópicos são removidos. Seu tempo registrado e seu plano não mudam.`}
-        confirmLabel="Excluir"
+        title={tx("Excluir este material?")}
+        description={tx(
+          "{{v0}}Os vínculos com tópicos são removidos. Seu tempo registrado e seu plano não mudam.",
+          { v0: m.kind === "pdf" ? tx("O arquivo é apagado da sua conta.") : "" },
+        )}
+        confirmLabel={tx("Excluir")}
         loading={del.isPending}
         onConfirm={() =>
           del.mutate(m.id, {
             onSuccess: () => {
-              toast("success", "Material removido");
+              toast("success", tx("Material removido"));
               onDeleted();
             },
-            onError: (e) => toast("error", "Não foi possível excluir", errorMessage(e)),
+            onError: (e) => toast("error", tx("Não foi possível excluir"), errorMessage(e)),
           })
         }
       />
@@ -927,12 +953,12 @@ function TopicLinks({ material: m, online }: { material: MaterialDetail; online:
   const linked = new Set(topics.map((t) => t.topic_id));
 
   const addLink = () => {
-    if (!topicId) return setError("Escolha um tópico.");
+    if (!topicId) return setError(tx("Escolha um tópico."));
     const nums = (pages.match(/\d{1,6}/g) ?? []).map(Number);
-    if (pages.trim() && nums.length === 0) return setError("Páginas: use “12” ou “12–30”.");
+    if (pages.trim() && nums.length === 0) return setError(tx("Páginas: use “12” ou “12–30”."));
     const from = nums[0] ?? null;
     const to = nums[1] ?? null;
-    if (from != null && to != null && to < from) return setError("A página final vem antes da inicial.");
+    if (from != null && to != null && to < from) return setError(tx("A página final vem antes da inicial."));
     setError(null);
     link.mutate(
       { materialId: m.id, body: { topic_id: topicId, page_from: from, page_to: to } },
@@ -947,15 +973,15 @@ function TopicLinks({ material: m, online }: { material: MaterialDetail; online:
   };
 
   return (
-    <section className="flex flex-col gap-2" aria-label="Tópicos vinculados">
-      <span className="kicker">Tópicos vinculados</span>
+    <section className="flex flex-col gap-2" aria-label={tx("Tópicos vinculados")}>
+      <span className="kicker">{tx("Tópicos vinculados")}</span>
       {topics.length === 0 ? (
-        <span className="text-[13px] text-neutral-400">Nenhum tópico vinculado ainda.</span>
+        <span className="text-[13px] text-neutral-400">{tx("Nenhum tópico vinculado ainda.")}</span>
       ) : (
         <ul className="flex flex-col divide-y divide-divider">
           {topics.map((t) => (
             <li key={t.topic_id} className="flex min-h-[44px] items-center justify-between gap-2 text-[14px]">
-              <span className="min-w-0 truncate">{t.topic_title ?? "Tópico"}</span>
+              <span className="min-w-0 truncate">{t.topic_title ?? tx("Tópico")}</span>
               <span className="flex shrink-0 items-center gap-1">
                 {t.page_from != null ? (
                   <Tag variant="neutral" className="tnum">
@@ -966,12 +992,14 @@ function TopicLinks({ material: m, online }: { material: MaterialDetail; online:
                 <Button
                   variant="ghost-muted"
                   size="icon"
-                  aria-label={`Desvincular ${t.topic_title ?? "tópico"}`}
+                  aria-label={tx("Desvincular {{v0}}", { v0: t.topic_title ?? tx("tópico") })}
                   disabled={!online || unlink.isPending}
                   onClick={() =>
                     unlink.mutate(
                       { materialId: m.id, topicId: t.topic_id },
-                      { onError: (e) => toast("error", "Não foi possível desvincular", errorMessage(e)) },
+                      {
+                        onError: (e) => toast("error", tx("Não foi possível desvincular"), errorMessage(e)),
+                      },
                     )
                   }
                 >
@@ -985,48 +1013,48 @@ function TopicLinks({ material: m, online }: { material: MaterialDetail; online:
 
       {!m.activity_id ? (
         <span className="text-[13px] text-neutral-400">
-          Para vincular a tópicos, escolha um objetivo em Detalhes e salve.
+          {tx("Para vincular a tópicos, escolha um objetivo em Detalhes e salve.")}
         </span>
       ) : subjects.isPending ? (
-        <Spinner label="Carregando tópicos" />
+        <Spinner label={tx("Carregando tópicos")} />
       ) : subjects.isError ? (
         <Banner
           kind="error"
           actions={
             <Button size="sm" variant="secondary" onClick={() => subjects.refetch()}>
-              Tentar de novo
+              {tx("Tentar de novo")}
             </Button>
           }
         >
-          Não foi possível carregar os tópicos deste objetivo.
+          {tx("Não foi possível carregar os tópicos deste objetivo.")}
         </Banner>
       ) : subjects.data.every((s) => (s.topics ?? []).length === 0) ? (
         <span className="text-[13px] text-neutral-400">
-          Este objetivo ainda não tem tópicos.{" "}
+          {tx("Este objetivo ainda não tem tópicos.")}{" "}
           <Link
             to={`/app/objetivos/${m.activity_id}`}
             className="text-accent underline-offset-2 hover:underline"
           >
-            Abrir objetivo
+            {tx("Abrir objetivo")}
           </Link>
         </span>
       ) : (
         <div className="grid gap-2 tablet:grid-cols-[minmax(0,1fr)_120px_auto] tablet:items-end">
-          <Field label="Vincular a um tópico" htmlFor="m-topic">
+          <Field label={tx("Vincular a um tópico")} htmlFor="m-topic">
             <Select id="m-topic" value={topicId} onChange={(e) => setTopicId(e.target.value)}>
-              <option value="">Escolher tópico…</option>
+              <option value="">{tx("Escolher tópico…")}</option>
               {subjects.data.map((s) => (
                 <optgroup key={s.id} label={s.title}>
                   {flattenTopics(s.topics).map(({ topic, depth }) => (
                     <option key={topic.id} value={topic.id} disabled={linked.has(topic.id)}>
-                      {`${"— ".repeat(depth)}${topic.title}${linked.has(topic.id) ? " (vinculado)" : ""}`}
+                      {`${"— ".repeat(depth)}${topic.title}${linked.has(topic.id) ? tx("(vinculado)") : ""}`}
                     </option>
                   ))}
                 </optgroup>
               ))}
             </Select>
           </Field>
-          <Field label="Páginas" htmlFor="m-topic-pages">
+          <Field label={tx("Páginas")} htmlFor="m-topic-pages">
             <Input
               id="m-topic-pages"
               className="tnum"
@@ -1036,7 +1064,7 @@ function TopicLinks({ material: m, online }: { material: MaterialDetail; online:
             />
           </Field>
           <Button variant="primary" size="lg" loading={link.isPending} disabled={!online} onClick={addLink}>
-            Vincular
+            {tx("Vincular")}
           </Button>
         </div>
       )}

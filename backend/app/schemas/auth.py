@@ -13,6 +13,7 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=8, max_length=256)
     name: str = Field(default="", max_length=120)
     timezone: str = Field(default="America/Sao_Paulo", max_length=64)
+    locale: str = Field(default="pt-BR", max_length=16)  # idioma da interface: pt-BR | en
 
 
 class LoginRequest(BaseModel):

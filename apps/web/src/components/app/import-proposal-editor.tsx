@@ -1,3 +1,4 @@
+import { t as tx, intlLocale } from "@/i18n";
 import * as React from "react";
 import { PlanUpsell } from "@/components/app/plan-upsell";
 import { ArrowDown, ArrowUp, CaretDown, CaretRight, Plus, Sparkle, Trash } from "@phosphor-icons/react";
@@ -35,7 +36,8 @@ import { cn } from "@/lib/utils";
 type Updater = (fn: (list: EditorSubject[]) => EditorSubject[]) => void;
 type Dir = -1 | 1;
 
-const plural = (n: number, one: string, many: string) => `${n.toLocaleString("pt-BR")} ${n === 1 ? one : many}`;
+const plural = (n: number, one: string, many: string) =>
+  `${n.toLocaleString(intlLocale)} ${n === 1 ? one : many}`;
 
 function moveBy<T extends { key: string }>(list: T[], key: string, dir: Dir): T[] {
   const i = list.findIndex((x) => x.key === key);
@@ -46,11 +48,20 @@ function moveBy<T extends { key: string }>(list: T[], key: string, dir: Dir): T[
   return next;
 }
 
-function mapSubject(list: EditorSubject[], sKey: string, fn: (s: EditorSubject) => EditorSubject): EditorSubject[] {
+function mapSubject(
+  list: EditorSubject[],
+  sKey: string,
+  fn: (s: EditorSubject) => EditorSubject,
+): EditorSubject[] {
   return list.map((s) => (s.key === sKey ? fn(s) : s));
 }
 
-function mapTopic(list: EditorSubject[], sKey: string, tKey: string, fn: (t: EditorTopic) => EditorTopic): EditorSubject[] {
+function mapTopic(
+  list: EditorSubject[],
+  sKey: string,
+  tKey: string,
+  fn: (t: EditorTopic) => EditorTopic,
+): EditorSubject[] {
   return mapSubject(list, sKey, (s) => ({ ...s, topics: s.topics.map((t) => (t.key === tKey ? fn(t) : t)) }));
 }
 
@@ -69,7 +80,9 @@ interface EditorProps {
  * e só volta ao servidor em "Salvar rascunho" ou "Confirmar e criar".
  */
 export function ImportProposalEditor({ job, activityName, online, onConfirmed }: EditorProps) {
-  const [subjects, setSubjects] = React.useState<EditorSubject[]>(() => toEditor(normalizeProposal(job.proposal)));
+  const [subjects, setSubjects] = React.useState<EditorSubject[]>(() =>
+    toEditor(normalizeProposal(job.proposal)),
+  );
   const [dirty, setDirty] = React.useState(false);
   const [collapsed, setCollapsed] = React.useState<Set<string>>(() => {
     if (countEditor(subjects).topics <= COLLAPSE_THRESHOLD) return new Set();
@@ -113,9 +126,9 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
       {
         onSuccess: () => {
           setDirty(false);
-          toast.success("Rascunho salvo", "Nada foi criado no seu plano ainda.");
+          toast.success(tx("Rascunho salvo"), tx("Nada foi criado no seu plano ainda."));
         },
-        onError: (e) => toast.error("Não foi possível salvar o rascunho", errorMessage(e)),
+        onError: (e) => toast.error(tx("Não foi possível salvar o rascunho"), errorMessage(e)),
       },
     );
   };
@@ -137,11 +150,11 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
     cancel.mutate(job.id, {
       onSuccess: () => {
         setAskCancel(false);
-        toast.info("Importação cancelada", "Nada do seu plano foi alterado.");
+        toast.info(tx("Importação cancelada"), tx("Nada do seu plano foi alterado."));
       },
       onError: (e) => {
         setAskCancel(false);
-        toast.error("Não foi possível cancelar", errorMessage(e));
+        toast.error(tx("Não foi possível cancelar"), errorMessage(e));
       },
     });
   };
@@ -154,7 +167,7 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
         onSuccess: (out) => {
           const next = toEditor(normalizeProposal(out.proposal));
           if (next.length === 0) {
-            toast.info("Nenhuma estrutura sugerida", "A revisão continua como estava.");
+            toast.info(tx("Nenhuma estrutura sugerida"), tx("A revisão continua como estava."));
             return;
           }
           setSubjects(next);
@@ -162,15 +175,17 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
           setDirty(true);
           setAiNote(
             out.truncated
-              ? "Prévia sugerida a partir de parte do conteúdo (o texto era longo). Nada foi criado; revise e confirme."
-              : "Prévia sugerida automaticamente. Nada foi criado; revise e confirme.",
+              ? tx(
+                  "Prévia sugerida a partir de parte do conteúdo (o texto era longo). Nada foi criado; revise e confirme.",
+                )
+              : tx("Prévia sugerida automaticamente. Nada foi criado; revise e confirme."),
           );
         },
         onError: (e) => {
           if (isAiDisabledError(e)) {
             setAiOff(true);
-            toast.info("Sugestão indisponível", "Você pode organizar o conteúdo manualmente.");
-          } else toast.error("Não foi possível sugerir a estrutura", errorMessage(e));
+            toast.info(tx("Sugestão indisponível"), tx("Você pode organizar o conteúdo manualmente."));
+          } else toast.error(tx("Não foi possível sugerir a estrutura"), errorMessage(e));
         },
       },
     );
@@ -178,7 +193,13 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
 
   const aiEnabled = !!ai.data?.enabled && !aiOff;
   const remaining = ai.data?.remaining_today ?? 0;
-  const aiDisabledNote = aiEnabled ? null : aiOff ? AI_UNAVAILABLE_NOTE : ai.data ? (aiReasonLabel(ai.data.reason) ?? AI_UNAVAILABLE_NOTE) : null;
+  const aiDisabledNote = aiEnabled
+    ? null
+    : aiOff
+      ? AI_UNAVAILABLE_NOTE
+      : ai.data
+        ? (aiReasonLabel(ai.data.reason) ?? AI_UNAVAILABLE_NOTE)
+        : null;
   const skipped = typeof stats?.skipped === "number" ? stats.skipped : 0;
 
   return (
@@ -186,24 +207,38 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
       <Card className="gap-[10px] p-[14px] desktop:p-4" data-tour="importar-revisao">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="flex min-w-0 flex-col gap-1">
-            <span className="kicker">Revisão</span>
-            <span className="text-[17px] font-medium leading-[1.2]">Confira antes de criar</span>
+            <span className="kicker">{tx("Revisão")}</span>
+            <span className="text-[17px] font-medium leading-[1.2]">{tx("Confira antes de criar")}</span>
           </div>
-          <Tag variant="pending">Aguardando revisão</Tag>
+          <Tag variant="pending">{tx("Aguardando revisão")}</Tag>
         </div>
         <p className="m-0 text-[13px] text-neutral-400">
-          Edite títulos, páginas e minutos, reorganize ou remova linhas. Nada entra{activityName ? ` em “${activityName}”` : " no objetivo"} até você confirmar.
+          {tx(
+            tx(
+              "Edite títulos, páginas e minutos, reorganize ou remova linhas. Nada entra{{v0}} até você confirmar.",
+            ),
+            { v0: activityName ? " " + tx("em “{{v0}}”", { v0: activityName }) : tx("no objetivo") },
+          )}
         </p>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]">
           <span className="tnum">
-            {plural(counts.subjects, "matéria", "matérias")} · {plural(counts.topics, "tópico", "tópicos")}
+            {plural(counts.subjects, tx("matéria"), tx("matérias"))} ·{" "}
+            {plural(counts.topics, tx("tópico"), tx("tópicos"))}
           </span>
-          {dirty ? <span className="text-[12px] text-pending">Edições ainda não salvas</span> : null}
+          {dirty ? <span className="text-[12px] text-pending">{tx("Edições ainda não salvas")}</span> : null}
         </div>
         {stats?.truncated === true ? (
-          <span className="text-[12px] text-neutral-400">O conteúdo era longo: só a primeira parte virou proposta. Confira se falta algo.</span>
+          <span className="text-[12px] text-neutral-400">
+            {tx("O conteúdo era longo: só a primeira parte virou proposta. Confira se falta algo.")}
+          </span>
         ) : null}
-        {skipped > 0 ? <span className="tnum text-[12px] text-neutral-400">{plural(skipped, "linha foi ignorada", "linhas foram ignoradas")} por não parecerem itens de conteúdo.</span> : null}
+        {skipped > 0 ? (
+          <span className="tnum text-[12px] text-neutral-400">
+            {tx("{{v0}} por não parecerem itens de conteúdo.", {
+              v0: plural(skipped, tx("linha foi ignorada"), tx("linhas foram ignoradas")),
+            })}
+          </span>
+        ) : null}
         {aiEnabled ? (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1" data-tour="importar-ia">
             <Button
@@ -214,16 +249,25 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
               onClick={() => (dirty ? setAskReplace(true) : runSuggest())}
             >
               {suggest.isPending ? null : <Sparkle size={16} aria-hidden />}
-              Sugerir estrutura
+              {tx("Sugerir estrutura")}
             </Button>
             <span className="tnum text-[12px] text-neutral-400">
               {remaining > 0
-                ? `${plural(remaining, "sugestão restante", "sugestões restantes")} hoje${ai.data?.remaining_this_month != null ? ` · ${ai.data.remaining_this_month} no mês` : ""}. Só preenche esta revisão.`
-                : aiReasonLabel(ai.data?.reason) ?? "Você usou todas as sugestões de hoje."}
+                ? tx("{{v0}} hoje{{v1}}. Só preenche esta revisão.", {
+                    v0: plural(remaining, tx("sugestão restante"), tx("sugestões restantes")),
+                    v1:
+                      ai.data?.remaining_this_month != null
+                        ? " " + tx("· {{v0}} no mês", { v0: ai.data.remaining_this_month })
+                        : "",
+                  })
+                : (aiReasonLabel(ai.data?.reason) ?? tx("Você usou todas as sugestões de hoje."))}
             </span>
           </div>
         ) : ai.data?.reason === "ai_plan" && !aiOff ? (
-          <PlanUpsell compact text="A IA para organizar o conteúdo está nos planos Essencial e Completo." />
+          <PlanUpsell
+            compact
+            text={tx("A IA para organizar o conteúdo está nos planos Essencial e Completo.")}
+          />
         ) : aiDisabledNote ? (
           <span className="text-[12px] text-neutral-500">{aiDisabledNote}</span>
         ) : null}
@@ -231,45 +275,97 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
       </Card>
 
       {subjects.length === 0 ? (
-        <Card className="p-[14px] text-[13px] text-neutral-400">A proposta está vazia. Adicione uma matéria para começar.</Card>
+        <Card className="p-[14px] text-[13px] text-neutral-400">
+          {tx("A proposta está vazia. Adicione uma matéria para começar.")}
+        </Card>
       ) : (
         subjects.map((s, i) => (
-          <SubjectBlock key={s.key} subject={s} index={i} total={subjects.length} collapsed={collapsed.has(s.key)} onToggle={toggle} apply={apply} disabled={busy} />
+          <SubjectBlock
+            key={s.key}
+            subject={s}
+            index={i}
+            total={subjects.length}
+            collapsed={collapsed.has(s.key)}
+            onToggle={toggle}
+            apply={apply}
+            disabled={busy}
+          />
         ))
       )}
 
-      <Button variant="secondary" className="min-h-[44px] self-start" disabled={busy} onClick={() => apply((list) => [...list, { ...newEditorSubject(), topics: [newEditorTopic()] }])}>
+      <Button
+        variant="secondary"
+        className="min-h-[44px] self-start"
+        disabled={busy}
+        onClick={() => apply((list) => [...list, { ...newEditorSubject(), topics: [newEditorTopic()] }])}
+      >
         <Plus size={16} aria-hidden />
-        Adicionar matéria
+        {tx("Adicionar matéria")}
       </Button>
 
       {confirm.isError ? (
-        <Banner kind="error" actions={<Button size="sm" onClick={() => setAskConfirm(true)} disabled={blocked || !!problem}>Tentar de novo</Button>}>
-          {errorMessage(confirm.error, "Não foi possível criar o conteúdo.")} Nada do seu plano foi alterado.
+        <Banner
+          kind="error"
+          actions={
+            <Button size="sm" onClick={() => setAskConfirm(true)} disabled={blocked || !!problem}>
+              {tx("Tentar de novo")}
+            </Button>
+          }
+        >
+          {tx("{{v0}} Nada do seu plano foi alterado.", {
+            v0: errorMessage(confirm.error, tx("Não foi possível criar o conteúdo.")),
+          })}
         </Banner>
       ) : null}
 
-      <Card elev="md" className="sticky bottom-[calc(var(--layout-bottom-nav-height)+8px)] z-10 gap-[10px] p-[14px] tablet:bottom-4">
+      <Card
+        elev="md"
+        className="sticky bottom-[calc(var(--layout-bottom-nav-height)+8px)] z-10 gap-[10px] p-[14px] tablet:bottom-4"
+      >
         {problem ? (
           <span role="alert" className="text-[13px] text-error">
             {problem}
           </span>
         ) : !online ? (
-          <span className="text-[13px] text-neutral-400">Sem conexão: salvar e confirmar voltam a funcionar quando a internet voltar. Suas edições continuam nesta tela.</span>
+          <span className="text-[13px] text-neutral-400">
+            {tx(
+              "Sem conexão: salvar e confirmar voltam a funcionar quando a internet voltar. Suas edições continuam nesta tela.",
+            )}
+          </span>
         ) : (
           <span className="tnum text-[13px] text-neutral-400">
-            Pronto para criar {plural(counts.subjects, "matéria", "matérias")} e {plural(counts.topics, "tópico", "tópicos")}.
+            {tx("Pronto para criar {{v0}} e {{v1}}.", {
+              v0: plural(counts.subjects, tx("matéria"), tx("matérias")),
+              v1: plural(counts.topics, tx("tópico"), tx("tópicos")),
+            })}
           </span>
         )}
         <div className="flex flex-wrap gap-2">
-          <Button size="lg" className="flex-1 tablet:flex-none" disabled={blocked || !!problem} onClick={() => setAskConfirm(true)}>
-            Confirmar e criar
+          <Button
+            size="lg"
+            className="flex-1 tablet:flex-none"
+            disabled={blocked || !!problem}
+            onClick={() => setAskConfirm(true)}
+          >
+            {tx("Confirmar e criar")}
           </Button>
-          <Button variant="secondary" size="lg" loading={save.isPending} disabled={blocked || !!problem || !dirty} onClick={onSave}>
-            Salvar rascunho
+          <Button
+            variant="secondary"
+            size="lg"
+            loading={save.isPending}
+            disabled={blocked || !!problem || !dirty}
+            onClick={onSave}
+          >
+            {tx("Salvar rascunho")}
           </Button>
-          <Button variant="ghost-muted" size="lg" className="px-2" disabled={blocked} onClick={() => setAskCancel(true)}>
-            Cancelar importação
+          <Button
+            variant="ghost-muted"
+            size="lg"
+            className="px-2"
+            disabled={blocked}
+            onClick={() => setAskCancel(true)}
+          >
+            {tx("Cancelar importação")}
           </Button>
         </div>
       </Card>
@@ -277,20 +373,26 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
       <ConfirmDialog
         open={askConfirm}
         onOpenChange={setAskConfirm}
-        title="Criar este conteúdo?"
-        description={`Serão criados ${plural(counts.subjects, "matéria", "matérias")} e ${plural(counts.topics, "tópico", "tópicos")}${activityName ? ` em “${activityName}”` : ""}. Você pode editar tudo depois no objetivo.`}
-        confirmLabel="Confirmar e criar"
-        cancelLabel="Voltar à revisão"
+        title={tx("Criar este conteúdo?")}
+        description={tx("Serão criados {{v0}} e {{v1}}{{v2}}. Você pode editar tudo depois no objetivo.", {
+          v0: plural(counts.subjects, tx("matéria"), tx("matérias")),
+          v1: plural(counts.topics, tx("tópico"), tx("tópicos")),
+          v2: activityName ? " " + tx("em “{{v0}}”", { v0: activityName }) : "",
+        })}
+        confirmLabel={tx("Confirmar e criar")}
+        cancelLabel={tx("Voltar à revisão")}
         loading={confirm.isPending}
         onConfirm={onConfirm}
       />
       <ConfirmDialog
         open={askCancel}
         onOpenChange={setAskCancel}
-        title="Cancelar esta importação?"
-        description="A proposta e as edições desta revisão serão descartadas. Nada do seu plano foi alterado."
-        confirmLabel="Cancelar importação"
-        cancelLabel="Continuar revisando"
+        title={tx("Cancelar esta importação?")}
+        description={tx(
+          "A proposta e as edições desta revisão serão descartadas. Nada do seu plano foi alterado.",
+        )}
+        confirmLabel={tx("Cancelar importação")}
+        cancelLabel={tx("Continuar revisando")}
         danger
         loading={cancel.isPending}
         onConfirm={onCancel}
@@ -298,10 +400,12 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
       <ConfirmDialog
         open={askReplace}
         onOpenChange={setAskReplace}
-        title="Substituir o que você editou?"
-        description="A sugestão troca todo o conteúdo desta revisão, incluindo as suas edições. Nada é criado até você confirmar."
-        confirmLabel="Substituir pela sugestão"
-        cancelLabel="Manter minhas edições"
+        title={tx("Substituir o que você editou?")}
+        description={tx(
+          "A sugestão troca todo o conteúdo desta revisão, incluindo as suas edições. Nada é criado até você confirmar.",
+        )}
+        confirmLabel={tx("Substituir pela sugestão")}
+        cancelLabel={tx("Manter minhas edições")}
         onConfirm={runSuggest}
       />
     </div>
@@ -320,34 +424,48 @@ interface SubjectBlockProps {
   disabled: boolean;
 }
 
-const SubjectBlock = React.memo(function SubjectBlock({ subject, index, total, collapsed, onToggle, apply, disabled }: SubjectBlockProps) {
+const SubjectBlock = React.memo(function SubjectBlock({
+  subject,
+  index,
+  total,
+  collapsed,
+  onToggle,
+  apply,
+  disabled,
+}: SubjectBlockProps) {
   const sKey = subject.key;
   const nTopics = subject.topics.reduce((n, t) => n + 1 + t.children.length, 0);
-  const label = subject.title.trim() || `matéria ${index + 1}`;
+  const label = subject.title.trim() || tx("matéria {{v0}}", { v0: index + 1 });
   return (
-    <Card as="section" aria-label={`Matéria: ${label}`} className="gap-[10px] p-[14px] desktop:p-4">
+    <Card
+      as="section"
+      aria-label={tx("Matéria: {{v0}}", { v0: label })}
+      className="gap-[10px] p-[14px] desktop:p-4"
+    >
       <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="ghost-muted"
           size="icon"
           className="h-11 w-9 shrink-0"
           aria-expanded={!collapsed}
-          aria-label={collapsed ? `Expandir ${label}` : `Recolher ${label}`}
+          aria-label={collapsed ? tx("Expandir {{v0}}", { v0: label }) : tx("Recolher {{v0}}", { v0: label })}
           onClick={() => onToggle(sKey)}
         >
           {collapsed ? <CaretRight size={16} aria-hidden /> : <CaretDown size={16} aria-hidden />}
         </Button>
         <div className="flex min-w-0 flex-1 basis-[200px] flex-col gap-1">
-          <span className="kicker">Matéria {index + 1}</span>
+          <span className="kicker">{tx("Matéria {{v0}}", { v0: index + 1 })}</span>
           <Input
-            aria-label={`Título da matéria ${index + 1}`}
-            placeholder="Nome da matéria"
+            aria-label={tx("Título da matéria {{v0}}", { v0: index + 1 })}
+            placeholder={tx("Nome da matéria")}
             value={subject.title}
             maxLength={MAX_TITLE_CHARS}
             invalid={!subject.title.trim()}
             disabled={disabled}
             className="text-[15px] font-medium"
-            onChange={(e) => apply((list) => mapSubject(list, sKey, (s) => ({ ...s, title: e.target.value })))}
+            onChange={(e) =>
+              apply((list) => mapSubject(list, sKey, (s) => ({ ...s, title: e.target.value })))
+            }
           />
         </div>
         <RowActions
@@ -360,22 +478,44 @@ const SubjectBlock = React.memo(function SubjectBlock({ subject, index, total, c
         />
       </div>
       {collapsed ? (
-        <span className="tnum pl-[44px] text-[12px] text-neutral-400">{plural(nTopics, "tópico", "tópicos")} nesta matéria</span>
+        <span className="tnum pl-[44px] text-[12px] text-neutral-400">
+          {tx("{{v0}} nesta matéria", { v0: plural(nTopics, tx("tópico"), tx("tópicos")) })}
+        </span>
       ) : (
         <>
-          {subject.topics.length === 0 ? <span className="text-[12px] text-neutral-400">Sem tópicos. A matéria será criada vazia.</span> : null}
+          {subject.topics.length === 0 ? (
+            <span className="text-[12px] text-neutral-400">
+              {tx("Sem tópicos. A matéria será criada vazia.")}
+            </span>
+          ) : null}
           <ul className="m-0 flex list-none flex-col p-0">
             {subject.topics.map((t, ti) => (
-              <li key={t.key} className="flex flex-col gap-2 border-t border-divider py-[10px] first:border-t-0 first:pt-0">
+              <li
+                key={t.key}
+                className="flex flex-col gap-2 border-t border-divider py-[10px] first:border-t-0 first:pt-0"
+              >
                 <ItemRow
                   kind="tópico"
                   item={t}
                   disabled={disabled}
                   canUp={ti > 0}
                   canDown={ti < subject.topics.length - 1}
-                  onChange={(patch) => apply((list) => mapTopic(list, sKey, t.key, (x) => ({ ...x, ...patch })))}
-                  onMove={(dir) => apply((list) => mapSubject(list, sKey, (s) => ({ ...s, topics: moveBy(s.topics, t.key, dir) })))}
-                  onRemove={() => apply((list) => mapSubject(list, sKey, (s) => ({ ...s, topics: s.topics.filter((x) => x.key !== t.key) })))}
+                  onChange={(patch) =>
+                    apply((list) => mapTopic(list, sKey, t.key, (x) => ({ ...x, ...patch })))
+                  }
+                  onMove={(dir) =>
+                    apply((list) =>
+                      mapSubject(list, sKey, (s) => ({ ...s, topics: moveBy(s.topics, t.key, dir) })),
+                    )
+                  }
+                  onRemove={() =>
+                    apply((list) =>
+                      mapSubject(list, sKey, (s) => ({
+                        ...s,
+                        topics: s.topics.filter((x) => x.key !== t.key),
+                      })),
+                    )
+                  }
                 />
                 {t.children.length > 0 ? (
                   <ul className="m-0 flex list-none flex-col gap-2 border-l border-divider p-0 pl-3 tablet:ml-3">
@@ -387,9 +527,30 @@ const SubjectBlock = React.memo(function SubjectBlock({ subject, index, total, c
                           disabled={disabled}
                           canUp={ci > 0}
                           canDown={ci < t.children.length - 1}
-                          onChange={(patch) => apply((list) => mapTopic(list, sKey, t.key, (x) => ({ ...x, children: x.children.map((y) => (y.key === c.key ? { ...y, ...patch } : y)) })))}
-                          onMove={(dir) => apply((list) => mapTopic(list, sKey, t.key, (x) => ({ ...x, children: moveBy(x.children, c.key, dir) })))}
-                          onRemove={() => apply((list) => mapTopic(list, sKey, t.key, (x) => ({ ...x, children: x.children.filter((y) => y.key !== c.key) })))}
+                          onChange={(patch) =>
+                            apply((list) =>
+                              mapTopic(list, sKey, t.key, (x) => ({
+                                ...x,
+                                children: x.children.map((y) => (y.key === c.key ? { ...y, ...patch } : y)),
+                              })),
+                            )
+                          }
+                          onMove={(dir) =>
+                            apply((list) =>
+                              mapTopic(list, sKey, t.key, (x) => ({
+                                ...x,
+                                children: moveBy(x.children, c.key, dir),
+                              })),
+                            )
+                          }
+                          onRemove={() =>
+                            apply((list) =>
+                              mapTopic(list, sKey, t.key, (x) => ({
+                                ...x,
+                                children: x.children.filter((y) => y.key !== c.key),
+                              })),
+                            )
+                          }
                         />
                       </li>
                     ))}
@@ -400,10 +561,17 @@ const SubjectBlock = React.memo(function SubjectBlock({ subject, index, total, c
                   size="sm"
                   className="min-h-[36px] self-start tablet:ml-3"
                   disabled={disabled}
-                  onClick={() => apply((list) => mapTopic(list, sKey, t.key, (x) => ({ ...x, children: [...x.children, newEditorSubtopic()] })))}
+                  onClick={() =>
+                    apply((list) =>
+                      mapTopic(list, sKey, t.key, (x) => ({
+                        ...x,
+                        children: [...x.children, newEditorSubtopic()],
+                      })),
+                    )
+                  }
                 >
                   <Plus size={14} aria-hidden />
-                  Subtópico
+                  {tx("Subtópico")}
                 </Button>
               </li>
             ))}
@@ -412,10 +580,14 @@ const SubjectBlock = React.memo(function SubjectBlock({ subject, index, total, c
             variant="ghost"
             className="min-h-[44px] self-start"
             disabled={disabled}
-            onClick={() => apply((list) => mapSubject(list, sKey, (s) => ({ ...s, topics: [...s.topics, newEditorTopic()] })))}
+            onClick={() =>
+              apply((list) =>
+                mapSubject(list, sKey, (s) => ({ ...s, topics: [...s.topics, newEditorTopic()] })),
+              )
+            }
           >
             <Plus size={16} aria-hidden />
-            Adicionar tópico
+            {tx("Adicionar tópico")}
           </Button>
         </>
       )}
@@ -441,18 +613,21 @@ function ItemRow({ kind, item, disabled, canUp, canDown, onChange, onMove, onRem
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Input
-        aria-label={`Título do ${kind}`}
-        placeholder={kind === "tópico" ? "Título do tópico" : "Título do subtópico"}
+        aria-label={tx("Título do {{v0}}", { v0: kind })}
+        placeholder={kind === "tópico" ? tx("Título do tópico") : tx("Título do subtópico")}
         value={item.title}
         maxLength={MAX_TITLE_CHARS}
         invalid={!item.title.trim()}
         disabled={disabled}
-        className={cn("min-w-0 flex-1 basis-full tablet:basis-[220px]", kind === "subtópico" && "text-[13px]")}
+        className={cn(
+          "min-w-0 flex-1 basis-full tablet:basis-[220px]",
+          kind === "subtópico" && "text-[13px]",
+        )}
         onChange={(e) => onChange({ title: e.target.value })}
       />
       <Input
-        aria-label={`Páginas de ${label}`}
-        placeholder="Págs. 12–30"
+        aria-label={tx("Páginas de {{v0}}", { v0: label })}
+        placeholder={tx("Págs. 12–30")}
         inputMode="numeric"
         value={item.pages}
         disabled={disabled}
@@ -465,8 +640,8 @@ function ItemRow({ kind, item, disabled, canUp, canDown, onChange, onMove, onRem
         }}
       />
       <Input
-        aria-label={`Minutos estimados de ${label}`}
-        placeholder="Min."
+        aria-label={tx("Minutos estimados de {{v0}}", { v0: label })}
+        placeholder={tx("Min.")}
         inputMode="numeric"
         value={item.estimated_minutes ?? ""}
         disabled={disabled}
@@ -477,21 +652,63 @@ function ItemRow({ kind, item, disabled, canUp, canDown, onChange, onMove, onRem
           onChange({ estimated_minutes: n >= 1 ? n : null });
         }}
       />
-      <RowActions label={label} canUp={canUp} canDown={canDown} disabled={disabled} onMove={onMove} onRemove={onRemove} />
+      <RowActions
+        label={label}
+        canUp={canUp}
+        canDown={canDown}
+        disabled={disabled}
+        onMove={onMove}
+        onRemove={onRemove}
+      />
     </div>
   );
 }
 
-function RowActions({ label, canUp, canDown, disabled, onMove, onRemove }: { label: string; canUp: boolean; canDown: boolean; disabled: boolean; onMove: (dir: Dir) => void; onRemove: () => void }) {
+function RowActions({
+  label,
+  canUp,
+  canDown,
+  disabled,
+  onMove,
+  onRemove,
+}: {
+  label: string;
+  canUp: boolean;
+  canDown: boolean;
+  disabled: boolean;
+  onMove: (dir: Dir) => void;
+  onRemove: () => void;
+}) {
   return (
     <div className="ml-auto flex shrink-0 items-center">
-      <Button variant="ghost-muted" size="icon" className="h-11 w-9" aria-label={`Mover ${label} para cima`} disabled={disabled || !canUp} onClick={() => onMove(-1)}>
+      <Button
+        variant="ghost-muted"
+        size="icon"
+        className="h-11 w-9"
+        aria-label={tx("Mover {{v0}} para cima", { v0: label })}
+        disabled={disabled || !canUp}
+        onClick={() => onMove(-1)}
+      >
         <ArrowUp size={16} aria-hidden />
       </Button>
-      <Button variant="ghost-muted" size="icon" className="h-11 w-9" aria-label={`Mover ${label} para baixo`} disabled={disabled || !canDown} onClick={() => onMove(1)}>
+      <Button
+        variant="ghost-muted"
+        size="icon"
+        className="h-11 w-9"
+        aria-label={tx("Mover {{v0}} para baixo", { v0: label })}
+        disabled={disabled || !canDown}
+        onClick={() => onMove(1)}
+      >
         <ArrowDown size={16} aria-hidden />
       </Button>
-      <Button variant="ghost-muted" size="icon" className="h-11 w-9 hover:text-error" aria-label={`Remover ${label}`} disabled={disabled} onClick={onRemove}>
+      <Button
+        variant="ghost-muted"
+        size="icon"
+        className="h-11 w-9 hover:text-error"
+        aria-label={tx("Remover {{v0}}", { v0: label })}
+        disabled={disabled}
+        onClick={onRemove}
+      >
         <Trash size={16} aria-hidden />
       </Button>
     </div>

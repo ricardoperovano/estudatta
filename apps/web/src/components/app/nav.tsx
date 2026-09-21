@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { NavLink, useLocation } from "react-router";
 import {
   ArrowsClockwise,
@@ -29,14 +30,14 @@ import { Avatar, ProfileMenu } from "./profile-menu";
 type Item = { to: string; label: string; labelLong?: string; icon: Icon; end?: boolean };
 
 const study: Item[] = [
-  { to: "/app", label: "Hoje", icon: SunHorizon, end: true },
-  { to: "/app/plano", label: "Plano", labelLong: "Plano da semana", icon: CalendarBlank },
-  { to: "/app/objetivos", label: "Objetivos", icon: Target },
+  { to: "/app", label: t("Hoje"), icon: SunHorizon, end: true },
+  { to: "/app/plano", label: t("Plano"), labelLong: t("Plano da semana"), icon: CalendarBlank },
+  { to: "/app/objetivos", label: t("Objetivos"), icon: Target },
 ];
 const track: Item[] = [
-  { to: "/app/relatorio", label: "Relatório", icon: ChartLineUp },
-  { to: "/app/revisoes", label: "Revisões", icon: ArrowsClockwise },
-  { to: "/app/conquistas", label: "Conquistas", icon: Trophy },
+  { to: "/app/relatorio", label: t("Relatório"), icon: ChartLineUp },
+  { to: "/app/revisoes", label: t("Revisões"), icon: ArrowsClockwise },
+  { to: "/app/conquistas", label: t("Conquistas"), icon: Trophy },
 ];
 /** celular: 4 itens (Revisões e Conquistas ficam acessíveis pelo Hoje) */
 const mobile: Item[] = [study[0], study[1], study[2], track[0]];
@@ -48,15 +49,30 @@ export function BottomNav() {
   if (pathname.startsWith("/app/sessao")) return null;
   return (
     <nav
-      aria-label="Principal"
+      aria-label={t("Principal")}
       data-tour="nav"
       className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(var(--layout-bottom-nav-height)+env(safe-area-inset-bottom,0px))] items-center justify-around rounded-t-[20px] border-t border-divider bg-surface pb-[calc(6px+env(safe-area-inset-bottom,0px))] text-[11px] shadow-[0_-6px_24px_rgba(41,43,49,0.06)] tablet:hidden"
     >
       {mobile.map(({ to, label, icon: I, end }) => (
-        <NavLink key={to} to={to} end={end} className={({ isActive }) => cn("flex min-h-[44px] min-w-[64px] flex-col items-center justify-center gap-1", isActive ? "font-medium text-accent" : "text-neutral-500")}>
+        <NavLink
+          key={to}
+          to={to}
+          end={end}
+          className={({ isActive }) =>
+            cn(
+              "flex min-h-[44px] min-w-[64px] flex-col items-center justify-center gap-1",
+              isActive ? "font-medium text-accent" : "text-neutral-500",
+            )
+          }
+        >
           {({ isActive }) => (
             <>
-              <span className={cn("flex h-7 w-14 items-center justify-center rounded-full transition-colors duration-base", isActive && "bg-accent-900")}>
+              <span
+                className={cn(
+                  "flex h-7 w-14 items-center justify-center rounded-full transition-colors duration-base",
+                  isActive && "bg-accent-900",
+                )}
+              >
                 <I size={22} weight={isActive ? "fill" : "duotone"} aria-hidden />
               </span>
               <span>{label}</span>
@@ -81,7 +97,13 @@ function Badge({ n, tone = "accent", label }: { n: number; tone?: "accent" | "pe
       >
         {n > 99 ? "99+" : n}
       </span>
-      <span aria-hidden className={cn("absolute right-2 top-2 h-2 w-2 rounded-full desktop:hidden", tone === "pending" ? "bg-pending" : "bg-accent")} />
+      <span
+        aria-hidden
+        className={cn(
+          "absolute right-2 top-2 h-2 w-2 rounded-full desktop:hidden",
+          tone === "pending" ? "bg-pending" : "bg-accent",
+        )}
+      />
     </>
   );
 }
@@ -96,13 +118,20 @@ function NavItem({ item, badge, active }: { item: Item; badge?: React.ReactNode;
       className={({ isActive }) =>
         cn(
           "group relative flex items-center gap-3 rounded-[14px] px-3 py-[9px] text-[14px] transition-colors duration-base tablet:justify-center desktop:justify-start",
-          isActive || active ? "bg-accent-900 font-medium text-accent" : "text-neutral-400 hover:bg-canvas hover:text-primary",
+          isActive || active
+            ? "bg-accent-900 font-medium text-accent"
+            : "text-neutral-400 hover:bg-canvas hover:text-primary",
         )
       }
     >
       {({ isActive }) => (
         <>
-          <I size={22} weight={isActive || active ? "fill" : "duotone"} aria-hidden className="shrink-0 transition-transform duration-base group-hover:scale-110" />
+          <I
+            size={22}
+            weight={isActive || active ? "fill" : "duotone"}
+            aria-hidden
+            className="shrink-0 transition-transform duration-base group-hover:scale-110"
+          />
           <span className="hidden truncate desktop:inline">{labelLong || label}</span>
           {badge}
         </>
@@ -114,7 +143,9 @@ function NavItem({ item, badge, active }: { item: Item; badge?: React.ReactNode;
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="hidden px-3 pb-1 pt-3 text-[11px] font-medium uppercase tracking-[0.08em] text-neutral-500 desktop:block">{title}</span>
+      <span className="hidden px-3 pb-1 pt-3 text-[11px] font-medium uppercase tracking-[0.08em] text-neutral-500 desktop:block">
+        {title}
+      </span>
       <span aria-hidden className="mx-auto my-2 h-px w-6 bg-divider desktop:hidden" />
       {children}
     </div>
@@ -131,11 +162,11 @@ function CompanionCard() {
   const streak = g.data?.records.current_streak ?? 0;
   const pct = lv && lv.xp_for_next ? Math.min(1, lv.xp_into_level / lv.xp_for_next) : 0;
   const hour = new Date().getHours();
-  const hello = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
+  const hello = hour < 12 ? t("Bom dia") : hour < 18 ? t("Boa tarde") : t("Boa noite");
   return (
     <NavLink
       to="/app/conquistas"
-      title="Suas conquistas"
+      title={t("Suas conquistas")}
       className="group flex items-center gap-3 rounded-[18px] bg-[linear-gradient(135deg,var(--color-accent-900),var(--color-bg-canvas))] p-2.5 transition-shadow duration-base hover:shadow-md tablet:justify-center desktop:justify-start"
     >
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface shadow-sm">
@@ -149,15 +180,29 @@ function CompanionCard() {
         {lv ? (
           <>
             <span className="truncate text-[12px] text-neutral-400">
-              Nível {lv.number} · {lv.title}
+              {t("Nível {{v0}} · {{v1}}", { v0: lv.number, v1: lv.title })}
             </span>
-            <span className="h-1.5 overflow-hidden rounded-full bg-surface" role="img" aria-label={`${lv.xp_into_level} de ${lv.xp_for_next} XP para o próximo nível`}>
-              <span className="block h-full rounded-full bg-accent transition-[width] duration-slow" style={{ width: `${pct * 100}%` }} />
+            <span
+              className="h-1.5 overflow-hidden rounded-full bg-surface"
+              role="img"
+              aria-label={t("{{v0}} de {{v1}} XP para o próximo nível", {
+                v0: lv.xp_into_level,
+                v1: lv.xp_for_next,
+              })}
+            >
+              <span
+                className="block h-full rounded-full bg-accent transition-[width] duration-slow"
+                style={{ width: `${pct * 100}%` }}
+              />
             </span>
-            {streak > 1 ? <span className="text-[11px] text-neutral-500">{streak} dias seguidos. No seu ritmo.</span> : null}
+            {streak > 1 ? (
+              <span className="text-[11px] text-neutral-500">
+                {t("{{v0}} dias seguidos. No seu ritmo.", { v0: streak })}
+              </span>
+            ) : null}
           </>
         ) : (
-          <span className="text-[12px] text-neutral-400">Que bom te ver por aqui.</span>
+          <span className="text-[12px] text-neutral-400">{t("Que bom te ver por aqui.")}</span>
         )}
       </span>
     </NavLink>
@@ -168,7 +213,7 @@ function AccountLabel() {
   const user = useUser();
   return (
     <span className="hidden min-w-0 flex-1 flex-col desktop:flex">
-      <span className="truncate text-[13px] font-medium text-primary">{user?.name || "Sua conta"}</span>
+      <span className="truncate text-[13px] font-medium text-primary">{user?.name || t("Sua conta")}</span>
       <span className="truncate text-[11px] text-neutral-500">{user?.email}</span>
     </span>
   );
@@ -181,15 +226,21 @@ function SyncChip() {
   if (!online)
     return (
       <span className={cn(base, "bg-info-tint text-info")}>
-        <CloudSlash size={12} weight="bold" aria-hidden /> Sem conexão
+        <CloudSlash size={12} weight="bold" aria-hidden /> {t("Sem conexão")}
       </span>
     );
-  if (sync.status === "syncing") return <span className={cn(base, "bg-canvas text-neutral-400")}>Sincronizando…</span>;
-  if (sync.pending > 0) return <span className={cn(base, "bg-warning-tint text-pending")}>{sync.pending} pendente(s)</span>;
+  if (sync.status === "syncing")
+    return <span className={cn(base, "bg-canvas text-neutral-400")}>{t("Sincronizando…")}</span>;
+  if (sync.pending > 0)
+    return (
+      <span className={cn(base, "bg-warning-tint text-pending")}>
+        {t("{{v0}} pendente(s)", { v0: sync.pending })}
+      </span>
+    );
   return (
     <span className={cn(base, "bg-success-tint text-success")}>
       <Check size={11} weight="bold" aria-hidden />
-      {sync.lastSyncAt ? `Sincronizado às ${fmtTime(sync.lastSyncAt)}` : "Sincronizado"}
+      {sync.lastSyncAt ? t("Sincronizado às {{v0}}", { v0: fmtTime(sync.lastSyncAt) }) : t("Sincronizado")}
     </span>
   );
 }
@@ -208,34 +259,48 @@ export function Sidebar() {
       >
         <div className="flex items-center gap-[10px] px-2 pb-3 tablet:justify-center desktop:justify-start">
           <Symbol size={26} />
-          <span className="hidden text-[17px] font-medium tracking-[-0.015em] text-primary desktop:inline">Estudatta</span>
+          <span className="hidden text-[17px] font-medium tracking-[-0.015em] text-primary desktop:inline">
+            Estudatta
+          </span>
         </div>
         <CompanionCard />
-        <nav aria-label="Principal" className="flex flex-col">
-          <Section title="Estudar">
+        <nav aria-label={t("Principal")} className="flex flex-col">
+          <Section title={t("Estudar")}>
             {study.map((i) => (
               <NavItem key={i.to} item={i} />
             ))}
           </Section>
-          <Section title="Acompanhar">
+          <Section title={t("Acompanhar")}>
             <NavItem item={track[0]} />
-            <NavItem item={track[1]} badge={<Badge n={due} tone="pending" label={`${due} revisões para hoje ou atrasadas`} />} />
+            <NavItem
+              item={track[1]}
+              badge={
+                <Badge
+                  n={due}
+                  tone="pending"
+                  label={t("{{v0}} revisões para hoje ou atrasadas", { v0: due })}
+                />
+              }
+            />
             <NavItem item={track[2]} />
           </Section>
         </nav>
         <div className="mt-auto flex flex-col gap-0.5 pt-4">
           <NavItem
-            item={{ to: "/app/notificacoes", label: "Notificações", icon: Bell }}
-            badge={<Badge n={unread} label={`${unread} notificações não lidas`} />}
+            item={{ to: "/app/notificacoes", label: t("Notificações"), icon: Bell }}
+            badge={<Badge n={unread} label={t("{{v0}} notificações não lidas", { v0: unread })} />}
           />
-          <NavItem item={{ to: "/app/preferencias", label: "Preferências", icon: Gear }} active={pathname.startsWith("/app/preferencias")} />
-          <NavItem item={{ to: "/app/planos", label: "Planos", icon: Sparkle }} />
+          <NavItem
+            item={{ to: "/app/preferencias", label: t("Preferências"), icon: Gear }}
+            active={pathname.startsWith("/app/preferencias")}
+          />
+          <NavItem item={{ to: "/app/planos", label: t("Planos"), icon: Sparkle }} />
           <ProfileMenu
             align="start"
             trigger={
               <button
                 type="button"
-                aria-label="Menu da conta"
+                aria-label={t("Menu da conta")}
                 className="mt-1 flex w-full items-center gap-3 rounded-[14px] px-2 py-2 text-left hover:bg-canvas focus-visible:ring-2 focus-visible:ring-accent tablet:justify-center desktop:justify-start"
               >
                 <Avatar size={30} />

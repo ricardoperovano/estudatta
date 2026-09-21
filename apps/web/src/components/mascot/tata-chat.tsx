@@ -4,6 +4,7 @@
  * acabam (ou o plano não inclui), diz isso com honestidade. A conversa fica em sessionStorage
  * (últimas 20 mensagens), para reabrir e continuar. Respostas são ditas em voz quando ela está ligada.
  */
+import { t } from "@/i18n";
 import * as React from "react";
 import { Broom, PaperPlaneRight } from "@phosphor-icons/react";
 import { ApiError } from "@/api/client";
@@ -43,10 +44,13 @@ export function TataChat({ open, onOpenChange }: { open: boolean; onOpenChange: 
 
   const lastTata = [...messages].reverse().find((m) => m.role === "tata");
   const reason = status.data && !status.data.chat_enabled ? status.data.chat_reason : null;
-  const mood: TataMood = chat.isPending ? "think" : (lastTata?.mood ?? (reason ? "sleep" : messages.length ? "idle" : "wave"));
+  const mood: TataMood = chat.isPending
+    ? "think"
+    : (lastTata?.mood ?? (reason ? "sleep" : messages.length ? "idle" : "wave"));
   const reasonText = tataChatReasonText(reason);
   const upsell = reason === "ai_plan" || reason === "ai_quota" || reason === "ai_monthly_quota";
-  const canSend = online && !chat.isPending && !reason && draft.trim().length > 0 && draft.length <= MAX_CHARS;
+  const canSend =
+    online && !chat.isPending && !reason && draft.trim().length > 0 && draft.length <= MAX_CHARS;
 
   // rola para a última mensagem
   React.useEffect(() => {
@@ -79,7 +83,11 @@ export function TataChat({ open, onOpenChange }: { open: boolean; onOpenChange: 
         onError: (e) => {
           const code = errorToReason(e);
           if (code) return; // o status atualizado explica (plano, cota, ambiente)
-          setFailed(e instanceof ApiError && e.status === 0 ? "Sem conexão agora. Tente quando a internet voltar." : "O Tatá não conseguiu responder agora. Tente de novo em instantes.");
+          setFailed(
+            e instanceof ApiError && e.status === 0
+              ? t("Sem conexão agora. Tente quando a internet voltar.")
+              : t("O Tatá não conseguiu responder agora. Tente de novo em instantes."),
+          );
         },
       },
     );
@@ -96,12 +104,14 @@ export function TataChat({ open, onOpenChange }: { open: boolean; onOpenChange: 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         mode="sheet"
-        title="Conversa com o Tatá"
+        title={t("Conversa com o Tatá")}
         description={
           status.data && status.data.chat_enabled ? (
-            <span className="tnum">{creditsLine(status.data.chat_remaining_today, status.data.chat_remaining_month)}</span>
+            <span className="tnum">
+              {creditsLine(status.data.chat_remaining_today, status.data.chat_remaining_month)}
+            </span>
           ) : (
-            "Pergunte sobre o seu dia, o que estudar agora ou como funciona o app."
+            t("Pergunte sobre o seu dia, o que estudar agora ou como funciona o app.")
           )
         }
         className="gap-3 tablet:w-[min(560px,calc(100%-32px))]"
@@ -112,20 +122,35 @@ export function TataChat({ open, onOpenChange }: { open: boolean; onOpenChange: 
       >
         <div className="flex h-[min(560px,66dvh)] flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
-            <TataSvg mood={mood} size={56} title={`Tatá ${chat.isPending ? "pensando" : ""}`.trim()} />
+            <TataSvg
+              mood={mood}
+              size={56}
+              title={t("Tatá {{v0}}", { v0: chat.isPending ? "pensando" : "" }).trim()}
+            />
             {messages.length ? (
               <Button variant="ghost-muted" size="sm" onClick={clear}>
                 <Broom size={14} aria-hidden />
-                Limpar conversa
+                {t("Limpar conversa")}
               </Button>
             ) : null}
           </div>
 
-          <div ref={listRef} role="log" aria-live="polite" aria-label="Mensagens" className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-lg bg-canvas p-3">
+          <div
+            ref={listRef}
+            role="log"
+            aria-live="polite"
+            aria-label={t("Mensagens")}
+            className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-lg bg-canvas p-3"
+          >
             {messages.length === 0 && !reasonText ? (
               <div className="my-auto flex flex-col items-center gap-3 text-center">
-                <p className="m-0 text-[14px] text-neutral-400">Oi! Sobre o que a gente conversa hoje?</p>
-                <ul className="m-0 flex list-none flex-wrap justify-center gap-2 p-0" aria-label="Perguntas rápidas">
+                <p className="m-0 text-[14px] text-neutral-400">
+                  {t("Oi! Sobre o que a gente conversa hoje?")}
+                </p>
+                <ul
+                  className="m-0 flex list-none flex-wrap justify-center gap-2 p-0"
+                  aria-label={t("Perguntas rápidas")}
+                >
                   {QUICK_QUESTIONS.map((q) => (
                     <li key={q}>
                       <button
@@ -146,17 +171,22 @@ export function TataChat({ open, onOpenChange }: { open: boolean; onOpenChange: 
                 <p
                   className={cn(
                     "m-0 max-w-[85%] whitespace-pre-wrap break-words rounded-lg px-3 py-2 text-[14px] leading-[1.4]",
-                    m.role === "user" ? "rounded-br-sm bg-accent-900 text-primary" : "rounded-bl-sm border border-divider bg-surface text-primary shadow-sm",
+                    m.role === "user"
+                      ? "rounded-br-sm bg-accent-900 text-primary"
+                      : "rounded-bl-sm border border-divider bg-surface text-primary shadow-sm",
                   )}
                 >
-                  <span className="sr-only">{m.role === "user" ? "Você: " : "Tatá: "}</span>
+                  <span className="sr-only">{m.role === "user" ? t("Você:") : t("Tatá:")}</span>
                   {m.text}
                 </p>
               </div>
             ))}
             {chat.isPending ? (
               <div className="flex justify-start">
-                <p className="tata-typing m-0 flex items-center gap-1 rounded-lg rounded-bl-sm border border-divider bg-surface px-3 py-2.5 text-neutral-400" aria-label="Tatá está digitando">
+                <p
+                  className="tata-typing m-0 flex items-center gap-1 rounded-lg rounded-bl-sm border border-divider bg-surface px-3 py-2.5 text-neutral-400"
+                  aria-label={t("Tatá está digitando")}
+                >
                   <span /> <span /> <span />
                 </p>
               </div>
@@ -167,9 +197,20 @@ export function TataChat({ open, onOpenChange }: { open: boolean; onOpenChange: 
               </p>
             ) : null}
             {reasonText ? (
-              <div className={cn("flex flex-col items-center gap-2 text-center", messages.length ? "mt-auto pt-2" : "my-auto")}>
+              <div
+                className={cn(
+                  "flex flex-col items-center gap-2 text-center",
+                  messages.length ? "mt-auto pt-2" : "my-auto",
+                )}
+              >
                 <p className="m-0 text-[14px] text-neutral-300">{reasonText}</p>
-                {upsell ? <PlanUpsell compact text="Mais conversas com o Tatá nos planos Essencial e Completo." className="justify-center" /> : null}
+                {upsell ? (
+                  <PlanUpsell
+                    compact
+                    text={t("Mais conversas com o Tatá nos planos Essencial e Completo.")}
+                    className="justify-center"
+                  />
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -187,16 +228,33 @@ export function TataChat({ open, onOpenChange }: { open: boolean; onOpenChange: 
               onChange={(e) => setDraft(e.target.value)}
               maxLength={MAX_CHARS}
               disabled={!online || !!reason}
-              placeholder={!online ? "Sem conexão: a conversa volta com a internet." : reason ? "A conversa está pausada por enquanto." : "Escreva para o Tatá…"}
-              aria-label="Mensagem para o Tatá"
+              placeholder={
+                !online
+                  ? t("Sem conexão: a conversa volta com a internet.")
+                  : reason
+                    ? t("A conversa está pausada por enquanto.")
+                    : t("Escreva para o Tatá…")
+              }
+              aria-label={t("Mensagem para o Tatá")}
               autoComplete="off"
               enterKeyHint="send"
             />
-            <Button type="submit" variant="primary" size="icon" aria-label="Enviar" disabled={!canSend} loading={chat.isPending}>
+            <Button
+              type="submit"
+              variant="primary"
+              size="icon"
+              aria-label={t("Enviar")}
+              disabled={!canSend}
+              loading={chat.isPending}
+            >
               <PaperPlaneRight size={18} weight="fill" aria-hidden />
             </Button>
           </form>
-          {!online ? <p className="m-0 text-center text-[12px] text-neutral-400">Sem conexão. O Tatá responde quando a internet voltar.</p> : null}
+          {!online ? (
+            <p className="m-0 text-center text-[12px] text-neutral-400">
+              {t("Sem conexão. O Tatá responde quando a internet voltar.")}
+            </p>
+          ) : null}
         </div>
       </DialogContent>
     </Dialog>

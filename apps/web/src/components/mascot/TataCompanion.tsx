@@ -7,6 +7,7 @@
  * Com a voz ligada, cada fala nova é dita (natural ou do aparelho); com `chat`, há o botão
  * "Conversar", que abre a conversa com o Tatá.
  */
+import { t as tx } from "@/i18n";
 import * as React from "react";
 import { ChatCircleDots, Eye, EyeSlash, SpeakerHigh, SpeakerSlash } from "@phosphor-icons/react";
 import { useTataStatus } from "@/api/tata";
@@ -44,7 +45,7 @@ type Reaction = { mood: TataMood; text: string | null; until: number };
 
 function fmtMilestone(sec: number) {
   const m = Math.round(sec / 60);
-  if (m < 60) return `${m} min`;
+  if (m < 60) return tx("{{v0}} min", { v0: m });
   const h = Math.floor(m / 60);
   const r = m % 60;
   return r ? `${h}h${String(r).padStart(2, "0")}` : `${h}h`;
@@ -68,22 +69,52 @@ function signature(scene: CompanionScene): string {
   return `static|${scene.mood}`;
 }
 
-function reactionFor(prev: string | null, next: string, scene: CompanionScene, tone: Parameters<typeof tataSay>[1], n: number, now: number): Reaction | null {
+function reactionFor(
+  prev: string | null,
+  next: string,
+  scene: CompanionScene,
+  tone: Parameters<typeof tataSay>[1],
+  n: number,
+  now: number,
+): Reaction | null {
   const say = (s: TataSituation, vars?: Record<string, string>) => tataSay(s, tone, n, vars);
-  if (scene.kind === "today") return { mood: scene.situation === "today_all_done" ? "cheer" : "wave", text: null, until: now + 2600 };
+  if (scene.kind === "today")
+    return { mood: scene.situation === "today_all_done" ? "cheer" : "wave", text: null, until: now + 2600 };
   if (scene.kind !== "timer") return null;
   const [, pStatus, pLong, pGoal, pMile] = (prev ?? "").split("|");
   const [, status, long, goal, mile] = next.split("|");
-  if (!prev) return { mood: status === "active" ? "encourage" : "paused", text: say(status === "active" ? (scene.elapsed < 60 ? "timer_start" : "timer_resumed") : "timer_paused"), until: now + 6000 };
+  if (!prev)
+    return {
+      mood: status === "active" ? "encourage" : "paused",
+      text: say(
+        status === "active" ? (scene.elapsed < 60 ? "timer_start" : "timer_resumed") : "timer_paused",
+      ),
+      until: now + 6000,
+    };
   if (goal === "1" && pGoal === "0") return { mood: "cheer", text: say("timer_goal"), until: now + 8000 };
-  if (status === "paused" && pStatus === "active") return { mood: "paused", text: say("timer_paused"), until: now + 6000 };
-  if (status === "active" && pStatus === "paused") return { mood: "wave", text: say("timer_resumed"), until: now + 5000 };
-  if (long === "1" && pLong === "0") return { mood: "sleep", text: say("timer_paused_long"), until: now + 60 * 60_000 };
-  if (status === "active" && mile !== pMile && Number(mile) > 0) return { mood: "cheer", text: say("timer_milestone", { min: fmtMilestone(Number(mile) * MILESTONE) }), until: now + 6000 };
+  if (status === "paused" && pStatus === "active")
+    return { mood: "paused", text: say("timer_paused"), until: now + 6000 };
+  if (status === "active" && pStatus === "paused")
+    return { mood: "wave", text: say("timer_resumed"), until: now + 5000 };
+  if (long === "1" && pLong === "0")
+    return { mood: "sleep", text: say("timer_paused_long"), until: now + 60 * 60_000 };
+  if (status === "active" && mile !== pMile && Number(mile) > 0)
+    return {
+      mood: "cheer",
+      text: say("timer_milestone", { min: fmtMilestone(Number(mile) * MILESTONE) }),
+      until: now + 6000,
+    };
   return null;
 }
 
-export function TataCompanion({ scene, size = 112, layout = "row", className, chat, "data-tour": tour }: Props) {
+export function TataCompanion({
+  scene,
+  size = 112,
+  layout = "row",
+  className,
+  chat,
+  "data-tour": tour,
+}: Props) {
   const { enabled, muted, tone } = useTataPrefs();
   const reduced = useReducedMotion();
   const voice = useTataVoice();
@@ -190,7 +221,11 @@ export function TataCompanion({ scene, size = 112, layout = "row", className, ch
     setLastActive(Date.now());
     const now = Date.now();
     setClock(now);
-    setReaction({ mood: "love", text: tataSay(mood === "sleep" ? "wake" : "poke", tone, n), until: now + 3500 });
+    setReaction({
+      mood: "love",
+      text: tataSay(mood === "sleep" ? "wake" : "poke", tone, n),
+      until: now + 3500,
+    });
     setN(n + 1);
   };
 
@@ -199,18 +234,31 @@ export function TataCompanion({ scene, size = 112, layout = "row", className, ch
       ref={wrapRef}
       role="group"
       data-tour={tour}
-      aria-label="Tatá, seu companheiro de estudo"
-      className={cn("tata-companion flex items-center gap-3", layout === "column" ? "flex-col" : "flex-row", className)}
+      aria-label={tx("Tatá, seu companheiro de estudo")}
+      className={cn(
+        "tata-companion flex items-center gap-3",
+        layout === "column" ? "flex-col" : "flex-row",
+        className,
+      )}
     >
       <button
         type="button"
         onClick={poke}
         className="shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-accent"
-        aria-label="Fazer carinho no Tatá"
+        aria-label={tx("Fazer carinho no Tatá")}
       >
-        <TataSvg mood={mood} size={size} look={mood === "focus" || mood === "sleep" ? { x: 0, y: 0 } : look} />
+        <TataSvg
+          mood={mood}
+          size={size}
+          look={mood === "focus" || mood === "sleep" ? { x: 0, y: 0 } : look}
+        />
       </button>
-      <div className={cn("flex min-w-0 flex-col gap-1.5", layout === "column" ? "items-center" : "flex-1 items-start")}>
+      <div
+        className={cn(
+          "flex min-w-0 flex-col gap-1.5",
+          layout === "column" ? "items-center" : "flex-1 items-start",
+        )}
+      >
         <p
           aria-live="polite"
           className={cn(
@@ -230,16 +278,16 @@ export function TataCompanion({ scene, size = 112, layout = "row", className, ch
               className="mr-1 inline-flex min-h-[32px] items-center gap-1.5 rounded-full border border-divider bg-surface px-3 text-[13px] font-medium text-accent transition-colors duration-fast hover:bg-[color-mix(in_srgb,var(--color-action-primary)_10%,transparent)] focus-visible:ring-2 focus-visible:ring-accent"
             >
               <ChatCircleDots size={16} aria-hidden />
-              Conversar
+              {tx("Conversar")}
             </button>
           ) : null}
           <button
             type="button"
             onClick={() => setTataMuted(!muted)}
             className="rounded-md p-1.5 text-neutral-500 hover:text-primary focus-visible:ring-2 focus-visible:ring-accent"
-            aria-label={muted ? "Mostrar as falas do Tatá" : "Ocultar as falas do Tatá"}
+            aria-label={muted ? tx("Mostrar as falas do Tatá") : tx("Ocultar as falas do Tatá")}
             aria-pressed={!muted}
-            title={muted ? "Mostrar as falas do Tatá" : "Ocultar as falas do Tatá"}
+            title={muted ? tx("Mostrar as falas do Tatá") : tx("Ocultar as falas do Tatá")}
           >
             {muted ? <EyeSlash size={16} aria-hidden /> : <Eye size={16} aria-hidden />}
           </button>
@@ -252,11 +300,15 @@ export function TataCompanion({ scene, size = 112, layout = "row", className, ch
               voice.mode === "on" ? "text-accent" : "text-neutral-500",
               voice.speaking && "tata-voice--speaking",
             )}
-            aria-label={voice.mode === "on" ? "Desligar a voz do Tatá" : "Ligar a voz do Tatá"}
+            aria-label={voice.mode === "on" ? tx("Desligar a voz do Tatá") : tx("Ligar a voz do Tatá")}
             aria-pressed={voice.mode === "on"}
             title={voiceTitle(voice.mode, muted, status.data?.voice_natural)}
           >
-            {voice.mode === "on" ? <SpeakerHigh size={16} aria-hidden /> : <SpeakerSlash size={16} aria-hidden />}
+            {voice.mode === "on" ? (
+              <SpeakerHigh size={16} aria-hidden />
+            ) : (
+              <SpeakerSlash size={16} aria-hidden />
+            )}
           </button>
         </div>
       </div>
@@ -270,8 +322,8 @@ export function TataCompanion({ scene, size = 112, layout = "row", className, ch
 }
 
 function voiceTitle(mode: "on" | "off", muted: boolean, natural: boolean | undefined): string {
-  if (muted) return "Mostre as falas para ligar a voz";
-  if (mode !== "on") return "Ligar a voz do Tatá";
-  if (natural === undefined) return "Voz do Tatá ligada";
-  return natural ? "Voz do Tatá ligada · voz natural" : "Voz do Tatá ligada · voz do aparelho";
+  if (muted) return tx("Mostre as falas para ligar a voz");
+  if (mode !== "on") return tx("Ligar a voz do Tatá");
+  if (natural === undefined) return tx("Voz do Tatá ligada");
+  return natural ? tx("Voz do Tatá ligada · voz natural") : tx("Voz do Tatá ligada · voz do aparelho");
 }

@@ -1,6 +1,31 @@
+import { t as tx } from "@/i18n";
 import * as React from "react";
-import { ArrowDown, ArrowUp, CheckCircle, Circle, CircleHalf, PencilSimple, Plus } from "@phosphor-icons/react";
-import { Banner, Bar, Button, Card, Dialog, DialogContent, EmptyState, Field, Input, Seg, Select, Spinner, Tag, Textarea, toast } from "@/components/ui";
+import {
+  ArrowDown,
+  ArrowUp,
+  CheckCircle,
+  Circle,
+  CircleHalf,
+  PencilSimple,
+  Plus,
+} from "@phosphor-icons/react";
+import {
+  Banner,
+  Bar,
+  Button,
+  Card,
+  Dialog,
+  DialogContent,
+  EmptyState,
+  Field,
+  Input,
+  Seg,
+  Select,
+  Spinner,
+  Tag,
+  Textarea,
+  toast,
+} from "@/components/ui";
 import { errorMessage } from "@/api/client";
 import {
   flattenTopics,
@@ -25,10 +50,19 @@ import { ConfirmDialog } from "./confirm-dialog";
 import { fmtPages, materialKindLabel } from "./week-utils";
 
 type TopicStatus = "not_started" | "in_progress" | "done";
-const NEXT_STATUS: Record<TopicStatus, TopicStatus> = { not_started: "in_progress", in_progress: "done", done: "not_started" };
-const STATUS_LABEL: Record<TopicStatus, string> = { not_started: "não iniciado", in_progress: "em andamento", done: "concluído" };
+const NEXT_STATUS: Record<TopicStatus, TopicStatus> = {
+  not_started: "in_progress",
+  in_progress: "done",
+  done: "not_started",
+};
+const STATUS_LABEL: Record<TopicStatus, string> = {
+  not_started: tx("não iniciado"),
+  in_progress: tx("em andamento"),
+  done: tx("concluído"),
+};
 type Difficulty = (typeof DIFFICULTIES)[number]["value"];
-const difficultyLabel = (v: string | null | undefined) => DIFFICULTIES.find((d) => d.value === v)?.label ?? "Média";
+const difficultyLabel = (v: string | null | undefined) =>
+  DIFFICULTIES.find((d) => d.value === v)?.label ?? tx("Média");
 /** "Peso 3 · Difícil" — só o que foge do padrão (peso 1, média), para não poluir a lista. */
 function subjectMeta(s: Subject): string | null {
   const parts: string[] = [];
@@ -46,7 +80,11 @@ export function SubjectTree({ activityId }: { activityId: string }) {
   const subjects = useSubjects(activityId);
   const progress = useContentProgress(activityId);
   const [subjectSheet, setSubjectSheet] = React.useState<{ subject?: Subject } | null>(null);
-  const [topicSheet, setTopicSheet] = React.useState<{ subject: Subject; topic?: Topic; parentId?: string | null } | null>(null);
+  const [topicSheet, setTopicSheet] = React.useState<{
+    subject: Subject;
+    topic?: Topic;
+    parentId?: string | null;
+  } | null>(null);
 
   if (subjects.isPending) {
     return (
@@ -57,8 +95,17 @@ export function SubjectTree({ activityId }: { activityId: string }) {
   }
   if (subjects.isError) {
     return (
-      <Banner kind="error" actions={<Button size="sm" variant="secondary" onClick={() => subjects.refetch()}>Tentar de novo</Button>}>
-        {online ? "Não foi possível carregar as matérias." : "Sem conexão: as matérias aparecem quando você voltar à internet."}
+      <Banner
+        kind="error"
+        actions={
+          <Button size="sm" variant="secondary" onClick={() => subjects.refetch()}>
+            {tx("Tentar de novo")}
+          </Button>
+        }
+      >
+        {online
+          ? tx("Não foi possível carregar as matérias.")
+          : tx("Sem conexão: as matérias aparecem quando você voltar à internet.")}
       </Banner>
     );
   }
@@ -70,18 +117,39 @@ export function SubjectTree({ activityId }: { activityId: string }) {
       {p && p.topics_total > 0 ? (
         <Card className="gap-2 p-3">
           <div className="flex items-baseline justify-between gap-2">
-            <span className="kicker">Progresso de conteúdo</span>
+            <span className="kicker">{tx("Progresso de conteúdo")}</span>
             <span className="tnum text-[12px] text-neutral-400">
-              {p.topics_done} de {p.topics_total} tópicos · {Math.round(p.percent_done)}%
+              {tx("{{v0}} de {{v1}} tópicos · {{v2}}%", {
+                v0: p.topics_done,
+                v1: p.topics_total,
+                v2: Math.round(p.percent_done),
+              })}
             </span>
           </div>
-          <Bar value={p.percent_done / 100} color="accent-600" height={6} label={`${p.topics_done} de ${p.topics_total} tópicos concluídos`} />
-          <span className="text-[11px] text-neutral-500">Conteúdo é diferente de tempo: concluir um tópico não registra minutos.</span>
+          <Bar
+            value={p.percent_done / 100}
+            color="accent-600"
+            height={6}
+            label={tx("{{v0}} de {{v1}} tópicos concluídos", { v0: p.topics_done, v1: p.topics_total })}
+          />
+          <span className="text-[11px] text-neutral-500">
+            {tx("Conteúdo é diferente de tempo: concluir um tópico não registra minutos.")}
+          </span>
         </Card>
       ) : null}
 
       {list.length === 0 ? (
-        <EmptyState title="Nenhuma matéria ainda." description="Organize o objetivo em matérias e tópicos para vincular materiais e acompanhar o conteúdo." action={<Button variant="primary" onClick={() => setSubjectSheet({})}>+ Adicionar matéria</Button>} />
+        <EmptyState
+          title={tx("Nenhuma matéria ainda.")}
+          description={tx(
+            "Organize o objetivo em matérias e tópicos para vincular materiais e acompanhar o conteúdo.",
+          )}
+          action={
+            <Button variant="primary" onClick={() => setSubjectSheet({})}>
+              {tx("+ Adicionar matéria")}
+            </Button>
+          }
+        />
       ) : (
         list.map((s, idx) => (
           <SubjectCard
@@ -98,38 +166,79 @@ export function SubjectTree({ activityId }: { activityId: string }) {
       )}
       {list.length > 0 ? (
         <Button variant="secondary" size="lg" onClick={() => setSubjectSheet({})}>
-          + Adicionar matéria
+          {tx("+ Adicionar matéria")}
         </Button>
       ) : null}
 
-      {subjectSheet ? <SubjectSheet key={subjectSheet.subject?.id ?? "new"} activityId={activityId} subject={subjectSheet.subject} subjects={list} open onOpenChange={(o) => !o && setSubjectSheet(null)} /> : null}
-      {topicSheet ? <TopicSheet key={topicSheet.topic?.id ?? `new-${topicSheet.subject.id}`} activityId={activityId} subject={topicSheet.subject} topic={topicSheet.topic} parentId={topicSheet.parentId} open onOpenChange={(o) => !o && setTopicSheet(null)} /> : null}
+      {subjectSheet ? (
+        <SubjectSheet
+          key={subjectSheet.subject?.id ?? "new"}
+          activityId={activityId}
+          subject={subjectSheet.subject}
+          subjects={list}
+          open
+          onOpenChange={(o) => !o && setSubjectSheet(null)}
+        />
+      ) : null}
+      {topicSheet ? (
+        <TopicSheet
+          key={topicSheet.topic?.id ?? `new-${topicSheet.subject.id}`}
+          activityId={activityId}
+          subject={topicSheet.subject}
+          topic={topicSheet.topic}
+          parentId={topicSheet.parentId}
+          open
+          onOpenChange={(o) => !o && setTopicSheet(null)}
+        />
+      ) : null}
     </div>
   );
 }
 
-function SubjectCard({ subject, index, total, activityId, onEdit, onAddTopic, onEditTopic }: { subject: Subject; index: number; total: number; activityId: string; onEdit: () => void; onAddTopic: (parentId?: string | null) => void; onEditTopic: (t: Topic) => void }) {
+function SubjectCard({
+  subject,
+  index,
+  total,
+  activityId,
+  onEdit,
+  onAddTopic,
+  onEditTopic,
+}: {
+  subject: Subject;
+  index: number;
+  total: number;
+  activityId: string;
+  onEdit: () => void;
+  onAddTopic: (parentId?: string | null) => void;
+  onEditTopic: (t: Topic) => void;
+}) {
   const update = useUpdateTopic(activityId);
   const rows = flattenTopics(subject.topics);
   const cycle = async (t: Topic) => {
     const next = NEXT_STATUS[(t.status as TopicStatus) ?? "not_started"] ?? "in_progress";
     try {
       await update.mutateAsync({ id: t.id, body: { status: next, clear_parent: false } });
-      if (next === "done") toast.success(`"${t.title}" concluído`, "O tempo registrado não muda.");
+      if (next === "done")
+        toast.success(tx('"{{v0}}" concluído', { v0: t.title }), tx("O tempo registrado não muda."));
     } catch (err) {
-      toast.error("Não foi possível atualizar o tópico", errorMessage(err));
+      toast.error(tx("Não foi possível atualizar o tópico"), errorMessage(err));
     }
   };
   return (
     <Card className={cn("gap-2 p-3", rows.length === 0 && "gap-1")}>
       <div className="flex items-center justify-between gap-2">
-        <button type="button" className="flex min-h-[32px] flex-1 items-center gap-2 text-left font-medium" onClick={onEdit} aria-label={`Editar matéria ${subject.title}`}>
+        <button
+          type="button"
+          className="flex min-h-[32px] flex-1 items-center gap-2 text-left font-medium"
+          onClick={onEdit}
+          aria-label={tx("Editar matéria {{v0}}", { v0: subject.title })}
+        >
           {subject.title}
           <PencilSimple size={14} className="text-neutral-500" aria-hidden />
         </button>
         <span className="tnum shrink-0 text-[12px] text-neutral-400">
           {subjectMeta(subject) ? <span className="text-neutral-500">{subjectMeta(subject)} · </span> : null}
-          {subject.topics_total} {subject.topics_total === 1 ? "tópico" : "tópicos"}
+          {subject.topics_total} {subject.topics_total === 1 ? tx("tópico") : tx("tópicos")}
           {subject.logged_seconds > 0 ? ` · ${fmtMinutes(subject.logged_seconds)}` : ""}
         </span>
       </div>
@@ -138,18 +247,34 @@ function SubjectCard({ subject, index, total, activityId, onEdit, onAddTopic, on
         const Icon = st === "done" ? CheckCircle : st === "in_progress" ? CircleHalf : Circle;
         const mats = topic.materials ?? [];
         return (
-          <div key={topic.id} className={cn("flex items-center justify-between gap-2", st === "done" && "text-neutral-400")} style={{ paddingLeft: 12 + depth * 16 }}>
+          <div
+            key={topic.id}
+            className={cn("flex items-center justify-between gap-2", st === "done" && "text-neutral-400")}
+            style={{ paddingLeft: 12 + depth * 16 }}
+          >
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <button
                 type="button"
-                className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-md", st === "done" ? "text-accent" : st === "in_progress" ? "text-accent" : "text-neutral-500", "hover:bg-[color-mix(in_srgb,var(--color-text-primary)_7%,transparent)]")}
-                aria-label={`${topic.title}: ${STATUS_LABEL[st]}. Marcar como ${STATUS_LABEL[NEXT_STATUS[st]]}`}
+                className={cn(
+                  "grid h-8 w-8 shrink-0 place-items-center rounded-md",
+                  st === "done" ? "text-accent" : st === "in_progress" ? "text-accent" : "text-neutral-500",
+                  "hover:bg-[color-mix(in_srgb,var(--color-text-primary)_7%,transparent)]",
+                )}
+                aria-label={tx("{{v0}}: {{v1}}. Marcar como {{v2}}", {
+                  v0: topic.title,
+                  v1: STATUS_LABEL[st],
+                  v2: STATUS_LABEL[NEXT_STATUS[st]],
+                })}
                 onClick={() => cycle(topic)}
                 disabled={update.isPending}
               >
                 <Icon size={18} weight={st === "done" ? "fill" : "regular"} aria-hidden />
               </button>
-              <button type="button" className="min-w-0 flex-1 truncate py-1 text-left" onClick={() => onEditTopic(topic)}>
+              <button
+                type="button"
+                className="min-w-0 flex-1 truncate py-1 text-left"
+                onClick={() => onEditTopic(topic)}
+              >
                 {topic.title}
               </button>
             </div>
@@ -164,28 +289,44 @@ function SubjectCard({ subject, index, total, activityId, onEdit, onAddTopic, on
                 {mats.length > 2 ? <Tag variant="neutral">+{mats.length - 2}</Tag> : null}
               </span>
             ) : (
-              <span className="shrink-0 text-[12px] text-neutral-400">{topic.estimated_minutes ? `${topic.estimated_minutes} min` : "sem material"}</span>
+              <span className="shrink-0 text-[12px] text-neutral-400">
+                {topic.estimated_minutes
+                  ? tx("{{v0}} min", { v0: topic.estimated_minutes })
+                  : tx("sem material")}
+              </span>
             )}
           </div>
         );
       })}
       <div className="flex items-center justify-between pl-3">
         <Button variant="ghost" size="sm" onClick={() => onAddTopic(null)}>
-          <Plus size={14} aria-hidden /> Adicionar tópico
+          <Plus size={14} aria-hidden /> {tx("Adicionar tópico")}
         </Button>
-        <span className="sr-only">
-          Matéria {index + 1} de {total}
-        </span>
+        <span className="sr-only">{tx("Matéria {{v0}} de {{v1}}", { v0: index + 1, v1: total })}</span>
       </div>
     </Card>
   );
 }
 
-function SubjectSheet({ activityId, subject, subjects, open, onOpenChange }: { activityId: string; subject?: Subject; subjects: Subject[]; open: boolean; onOpenChange: (o: boolean) => void }) {
+function SubjectSheet({
+  activityId,
+  subject,
+  subjects,
+  open,
+  onOpenChange,
+}: {
+  activityId: string;
+  subject?: Subject;
+  subjects: Subject[];
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+}) {
   const [title, setTitle] = React.useState(subject?.title ?? "");
   const [description, setDescription] = React.useState(subject?.description ?? "");
   const [weight, setWeight] = React.useState(String(subject?.weight ?? 1));
-  const [difficulty, setDifficulty] = React.useState<Difficulty>(DIFFICULTIES.some((d) => d.value === subject?.difficulty) ? (subject!.difficulty as Difficulty) : "media");
+  const [difficulty, setDifficulty] = React.useState<Difficulty>(
+    DIFFICULTIES.some((d) => d.value === subject?.difficulty) ? (subject!.difficulty as Difficulty) : "media",
+  );
   const [error, setError] = React.useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = React.useState(false);
   const create = useCreateSubject(activityId);
@@ -197,12 +338,17 @@ function SubjectSheet({ activityId, subject, subjects, open, onOpenChange }: { a
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!title.trim()) return setError("Dê um nome à matéria.");
+    if (!title.trim()) return setError(tx("Dê um nome à matéria."));
     try {
-      const body = { title: title.trim(), description: description || null, weight: Number(weight), difficulty };
+      const body = {
+        title: title.trim(),
+        description: description || null,
+        weight: Number(weight),
+        difficulty,
+      };
       if (subject) await update.mutateAsync({ id: subject.id, body });
       else await create.mutateAsync(body);
-      toast.success(subject ? "Matéria atualizada" : "Matéria adicionada");
+      toast.success(subject ? tx("Matéria atualizada") : tx("Matéria adicionada"));
       onOpenChange(false);
     } catch (err) {
       setError(errorMessage(err));
@@ -223,36 +369,83 @@ function SubjectSheet({ activityId, subject, subjects, open, onOpenChange }: { a
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent mode="sheet" title={subject ? "Editar matéria" : "Nova matéria"}>
+      <DialogContent mode="sheet" title={subject ? tx("Editar matéria") : tx("Nova matéria")}>
         <form onSubmit={submit} className="flex flex-col gap-[14px]">
           {error ? <Banner kind="error">{error}</Banner> : null}
-          <Field label="Nome" htmlFor="s-title">
-            <Input id="s-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Gramática" maxLength={200} autoFocus />
+          <Field label={tx("Nome")} htmlFor="s-title">
+            <Input
+              id="s-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={tx("Gramática")}
+              maxLength={200}
+              autoFocus
+            />
           </Field>
-          <Field label="Descrição (opcional)" htmlFor="s-desc">
-            <Textarea id="s-desc" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} />
+          <Field label={tx("Descrição (opcional)")} htmlFor="s-desc">
+            <Textarea
+              id="s-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              maxLength={2000}
+            />
           </Field>
-          <Field label="Peso" hint="Quanto essa matéria vale na prova ou importa para você (1 = pouco, 5 = muito).">
-            <Seg block label="Peso" value={weight} onChange={setWeight} options={["1", "2", "3", "4", "5"].map((v) => ({ value: v, label: v }))} />
+          <Field
+            label={tx("Peso")}
+            hint={tx("Quanto essa matéria vale na prova ou importa para você (1 = pouco, 5 = muito).")}
+          >
+            <Seg
+              block
+              label={tx("Peso")}
+              value={weight}
+              onChange={setWeight}
+              options={["1", "2", "3", "4", "5"].map((v) => ({ value: v, label: v }))}
+            />
           </Field>
-          <Field label="Dificuldade">
-            <Seg block label="Dificuldade" value={difficulty} onChange={setDifficulty} options={DIFFICULTIES.map((d) => ({ value: d.value, label: d.label }))} />
+          <Field label={tx("Dificuldade")}>
+            <Seg
+              block
+              label={tx("Dificuldade")}
+              value={difficulty}
+              onChange={setDifficulty}
+              options={DIFFICULTIES.map((d) => ({ value: d.value, label: d.label }))}
+            />
           </Field>
           <Button type="submit" size="xl" block loading={create.isPending || update.isPending}>
-            Salvar
+            {tx("Salvar")}
           </Button>
           {subject ? (
             <div className="flex items-center justify-between">
               <span className="flex gap-1">
-                <Button type="button" variant="secondary" size="icon" aria-label="Mover para cima" disabled={idx <= 0 || reorder.isPending} onClick={() => move(-1)}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  aria-label={tx("Mover para cima")}
+                  disabled={idx <= 0 || reorder.isPending}
+                  onClick={() => move(-1)}
+                >
                   <ArrowUp size={16} />
                 </Button>
-                <Button type="button" variant="secondary" size="icon" aria-label="Mover para baixo" disabled={idx < 0 || idx >= subjects.length - 1 || reorder.isPending} onClick={() => move(1)}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  aria-label={tx("Mover para baixo")}
+                  disabled={idx < 0 || idx >= subjects.length - 1 || reorder.isPending}
+                  onClick={() => move(1)}
+                >
                   <ArrowDown size={16} />
                 </Button>
               </span>
-              <Button type="button" variant="ghost-muted" size="sm" className="text-error" onClick={() => setConfirmDelete(true)}>
-                Excluir matéria
+              <Button
+                type="button"
+                variant="ghost-muted"
+                size="sm"
+                className="text-error"
+                onClick={() => setConfirmDelete(true)}
+              >
+                {tx("Excluir matéria")}
               </Button>
             </div>
           ) : null}
@@ -261,15 +454,17 @@ function SubjectSheet({ activityId, subject, subjects, open, onOpenChange }: { a
       <ConfirmDialog
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
-        title={`Excluir "${subject?.title}"?`}
-        description="Os tópicos e vínculos com materiais desta matéria são removidos. O tempo registrado continua no objetivo."
-        confirmLabel="Excluir"
+        title={tx('Excluir "{{v0}}"?', { v0: subject?.title })}
+        description={tx(
+          "Os tópicos e vínculos com materiais desta matéria são removidos. O tempo registrado continua no objetivo.",
+        )}
+        confirmLabel={tx("Excluir")}
         danger
         loading={remove.isPending}
         onConfirm={async () => {
           try {
             await remove.mutateAsync(subject!.id);
-            toast.success("Matéria excluída");
+            toast.success(tx("Matéria excluída"));
             setConfirmDelete(false);
             onOpenChange(false);
           } catch (err) {
@@ -282,10 +477,26 @@ function SubjectSheet({ activityId, subject, subjects, open, onOpenChange }: { a
   );
 }
 
-function TopicSheet({ activityId, subject, topic, parentId, open, onOpenChange }: { activityId: string; subject: Subject; topic?: Topic; parentId?: string | null; open: boolean; onOpenChange: (o: boolean) => void }) {
+function TopicSheet({
+  activityId,
+  subject,
+  topic,
+  parentId,
+  open,
+  onOpenChange,
+}: {
+  activityId: string;
+  subject: Subject;
+  topic?: Topic;
+  parentId?: string | null;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+}) {
   const [title, setTitle] = React.useState(topic?.title ?? "");
   const [description, setDescription] = React.useState(topic?.description ?? "");
-  const [minutes, setMinutes] = React.useState(topic?.estimated_minutes ? String(topic.estimated_minutes) : "");
+  const [minutes, setMinutes] = React.useState(
+    topic?.estimated_minutes ? String(topic.estimated_minutes) : "",
+  );
   const [status, setStatus] = React.useState<TopicStatus>((topic?.status as TopicStatus) ?? "not_started");
   const [parent, setParent] = React.useState<string>(topic?.parent_id ?? parentId ?? "");
   const [error, setError] = React.useState<string | null>(null);
@@ -296,25 +507,42 @@ function TopicSheet({ activityId, subject, topic, parentId, open, onOpenChange }
   const reorder = useReorderTopics(activityId);
 
   const all = flattenTopics(subject.topics);
-  const parentOptions = all.filter(({ topic: t }) => t.id !== topic?.id && (!topic || !isDescendant(topic, t.id)));
+  const parentOptions = all.filter(
+    ({ topic: t }) => t.id !== topic?.id && (!topic || !isDescendant(topic, t.id)),
+  );
   const siblings = (topic ? findSiblings(subject.topics ?? [], topic) : []).map((t) => t.id);
   const idx = topic ? siblings.indexOf(topic.id) : -1;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!title.trim()) return setError("Dê um nome ao tópico.");
+    if (!title.trim()) return setError(tx("Dê um nome ao tópico."));
     const est = minutes ? Number(minutes) : null;
     try {
       if (topic) {
         await update.mutateAsync({
           id: topic.id,
-          body: { title: title.trim(), description: description || null, estimated_minutes: est, status, parent_id: parent || null, clear_parent: !parent && !!topic.parent_id },
+          body: {
+            title: title.trim(),
+            description: description || null,
+            estimated_minutes: est,
+            status,
+            parent_id: parent || null,
+            clear_parent: !parent && !!topic.parent_id,
+          },
         });
       } else {
-        await create.mutateAsync({ subjectId: subject.id, body: { title: title.trim(), description: description || null, parent_id: parent || null, estimated_minutes: est } });
+        await create.mutateAsync({
+          subjectId: subject.id,
+          body: {
+            title: title.trim(),
+            description: description || null,
+            parent_id: parent || null,
+            estimated_minutes: est,
+          },
+        });
       }
-      toast.success(topic ? "Tópico atualizado" : "Tópico adicionado");
+      toast.success(topic ? tx("Tópico atualizado") : tx("Tópico adicionado"));
       onOpenChange(false);
     } catch (err) {
       setError(errorMessage(err));
@@ -335,34 +563,53 @@ function TopicSheet({ activityId, subject, topic, parentId, open, onOpenChange }
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent mode="sheet" title={topic ? "Editar tópico" : "Novo tópico"} description={`Matéria: ${subject.title}`}>
+      <DialogContent
+        mode="sheet"
+        title={topic ? tx("Editar tópico") : tx("Novo tópico")}
+        description={tx("Matéria: {{v0}}", { v0: subject.title })}
+      >
         <form onSubmit={submit} className="flex flex-col gap-[14px]">
           {error ? <Banner kind="error">{error}</Banner> : null}
-          <Field label="Nome" htmlFor="t-title">
-            <Input id="t-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Present perfect" maxLength={200} autoFocus />
+          <Field label={tx("Nome")} htmlFor="t-title">
+            <Input
+              id="t-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={tx("Present perfect")}
+              maxLength={200}
+              autoFocus
+            />
           </Field>
           {topic ? (
-            <Field label="Estado" hint="Concluir um tópico não registra minutos.">
+            <Field label={tx("Estado")} hint={tx("Concluir um tópico não registra minutos.")}>
               <Seg
                 block
-                label="Estado do tópico"
+                label={tx("Estado do tópico")}
                 value={status}
                 onChange={setStatus}
                 options={[
-                  { value: "not_started", label: "Não iniciado" },
-                  { value: "in_progress", label: "Em andamento" },
-                  { value: "done", label: "Concluído" },
+                  { value: "not_started", label: tx("Não iniciado") },
+                  { value: "in_progress", label: tx("Em andamento") },
+                  { value: "done", label: tx("Concluído") },
                 ]}
               />
             </Field>
           ) : null}
           <div className="grid grid-cols-2 gap-2">
-            <Field label="Estimativa (min, opcional)" htmlFor="t-min">
-              <Input id="t-min" type="number" inputMode="numeric" min={0} max={6000} value={minutes} onChange={(e) => setMinutes(e.target.value)} />
+            <Field label={tx("Estimativa (min, opcional)")} htmlFor="t-min">
+              <Input
+                id="t-min"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={6000}
+                value={minutes}
+                onChange={(e) => setMinutes(e.target.value)}
+              />
             </Field>
-            <Field label="Dentro de (opcional)" htmlFor="t-parent">
+            <Field label={tx("Dentro de (opcional)")} htmlFor="t-parent">
               <Select id="t-parent" value={parent} onChange={(e) => setParent(e.target.value)}>
-                <option value="">— nível principal —</option>
+                <option value="">{tx("— nível principal —")}</option>
                 {parentOptions.map(({ topic: t, depth }) => (
                   <option key={t.id} value={t.id}>
                     {"· ".repeat(depth)}
@@ -372,12 +619,17 @@ function TopicSheet({ activityId, subject, topic, parentId, open, onOpenChange }
               </Select>
             </Field>
           </div>
-          <Field label="Descrição (opcional)" htmlFor="t-desc">
-            <Textarea id="t-desc" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} />
+          <Field label={tx("Descrição (opcional)")} htmlFor="t-desc">
+            <Textarea
+              id="t-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              maxLength={2000}
+            />
           </Field>
           {topic && topic.materials && topic.materials.length > 0 ? (
             <div className="flex flex-col gap-1 text-[13px]">
-              <span className="kicker">Materiais vinculados</span>
+              <span className="kicker">{tx("Materiais vinculados")}</span>
               {topic.materials.map((m) => (
                 <span key={m.id} className="flex items-center justify-between gap-2">
                   <span className="truncate">{m.title}</span>
@@ -387,24 +639,46 @@ function TopicSheet({ activityId, subject, topic, parentId, open, onOpenChange }
                   </Tag>
                 </span>
               ))}
-              <span className="text-[12px] text-neutral-500">Vincule ou desvincule na aba Materiais.</span>
+              <span className="text-[12px] text-neutral-500">
+                {tx("Vincule ou desvincule na aba Materiais.")}
+              </span>
             </div>
           ) : null}
           <Button type="submit" size="xl" block loading={create.isPending || update.isPending}>
-            {topic ? "Salvar" : "Adicionar tópico"}
+            {topic ? tx("Salvar") : tx("Adicionar tópico")}
           </Button>
           {topic ? (
             <div className="flex items-center justify-between">
               <span className="flex gap-1">
-                <Button type="button" variant="secondary" size="icon" aria-label="Mover para cima" disabled={idx <= 0 || reorder.isPending} onClick={() => move(-1)}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  aria-label={tx("Mover para cima")}
+                  disabled={idx <= 0 || reorder.isPending}
+                  onClick={() => move(-1)}
+                >
                   <ArrowUp size={16} />
                 </Button>
-                <Button type="button" variant="secondary" size="icon" aria-label="Mover para baixo" disabled={idx < 0 || idx >= siblings.length - 1 || reorder.isPending} onClick={() => move(1)}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  aria-label={tx("Mover para baixo")}
+                  disabled={idx < 0 || idx >= siblings.length - 1 || reorder.isPending}
+                  onClick={() => move(1)}
+                >
                   <ArrowDown size={16} />
                 </Button>
               </span>
-              <Button type="button" variant="ghost-muted" size="sm" className="text-error" onClick={() => setConfirmDelete(true)}>
-                Excluir tópico
+              <Button
+                type="button"
+                variant="ghost-muted"
+                size="sm"
+                className="text-error"
+                onClick={() => setConfirmDelete(true)}
+              >
+                {tx("Excluir tópico")}
               </Button>
             </div>
           ) : null}
@@ -413,15 +687,15 @@ function TopicSheet({ activityId, subject, topic, parentId, open, onOpenChange }
       <ConfirmDialog
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
-        title={`Excluir "${topic?.title}"?`}
-        description="Subtópicos e vínculos com materiais são removidos. Tempo registrado não muda."
-        confirmLabel="Excluir"
+        title={tx('Excluir "{{v0}}"?', { v0: topic?.title })}
+        description={tx("Subtópicos e vínculos com materiais são removidos. Tempo registrado não muda.")}
+        confirmLabel={tx("Excluir")}
         danger
         loading={remove.isPending}
         onConfirm={async () => {
           try {
             await remove.mutateAsync(topic!.id);
-            toast.success("Tópico excluído");
+            toast.success(tx("Tópico excluído"));
             setConfirmDelete(false);
             onOpenChange(false);
           } catch (err) {

@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import * as React from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { useForm } from "react-hook-form";
@@ -7,7 +8,7 @@ import { AuthLayout } from "./layout";
 import { Button, Field, Input, Banner } from "@/components/ui";
 import { api, unwrap, errorMessage } from "@/api/client";
 
-const schema = z.object({ password: z.string().min(8, "Use pelo menos 8 caracteres.") });
+const schema = z.object({ password: z.string().min(8, t("Use pelo menos 8 caracteres.")) });
 type Form = z.infer<typeof schema>;
 
 export default function ResetPage() {
@@ -26,17 +27,28 @@ export default function ResetPage() {
     }
   };
   return (
-    <AuthLayout mood="encourage" greeting="Escolha uma senha nova e pronto." title="Redefinir senha" footer={<Link to="/entrar">Voltar para entrar</Link>}>
+    <AuthLayout
+      mood="encourage"
+      greeting={t("Escolha uma senha nova e pronto.")}
+      title={t("Redefinir senha")}
+      footer={<Link to="/entrar">{t("Voltar para entrar")}</Link>}
+    >
       {!token ? (
-        <Banner kind="error">Link inválido. Peça um novo em "Esqueci minha senha".</Banner>
+        <Banner kind="error">{t('Link inválido. Peça um novo em "Esqueci minha senha".')}</Banner>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
           {error ? <Banner kind="error">{error}</Banner> : null}
-          <Field label="Nova senha" htmlFor="password" error={formState.errors.password?.message}>
-            <Input id="password" type="password" autoComplete="new-password" invalid={!!formState.errors.password} {...register("password")} />
+          <Field label={t("Nova senha")} htmlFor="password" error={formState.errors.password?.message}>
+            <Input
+              id="password"
+              type="password"
+              autoComplete="new-password"
+              invalid={!!formState.errors.password}
+              {...register("password")}
+            />
           </Field>
           <Button type="submit" size="xl" block loading={formState.isSubmitting}>
-            Salvar nova senha
+            {t("Salvar nova senha")}
           </Button>
         </form>
       )}

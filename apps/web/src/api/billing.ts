@@ -1,4 +1,5 @@
 /** Planos e assinatura: catálogo público, estado da assinatura, checkout, cancelamento e verificação. */
+import { t } from "@/i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, unwrap } from "./client";
 import { sessionKey } from "./session";
@@ -37,7 +38,8 @@ export function useSubscription() {
 export function useCheckout() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (body: { plan_code: string; interval: BillingInterval; coupon_code?: string | null }) => unwrap(await api.POST("/api/v1/billing/checkout", { body })),
+    mutationFn: async (body: { plan_code: string; interval: BillingInterval; coupon_code?: string | null }) =>
+      unwrap(await api.POST("/api/v1/billing/checkout", { body })),
     onSettled: () => qc.invalidateQueries({ queryKey: billingKeys.subscription }),
   });
 }
@@ -73,7 +75,8 @@ export type CouponInfo = components["schemas"]["CouponInfoOut"];
 /** Valida um cupom para este usuário (sem consumir). */
 export function useCheckCoupon() {
   return useMutation({
-    mutationFn: async (body: { code: string; plan_code?: string | null }) => unwrap(await api.POST("/api/v1/billing/coupons/check", { body })) as CouponInfo,
+    mutationFn: async (body: { code: string; plan_code?: string | null }) =>
+      unwrap(await api.POST("/api/v1/billing/coupons/check", { body })) as CouponInfo,
   });
 }
 
@@ -81,7 +84,8 @@ export function useCheckCoupon() {
 export function useRedeemCoupon() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (code: string) => unwrap(await api.POST("/api/v1/billing/coupons/redeem", { body: { code } })) as SubscriptionState,
+    mutationFn: async (code: string) =>
+      unwrap(await api.POST("/api/v1/billing/coupons/redeem", { body: { code } })) as SubscriptionState,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: billingKeys.subscription });
       qc.invalidateQueries({ queryKey: sessionKey });
@@ -99,9 +103,9 @@ export function isFreePlan(plan: PublicPlan): boolean {
 }
 
 const SUB_STATUS: Record<string, string> = {
-  pending: "Pagamento em confirmação",
+  pending: t("Pagamento em confirmação"),
   active: "Ativa",
-  past_due: "Pagamento em atraso",
+  past_due: t("Pagamento em atraso"),
   cancelled: "Cancelada",
   canceled: "Cancelada",
   expired: "Encerrada",
@@ -110,6 +114,6 @@ const SUB_STATUS: Record<string, string> = {
 };
 
 export function subscriptionStatusLabel(status: string | null | undefined): string {
-  if (!status) return "Sem assinatura";
+  if (!status) return t("Sem assinatura");
   return SUB_STATUS[status] ?? status.replace(/_/g, " ");
 }

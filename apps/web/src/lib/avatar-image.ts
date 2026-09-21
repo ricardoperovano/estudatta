@@ -1,4 +1,5 @@
 /** Prepara a foto de perfil no navegador: corte central quadrado e redução para 256 px (JPEG). */
+import { t } from "@/i18n";
 export const AVATAR_SIZE = 256;
 const MAX_BYTES = 300 * 1024;
 
@@ -12,23 +13,23 @@ function load(file: File): Promise<HTMLImageElement> {
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error("Não deu para abrir essa imagem."));
+      reject(new Error(t("Não deu para abrir essa imagem.")));
     };
     img.src = url;
   });
 }
 
 export async function prepareAvatar(file: File): Promise<Blob> {
-  if (!file.type.startsWith("image/")) throw new Error("Escolha um arquivo de imagem (JPG, PNG ou WebP).");
+  if (!file.type.startsWith("image/")) throw new Error(t("Escolha um arquivo de imagem (JPG, PNG ou WebP)."));
   const img = await load(file);
   const side = Math.min(img.naturalWidth, img.naturalHeight);
-  if (side < 32) throw new Error("A imagem é pequena demais.");
+  if (side < 32) throw new Error(t("A imagem é pequena demais."));
   const sx = (img.naturalWidth - side) / 2;
   const sy = (img.naturalHeight - side) / 2;
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = AVATAR_SIZE;
   const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Seu navegador não conseguiu processar a imagem.");
+  if (!ctx) throw new Error(t("Seu navegador não conseguiu processar a imagem."));
   ctx.fillStyle = "#ffffff"; // PNG com transparência vira fundo branco no JPEG
   ctx.fillRect(0, 0, AVATAR_SIZE, AVATAR_SIZE);
   ctx.drawImage(img, sx, sy, side, side, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
@@ -36,5 +37,5 @@ export async function prepareAvatar(file: File): Promise<Blob> {
     const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", q));
     if (blob && blob.size <= MAX_BYTES) return blob;
   }
-  throw new Error("Não foi possível reduzir a imagem o suficiente.");
+  throw new Error(t("Não foi possível reduzir a imagem o suficiente."));
 }

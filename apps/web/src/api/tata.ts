@@ -1,4 +1,5 @@
 /** Tatá: situação das cotas (conversa e voz), conversa com IA e voz natural (MP3). */
+import { t } from "@/i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, rawFetch, unwrap, ApiError } from "./client";
 import type { components } from "./schema";
@@ -26,14 +27,21 @@ export function useTataStatus(enabled = true) {
 export function useTataChat() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (body: { message: string; history: TataHistoryItem[] }) => unwrap(await api.POST("/api/v1/tata/chat", { body })) as TataChatOut,
+    mutationFn: async (body: { message: string; history: TataHistoryItem[] }) =>
+      unwrap(await api.POST("/api/v1/tata/chat", { body })) as TataChatOut,
     onSuccess: (data) => qc.setQueryData(tataKeys.status, data.status),
     onError: () => qc.invalidateQueries({ queryKey: tataKeys.status }),
   });
 }
 
 /** Códigos em que a voz natural não veio e o app usa o sintetizador do aparelho, em silêncio. */
-export const VOICE_FALLBACK_CODES: readonly string[] = ["voice_plan", "voice_quota", "voice_budget", "voice_disabled", "voice_unavailable"];
+export const VOICE_FALLBACK_CODES: readonly string[] = [
+  "voice_plan",
+  "voice_quota",
+  "voice_budget",
+  "voice_disabled",
+  "voice_unavailable",
+];
 
 /** MP3 da fala pela ElevenLabs. Lança ApiError com o código do servidor quando não há voz natural. */
 export async function fetchTataVoice(text: string): Promise<Blob> {
@@ -44,7 +52,7 @@ export async function fetchTataVoice(text: string): Promise<Blob> {
   });
   if (!res.ok) {
     let code = "http_error";
-    let msg = `Erro ${res.status}`;
+    let msg = t("Erro {{v0}}", { v0: res.status });
     try {
       const body = (await res.json()) as { error?: { code?: string; message?: string } };
       code = body.error?.code || code;
@@ -61,16 +69,16 @@ export async function fetchTataVoice(text: string): Promise<Blob> {
 export function tataChatReasonText(reason: string | null | undefined): string | null {
   switch (reason) {
     case "ai_disabled":
-      return "A conversa com o Tatá ainda não está disponível neste ambiente.";
+      return t("A conversa com o Tatá ainda não está disponível neste ambiente.");
     case "ai_plan":
-      return "A conversa com o Tatá faz parte dos planos Essencial e Completo.";
+      return t("A conversa com o Tatá faz parte dos planos Essencial e Completo.");
     case "ai_quota":
-      return "Você usou as conversas de hoje. Amanhã a cota renova.";
+      return t("Você usou as conversas de hoje. Amanhã a cota renova.");
     case "ai_monthly_quota":
-      return "Você usou as conversas deste mês. A cota renova no dia 1º.";
+      return t("Você usou as conversas deste mês. A cota renova no dia 1º.");
     case "ai_budget":
-      return "O limite geral de uso foi atingido por hoje. Amanhã tentamos de novo.";
+      return t("O limite geral de uso foi atingido por hoje. Amanhã tentamos de novo.");
     default:
-      return reason ? "A conversa com o Tatá não está disponível agora." : null;
+      return reason ? t("A conversa com o Tatá não está disponível agora.") : null;
   }
 }

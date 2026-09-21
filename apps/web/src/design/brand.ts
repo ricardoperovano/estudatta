@@ -1,15 +1,20 @@
 /** Configuração de marca centralizada (nome, logos, cores, URLs). Já preenchida com Estudatta. */
 
+import { t } from "@/i18n";
 export const brand = {
   name: "Estudatta",
-  tagline: "Saiba o que fazer hoje. Retome quando atrasar.",
-  positioning:
+  tagline: t("Saiba o que fazer hoje. Retome quando atrasar."),
+  positioning: t(
     "O planejador de estudo e prática que mostra o que fazer hoje e como retomar quando o plano atrasa.",
-  description:
+  ),
+  description: t(
     "Você define meta, dias e horários. O Estudatta organiza o plano, registra as sessões e transforma o que faltou em tempo a recuperar — no seu ritmo, sem culpa.",
+  ),
   domain: "estudatta.com.br",
   /** Site público (repositório separado). Em dev: http://localhost:5190 via VITE_SITE_URL. */
-  siteUrl: (import.meta.env.VITE_SITE_URL as string | undefined) || (import.meta.env.DEV ? "http://localhost:5190" : "https://estudatta.com.br"),
+  siteUrl:
+    (import.meta.env.VITE_SITE_URL as string | undefined) ||
+    (import.meta.env.DEV ? "http://localhost:5190" : "https://estudatta.com.br"),
   supportEmail: "contato@estudatta.com.br",
   colors: {
     accentDark: "#9184d9",
@@ -24,11 +29,15 @@ export const brand = {
     claro: "/marca/logo-claro-128.png",
   },
   campaigns: {
-    ingles: "60 minutos por dia. Mesmo depois de ontem.",
-    concursos: "Edital longo. Plano do dia curto.",
-    rotina: "Atrasou ontem? Hoje dá para retomar.",
+    ingles: t("60 minutos por dia. Mesmo depois de ontem."),
+    concursos: t("Edital longo. Plano do dia curto."),
+    rotina: t("Atrasou ontem? Hoje dá para retomar."),
   },
-  signatures: ["Saiba o que fazer hoje.", "Retome de onde parou.", "Um plano que aguenta a vida real."],
+  signatures: [
+    t("Saiba o que fazer hoje."),
+    t("Retome de onde parou."),
+    t("Um plano que aguenta a vida real."),
+  ],
 } as const;
 
 /** Link absoluto para uma página do site público (termos, privacidade, planos…). */

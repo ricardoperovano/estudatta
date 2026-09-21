@@ -1,3 +1,4 @@
+import { t as tx } from "@/i18n";
 import * as React from "react";
 import { Link, useNavigate } from "react-router";
 import { Banner, Button, Card, Field, Input, Seg, Spinner, Switch, Tag, toast } from "@/components/ui";
@@ -21,10 +22,10 @@ interface Props {
 }
 
 const ALTERNATIVE_LABEL: Record<string, string> = {
-  ampliar_prazo: "Ampliar prazo",
-  aumentar_disponibilidade: "Aumentar disponibilidade",
-  revisar_plano: "Revisar o plano",
-  perdoar_parte: "Perdoar parte",
+  ampliar_prazo: tx("Ampliar prazo"),
+  aumentar_disponibilidade: tx("Aumentar disponibilidade"),
+  revisar_plano: tx("Revisar o plano"),
+  perdoar_parte: tx("Perdoar parte"),
 };
 
 /**
@@ -63,7 +64,11 @@ export function RecoveryPlanner({ activityId, onDone, inDialog }: Props) {
 
   React.useEffect(() => {
     if (!balance.data) return;
-    distributeMutate({ strategy: "distribute", horizon_days: Number(horizon), include_rest_days: includeRest });
+    distributeMutate({
+      strategy: "distribute",
+      horizon_days: Number(horizon),
+      include_rest_days: includeRest,
+    });
   }, [balance.data, horizon, includeRest, distributeMutate]);
 
   React.useEffect(() => {
@@ -93,15 +98,25 @@ export function RecoveryPlanner({ activityId, onDone, inDialog }: Props) {
     until_date: untilPv.data,
   };
   const preview = previewOf[option];
-  const previewPending = distribute.isPending || (option === "today" && todayPv.isPending) || (option === "custom" && customPv.isPending) || (option === "until_date" && untilPv.isPending);
+  const previewPending =
+    distribute.isPending ||
+    (option === "today" && todayPv.isPending) ||
+    (option === "custom" && customPv.isPending) ||
+    (option === "until_date" && untilPv.isPending);
 
   // Dias recentes sem registro (para a explicação honesta).
-  const deficitDays = (balance.data?.days ?? []).filter((d) => d.local_date < today && d.in_range && !d.is_rest && !d.is_paused && d.deficit > 0).slice(-3);
+  const deficitDays = (balance.data?.days ?? [])
+    .filter((d) => d.local_date < today && d.in_range && !d.is_rest && !d.is_paused && d.deficit > 0)
+    .slice(-3);
   const allEmpty = deficitDays.length > 0 && deficitDays.every((d) => d.logged === 0);
   const explanation =
     deficitDays.length === 0
-      ? "Escolha como retomar o plano — nada se perde, só muda de lugar."
-      : `${capitalize(joinNames(deficitDays.map((d) => WEEKDAY_NAMES[weekdayMon(d.local_date)])))} ${deficitDays.length > 1 ? "ficaram" : "ficou"} ${allEmpty ? "sem registro" : "abaixo da meta"}. Escolha como retomar o plano — nada se perde, só muda de lugar.`;
+      ? tx("Escolha como retomar o plano — nada se perde, só muda de lugar.")
+      : tx("{{v0}} {{v1}} {{v2}}. Escolha como retomar o plano — nada se perde, só muda de lugar.", {
+          v0: capitalize(joinNames(deficitDays.map((d) => WEEKDAY_NAMES[weekdayMon(d.local_date)]))),
+          v1: deficitDays.length > 1 ? "ficaram" : "ficou",
+          v2: allEmpty ? tx("sem registro") : tx("abaixo da meta"),
+        });
 
   const distAlloc = Object.entries(distribute.data?.allocations ?? {}).sort(([a], [b]) => (a < b ? -1 : 1));
   const distDays = distAlloc.length;
@@ -109,9 +124,14 @@ export function RecoveryPlanner({ activityId, onDone, inDialog }: Props) {
   const distSub =
     distAlloc.length === 0
       ? distribute.data
-        ? "Não há dias com espaço nesse horizonte"
-        : "Calculando…"
-      : `${distUniform ? `+${minutesOf(distAlloc[0][1])} min` : fmtMinutes(distribute.data!.allocated)} ${joinNames(distAlloc.map(([d]) => WEEKDAY_SHORT[weekdayMon(d)]))} · recomendado`;
+        ? tx("Não há dias com espaço nesse horizonte")
+        : tx("Calculando…")
+      : tx("{{v0}} {{v1}} · recomendado", {
+          v0: distUniform
+            ? tx("+{{v0}} min", { v0: minutesOf(distAlloc[0][1]) })
+            : fmtMinutes(distribute.data!.allocated),
+          v1: joinNames(distAlloc.map(([d]) => WEEKDAY_SHORT[weekdayMon(d)])),
+        });
   const todayTarget = balance.data?.today?.target ?? 0;
   const todayAlloc = todayPv.data?.allocations?.[today] ?? 0;
   const todayExceeds = (todayPv.data?.exceeds_capacity_on ?? []).includes(today);
@@ -135,7 +155,10 @@ export function RecoveryPlanner({ activityId, onDone, inDialog }: Props) {
     try {
       if (option === "keep") {
         await cancel.mutateAsync();
-        toast.info("Pendência mantida", `${fmtMinutes(pending)} continuam visíveis no plano.`);
+        toast.info(
+          tx("Pendência mantida"),
+          tx("{{v0}} continuam visíveis no plano.", { v0: fmtMinutes(pending) }),
+        );
         finish();
         return;
       }
@@ -146,10 +169,24 @@ export function RecoveryPlanner({ activityId, onDone, inDialog }: Props) {
             ? { strategy: "today", include_rest_days: false }
             : option === "until_date"
               ? { strategy: "until_date", until: untilDate, include_rest_days: includeRest }
-              : { strategy: "custom", custom: Object.fromEntries(Object.entries(customMap).map(([d, v]) => [d, Math.max(0, Number(v) || 0) * 60])), include_rest_days: true };
+              : {
+                  strategy: "custom",
+                  custom: Object.fromEntries(
+                    Object.entries(customMap).map(([d, v]) => [d, Math.max(0, Number(v) || 0) * 60]),
+                  ),
+                  include_rest_days: true,
+                };
       const plan = await apply.mutateAsync(body);
       const left = plan.unallocated_seconds;
-      toast.success("Replanejamento aplicado", left > 0 ? `${fmtMinutes(plan.allocated_seconds)} distribuídos; ${fmtMinutes(left)} continuam pendentes.` : `${fmtMinutes(plan.allocated_seconds)} distribuídos nos próximos dias.`);
+      toast.success(
+        tx("Replanejamento aplicado"),
+        left > 0
+          ? tx("{{v0}} distribuídos; {{v1}} continuam pendentes.", {
+              v0: fmtMinutes(plan.allocated_seconds),
+              v1: fmtMinutes(left),
+            })
+          : tx("{{v0}} distribuídos nos próximos dias.", { v0: fmtMinutes(plan.allocated_seconds) }),
+      );
       finish();
     } catch (err) {
       setError(errorMessage(err));
@@ -165,8 +202,17 @@ export function RecoveryPlanner({ activityId, onDone, inDialog }: Props) {
   }
   if (activity.isError || balance.isError || !balance.data) {
     return (
-      <Banner kind="error" actions={<Button size="sm" variant="secondary" onClick={() => balance.refetch()}>Tentar de novo</Button>}>
-        {online ? "Não foi possível carregar a pendência." : "Sem conexão: a recuperação precisa do servidor para calcular."}
+      <Banner
+        kind="error"
+        actions={
+          <Button size="sm" variant="secondary" onClick={() => balance.refetch()}>
+            {tx("Tentar de novo")}
+          </Button>
+        }
+      >
+        {online
+          ? tx("Não foi possível carregar a pendência.")
+          : tx("Sem conexão: a recuperação precisa do servidor para calcular.")}
       </Banner>
     );
   }
@@ -174,11 +220,20 @@ export function RecoveryPlanner({ activityId, onDone, inDialog }: Props) {
   if (pending <= 0) {
     return (
       <div className="flex flex-col gap-[14px]">
-        {!inDialog ? <span className="kicker-pending">Tempo a recuperar</span> : null}
-        <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">Nada a recuperar.</h1>
-        <p className="text-[14px] text-neutral-400">A pendência de dias anteriores está zerada em {activity.data?.title}. O que falta hoje não é atraso — é a meta de hoje.</p>
+        {!inDialog ? <span className="kicker-pending">{tx("Tempo a recuperar")}</span> : null}
+        <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">
+          {tx("Nada a recuperar.")}
+        </h1>
+        <p className="text-[14px] text-neutral-400">
+          {tx(
+            tx(
+              "A pendência de dias anteriores está zerada em {{v0}}. O que falta hoje não é atraso — é a meta de hoje.",
+            ),
+            { v0: activity.data?.title },
+          )}
+        </p>
         <Button variant="primary" size="lg" className="self-start" onClick={finish}>
-          Voltar ao plano
+          {tx("Voltar ao plano")}
         </Button>
       </div>
     );
@@ -186,7 +241,8 @@ export function RecoveryPlanner({ activityId, onDone, inDialog }: Props) {
 
   const rows = visibleRows(preview);
   const optionBtn = (value: Option, label: string, sub: React.ReactNode, extra?: React.ReactNode) => {
-    const active = option === value || (value === "distribute" && (option === "custom" || option === "until_date"));
+    const active =
+      option === value || (value === "distribute" && (option === "custom" || option === "until_date"));
     return (
       <Button
         type="button"
@@ -206,57 +262,80 @@ export function RecoveryPlanner({ activityId, onDone, inDialog }: Props) {
     <div className="flex flex-col gap-[14px]">
       {!inDialog ? (
         <>
-          <span className="kicker-pending">Tempo a recuperar</span>
-          <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">Há {fmtLongDuration(pending)} a recuperar. Distribuir nos próximos dias?</h1>
+          <span className="kicker-pending">{tx("Tempo a recuperar")}</span>
+          <h1 className="text-[25px] leading-[1.15] desktop:text-[32px] desktop:leading-[1.1]">
+            {tx("Há {{v0}} a recuperar. Distribuir nos próximos dias?", { v0: fmtLongDuration(pending) })}
+          </h1>
         </>
       ) : null}
       <p className="text-[14px] text-neutral-400">{explanation}</p>
-      {!online ? <Banner kind="offline">Sem conexão: a prévia pode estar desatualizada e o replanejamento só é aplicado quando você voltar à internet.</Banner> : null}
+      {!online ? (
+        <Banner kind="offline">
+          {tx(
+            "Sem conexão: a prévia pode estar desatualizada e o replanejamento só é aplicado quando você voltar à internet.",
+          )}
+        </Banner>
+      ) : null}
       {error ? <Banner kind="error">{error}</Banner> : null}
 
       <div className="flex flex-col gap-2" data-tour="recuperacao-opcoes">
-        {optionBtn("distribute", `Distribuir em ${distDays || horizon} dias`, distSub)}
+        {optionBtn("distribute", tx("Distribuir em {{v0}} dias", { v0: distDays || horizon }), distSub)}
         {option !== "today" && option !== "keep" ? (
-          <div className="flex flex-wrap items-center justify-between gap-2 px-1" data-tour="recuperacao-horizonte">
+          <div
+            className="flex flex-wrap items-center justify-between gap-2 px-1"
+            data-tour="recuperacao-horizonte"
+          >
             <Seg
               size="sm"
-              label="Horizonte"
+              label={tx("Horizonte")}
               value={horizon}
               onChange={(v) => {
                 setHorizon(v);
                 setOption("distribute");
               }}
               options={[
-                { value: "3", label: "3 dias" },
-                { value: "5", label: "5 dias" },
-                { value: "7", label: "7 dias" },
+                { value: "3", label: tx("3 dias") },
+                { value: "5", label: tx("5 dias") },
+                { value: "7", label: tx("7 dias") },
               ]}
             />
             <label className="flex items-center gap-2 text-[12px] text-neutral-400">
-              Incluir descanso
-              <Switch checked={includeRest} onCheckedChange={setIncludeRest} label="Incluir dias de descanso" />
+              {tx("Incluir descanso")}
+              <Switch
+                checked={includeRest}
+                onCheckedChange={setIncludeRest}
+                label={tx("Incluir dias de descanso")}
+              />
             </label>
           </div>
         ) : null}
         {optionBtn(
           "today",
-          "Recuperar tudo hoje",
+          tx("Recuperar tudo hoje"),
           <>
-            Sessão de {fmtMinutes(todayTarget + todayAlloc)} hoje
-            {todayLeft > 0 ? ` · só cabem ${fmtMinutes(todayAlloc)}` : ""}
+            {tx("Sessão de {{v0}} hoje {{v1}}", {
+              v0: fmtMinutes(todayTarget + todayAlloc),
+              v1: todayLeft > 0 ? " " + tx("· só cabem {{v0}}", { v0: fmtMinutes(todayAlloc) }) : "",
+            })}
           </>,
           todayExceeds ? (
             <Tag variant="pending" className="mt-1">
-              Passa do limite diário
+              {tx("Passa do limite diário")}
             </Tag>
           ) : null,
         )}
-        {optionBtn("keep", "Deixar como está", "A pendência continua visível")}
+        {optionBtn("keep", tx("Deixar como está"), tx("A pendência continua visível"))}
       </div>
 
       {option === "until_date" ? (
-        <Field label="Distribuir até" htmlFor="rec-until">
-          <Input id="rec-until" type="date" min={today} value={untilDate} onChange={(e) => setUntilDate(e.target.value)} />
+        <Field label={tx("Distribuir até")} htmlFor="rec-until">
+          <Input
+            id="rec-until"
+            type="date"
+            min={today}
+            value={untilDate}
+            onChange={(e) => setUntilDate(e.target.value)}
+          />
         </Field>
       ) : null}
 
@@ -276,45 +355,77 @@ export function RecoveryPlanner({ activityId, onDone, inDialog }: Props) {
                   </Button>
                 ) : alt === "perdoar_parte" ? (
                   <Button key={alt} asChild size="sm" variant="secondary">
-                    <Link to={`/app/objetivos/${activityId}?aba=config#perdoar`}>{ALTERNATIVE_LABEL[alt]}</Link>
+                    <Link to={`/app/objetivos/${activityId}?aba=config#perdoar`}>
+                      {ALTERNATIVE_LABEL[alt]}
+                    </Link>
                   </Button>
                 ) : (
                   <Button key={alt} asChild size="sm" variant="secondary">
-                    <Link to={`/app/objetivos/${activityId}?aba=config#meta`}>{ALTERNATIVE_LABEL[alt] ?? alt}</Link>
+                    <Link to={`/app/objetivos/${activityId}?aba=config#meta`}>
+                      {ALTERNATIVE_LABEL[alt] ?? alt}
+                    </Link>
                   </Button>
                 ),
               )}
             </div>
           }
         >
-          Não cabe tudo: {fmtMinutes(preview.unallocated)} ficam sem lugar {option === "today" ? "hoje" : "nesse prazo"}. A sugestão não aumenta a dívida — o que não couber continua como pendência.
+          {tx(
+            tx(
+              "Não cabe tudo: {{v0}} ficam sem lugar {{v1}}. A sugestão não aumenta a dívida — o que não couber continua como pendência.",
+            ),
+            { v0: fmtMinutes(preview.unallocated), v1: option === "today" ? "hoje" : tx("nesse prazo") },
+          )}
         </Banner>
       ) : null}
 
       {option !== "keep" ? (
-        <RecoveryTable rows={rows} pending={pending} pendingAfter={preview?.pending_after ?? pending} loading={previewPending} editing={option === "custom"} customMap={customMap} onCustomChange={(d, v) => setCustomMap((m) => ({ ...m, [d]: v }))} exceeds={preview?.exceeds_capacity_on ?? []} />
+        <RecoveryTable
+          rows={rows}
+          pending={pending}
+          pendingAfter={preview?.pending_after ?? pending}
+          loading={previewPending}
+          editing={option === "custom"}
+          customMap={customMap}
+          onCustomChange={(d, v) => setCustomMap((m) => ({ ...m, [d]: v }))}
+          exceeds={preview?.exceeds_capacity_on ?? []}
+        />
       ) : (
         <Card className="gap-2 p-[14px] text-[13px]">
           <div className="flex justify-between border-t-0">
-            <span className="text-neutral-400">Pendência ao final</span>
+            <span className="text-neutral-400">{tx("Pendência ao final")}</span>
             <span className="tnum text-pending">{fmtMinutes(pending)}</span>
           </div>
-          <p className="text-[12px] text-neutral-400">Nada muda no plano. A pendência continua aparecendo em Hoje até você registrar tempo extra ou distribuir depois.</p>
+          <p className="text-[12px] text-neutral-400">
+            {tx(
+              "Nada muda no plano. A pendência continua aparecendo em Hoje até você registrar tempo extra ou distribuir depois.",
+            )}
+          </p>
         </Card>
       )}
 
-      <div className={cn("mt-auto flex flex-col gap-2", inDialog && "flex-row-reverse justify-start")} data-tour="recuperacao-aplicar">
-        <Button variant="primary" size="xl" block={!inDialog} loading={apply.isPending || cancel.isPending} disabled={option !== "keep" && (!preview || previewPending)} onClick={submit}>
-          {option === "keep" ? "Manter como está" : "Aplicar replanejamento"}
+      <div
+        className={cn("mt-auto flex flex-col gap-2", inDialog && "flex-row-reverse justify-start")}
+        data-tour="recuperacao-aplicar"
+      >
+        <Button
+          variant="primary"
+          size="xl"
+          block={!inDialog}
+          loading={apply.isPending || cancel.isPending}
+          disabled={option !== "keep" && (!preview || previewPending)}
+          onClick={submit}
+        >
+          {option === "keep" ? tx("Manter como está") : tx("Aplicar replanejamento")}
         </Button>
         {option !== "keep" ? (
           option === "custom" ? (
             <Button variant="ghost" size="lg" className="text-[13px]" onClick={() => setOption("distribute")}>
-              Voltar à sugestão
+              {tx("Voltar à sugestão")}
             </Button>
           ) : (
             <Button variant="ghost" size="lg" className="text-[13px]" onClick={startEdit} disabled={!preview}>
-              Editar dia a dia
+              {tx("Editar dia a dia")}
             </Button>
           )
         ) : null}
@@ -378,15 +489,20 @@ function RecoveryTable({
           max={minutesOf(r.capacity_extra) || 600}
           value={customMap[r.local_date] ?? "0"}
           onChange={(e) => onCustomChange(r.local_date, e.target.value)}
-          aria-label={`Minutos extras em ${fmtDayTiny(r.local_date)}`}
-          className={cn("h-8 min-h-0 w-[64px] px-2 py-0 text-[13px]", exceeds.includes(r.local_date) && "border-pending")}
+          aria-label={tx("Minutos extras em {{v0}}", { v0: fmtDayTiny(r.local_date) })}
+          className={cn(
+            "h-8 min-h-0 w-[64px] px-2 py-0 text-[13px]",
+            exceeds.includes(r.local_date) && "border-pending",
+          )}
         />
       </span>
     ) : r.is_active || r.after_extra > 0 ? (
       <span>
         {r.is_active ? minutesOf(r.target) : ""}
         <Extra seconds={r.after_extra} />
-        {exceeds.includes(r.local_date) ? <span className="sr-only"> (acima do limite diário)</span> : null}
+        {exceeds.includes(r.local_date) ? (
+          <span className="sr-only"> {tx("(acima do limite diário)")}</span>
+        ) : null}
       </span>
     ) : (
       <span className="text-neutral-500">—</span>
@@ -394,22 +510,38 @@ function RecoveryTable({
   const beforePendingAfter = Math.max(0, pending - rows.reduce((acc, r) => acc + r.before_extra, 0));
   const footer = (
     <div className="flex justify-between border-t border-divider pt-2">
-      <span className="text-neutral-400">Pendência ao final</span>
-      <span className={cn("tnum", pendingAfter === 0 ? "text-success" : "text-pending")}>{loading ? "…" : fmtMinutes(pendingAfter)}</span>
+      <span className="text-neutral-400">{tx("Pendência ao final")}</span>
+      <span className={cn("tnum", pendingAfter === 0 ? "text-success" : "text-pending")}>
+        {loading ? "…" : fmtMinutes(pendingAfter)}
+      </span>
     </div>
   );
   return (
     <>
       {/* celular: Dia · Antes · Depois */}
-      <Card className="tnum gap-[10px] p-[14px] text-[13px] desktop:hidden" aria-busy={loading || undefined} data-tour="recuperacao-previa">
+      <Card
+        className="tnum gap-[10px] p-[14px] text-[13px] desktop:hidden"
+        aria-busy={loading || undefined}
+        data-tour="recuperacao-previa"
+      >
         <div className="grid grid-cols-3 gap-1.5 text-[11px] uppercase tracking-[0.1em] text-neutral-500">
-          <span>Dia</span>
-          <span>Antes</span>
-          <span className="text-accent">Depois</span>
+          <span>{tx("Dia")}</span>
+          <span>{tx("Antes")}</span>
+          <span className="text-accent">{tx("Depois")}</span>
         </div>
-        {rows.length === 0 ? <span className="text-neutral-400">{loading ? "Calculando…" : "Sem dias no horizonte."}</span> : null}
+        {rows.length === 0 ? (
+          <span className="text-neutral-400">
+            {loading ? tx("Calculando…") : tx("Sem dias no horizonte.")}
+          </span>
+        ) : null}
         {rows.map((r) => (
-          <div key={r.local_date} className={cn("grid grid-cols-3 items-center gap-1.5", !r.is_active && r.after_extra === 0 && !editing && "text-neutral-500")}>
+          <div
+            key={r.local_date}
+            className={cn(
+              "grid grid-cols-3 items-center gap-1.5",
+              !r.is_active && r.after_extra === 0 && !editing && "text-neutral-500",
+            )}
+          >
             <span>{fmtDayTiny(r.local_date)}</span>
             {before(r)}
             {after(r)}
@@ -418,30 +550,53 @@ function RecoveryTable({
         {footer}
       </Card>
       {/* desktop: duas colunas Antes / Depois (D2) */}
-      <div className="tnum hidden grid-cols-2 gap-4 text-[14px] desktop:grid" aria-busy={loading || undefined} data-tour="recuperacao-previa">
+      <div
+        className="tnum hidden grid-cols-2 gap-4 text-[14px] desktop:grid"
+        aria-busy={loading || undefined}
+        data-tour="recuperacao-previa"
+      >
         <Card className="gap-1.5 bg-canvas p-[14px]">
-          <span className="kicker">Antes</span>
+          <span className="kicker">{tx("Antes")}</span>
           {rows.map((r) => (
-            <span key={r.local_date} className={cn("flex justify-between", !r.is_active && "text-neutral-500")}>
+            <span
+              key={r.local_date}
+              className={cn("flex justify-between", !r.is_active && "text-neutral-500")}
+            >
               <span>{fmtDayTiny(r.local_date)}</span>
               {before(r)}
             </span>
           ))}
-          <span className={cn("flex justify-between border-t border-divider pt-1.5", beforePendingAfter === 0 ? "text-success" : "text-pending")}>
-            <span>Pendência ao final</span>
+          <span
+            className={cn(
+              "flex justify-between border-t border-divider pt-1.5",
+              beforePendingAfter === 0 ? "text-success" : "text-pending",
+            )}
+          >
+            <span>{tx("Pendência ao final")}</span>
             <span>{minutesOf(beforePendingAfter)}</span>
           </span>
         </Card>
         <Card className="gap-1.5 bg-canvas p-[14px] shadow-accent-ring">
-          <span className="kicker-accent">Depois</span>
+          <span className="kicker-accent">{tx("Depois")}</span>
           {rows.map((r) => (
-            <span key={r.local_date} className={cn("flex justify-between", !r.is_active && r.after_extra === 0 && !editing && "text-neutral-500")}>
+            <span
+              key={r.local_date}
+              className={cn(
+                "flex justify-between",
+                !r.is_active && r.after_extra === 0 && !editing && "text-neutral-500",
+              )}
+            >
               <span>{fmtDayTiny(r.local_date)}</span>
               {after(r)}
             </span>
           ))}
-          <span className={cn("flex justify-between border-t border-divider pt-1.5", pendingAfter === 0 ? "text-success" : "text-pending")}>
-            <span>Pendência ao final</span>
+          <span
+            className={cn(
+              "flex justify-between border-t border-divider pt-1.5",
+              pendingAfter === 0 ? "text-success" : "text-pending",
+            )}
+          >
+            <span>{tx("Pendência ao final")}</span>
             <span>{loading ? "…" : minutesOf(pendingAfter)}</span>
           </span>
         </Card>

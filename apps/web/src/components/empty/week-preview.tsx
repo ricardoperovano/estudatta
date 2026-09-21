@@ -2,13 +2,14 @@
  * Prévia (exemplo) de uma semana no Plano: sete colunas com blocos de um objetivo de idioma
  * e de leitura, dois dias feitos e um pouco de recuperação. Não usa dados da pessoa.
  */
+import { t } from "@/i18n";
 import { Check } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { ExamplePreview } from "./example-preview";
 
 type Block = { obj: "a" | "b"; min: number; done?: boolean; recovery?: boolean };
 
-const NAMES = { a: "Inglês", b: "Leitura" } as const;
+const NAMES = { a: t("Inglês"), b: "Leitura" } as const;
 
 const DAYS: { name: string; blocks: Block[]; today?: boolean }[] = [
   { name: "seg", blocks: [{ obj: "a", min: 30, done: true }] },
@@ -34,7 +35,7 @@ const DAYS: { name: string; blocks: Block[]; today?: boolean }[] = [
       { obj: "a", min: 10, recovery: true },
     ],
   },
-  { name: "sáb", blocks: [{ obj: "b", min: 20 }] },
+  { name: t("sáb"), blocks: [{ obj: "b", min: 20 }] },
   { name: "dom", blocks: [] },
 ];
 
@@ -42,9 +43,13 @@ export function WeekPreview({ className }: { className?: string }) {
   return (
     <ExamplePreview
       className={className}
-      title="Assim fica a sua semana"
-      summary="uma semana com Inglês 30 minutos de segunda a sexta, Leitura 20 minutos em alguns dias, dois dias já feitos, uma recuperação de 10 minutos na sexta e o domingo livre."
-      note="Cada objetivo vira blocos nos dias escolhidos. Depois você adiciona tarefas e horários e marca o que fez."
+      title={t("Assim fica a sua semana")}
+      summary={t(
+        "uma semana com Inglês 30 minutos de segunda a sexta, Leitura 20 minutos em alguns dias, dois dias já feitos, uma recuperação de 10 minutos na sexta e o domingo livre.",
+      )}
+      note={t(
+        "Cada objetivo vira blocos nos dias escolhidos. Depois você adiciona tarefas e horários e marca o que fez.",
+      )}
     >
       <div className="grid grid-cols-7 gap-1.5 text-center text-[11px] desktop:gap-2 desktop:text-[12px]">
         {DAYS.map((d) => (
@@ -77,7 +82,7 @@ export function WeekPreview({ className }: { className?: string }) {
                       b.recovery && "w-auto rounded-[3px] bg-canvas px-0.5",
                     )}
                   >
-                    {b.recovery ? "Recuperação" : NAMES[b.obj]}
+                    {b.recovery ? t("Recuperação") : NAMES[b.obj]}
                   </span>
                   <span
                     className={cn(
@@ -92,7 +97,7 @@ export function WeekPreview({ className }: { className?: string }) {
                 </span>
               ))}
               {d.blocks.length === 0 ? (
-                <span className="m-auto text-[10px] text-neutral-500 desktop:text-[11px]">livre</span>
+                <span className="m-auto text-[10px] text-neutral-500 desktop:text-[11px]">{t("livre")}</span>
               ) : null}
             </div>
           </div>
@@ -100,16 +105,16 @@ export function WeekPreview({ className }: { className?: string }) {
       </div>
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-neutral-300">
         <span className="inline-flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-accent" /> Inglês
+          <span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-accent" /> {t("Inglês")}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-info" /> Leitura
+          <span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-info" /> {t("Leitura")}
         </span>
         <span className="inline-flex items-center gap-1">
-          <Check size={11} weight="bold" className="text-accent" /> feito
+          <Check size={11} weight="bold" className="text-accent" /> {t("feito")}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="recovery-stripes inline-block h-2.5 w-2.5 rounded-[2px]" /> recuperação
+          <span className="recovery-stripes inline-block h-2.5 w-2.5 rounded-[2px]" /> {t("recuperação")}
         </span>
       </div>
     </ExamplePreview>

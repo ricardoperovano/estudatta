@@ -15,10 +15,23 @@ const cfg: Record<Kind, { icon: React.ReactNode; className: string }> = {
 };
 
 /** Estados de sistema: sincronizando · sincronizado · offline · conflito (com escolha). */
-export function Banner({ kind, children, className, actions }: { kind: Kind; children: React.ReactNode; className?: string; actions?: React.ReactNode }) {
+export function Banner({
+  kind,
+  children,
+  className,
+  actions,
+}: {
+  kind: Kind;
+  children: React.ReactNode;
+  className?: string;
+  actions?: React.ReactNode;
+}) {
   const c = cfg[kind];
   return (
-    <div role={kind === "error" || kind === "conflict" ? "alert" : "status"} className={cn("flex items-start gap-2.5 rounded-md px-3 py-[10px] text-[14px]", c.className, className)}>
+    <div
+      role={kind === "error" || kind === "conflict" ? "alert" : "status"}
+      className={cn("flex items-start gap-2.5 rounded-md px-3 py-[10px] text-[14px]", c.className, className)}
+    >
       <span className="mt-0.5 shrink-0">{c.icon}</span>
       <div className="flex flex-1 flex-col">
         <span>{children}</span>

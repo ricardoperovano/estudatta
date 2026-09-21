@@ -1,4 +1,5 @@
 /** Formatação e rótulos do painel administrativo (sem JSX). */
+import { t, intlLocale } from "@/i18n";
 import type * as React from "react";
 import type { Tag } from "@/components/ui";
 import { fmtDateTimeShort } from "@/lib/format";
@@ -12,14 +13,14 @@ export function humanize(key: string): string {
 
 const STATUS_LABEL: Record<string, string> = {
   active: "ativa",
-  trialing: "em teste",
-  past_due: "em atraso",
+  trialing: t("em teste"),
+  past_due: t("em atraso"),
   canceled: "cancelada",
   cancelled: "cancelada",
   expired: "expirada",
   ended: "encerrada",
   incomplete: "incompleta",
-  unpaid: "não paga",
+  unpaid: t("não paga"),
   paused: "pausada",
   pending: "pendente",
   processing: "processando",
@@ -29,11 +30,11 @@ const STATUS_LABEL: Record<string, string> = {
   received: "recebido",
   processed: "processado",
   ignored: "ignorado",
-  ambiguous: "ambígua",
-  finished: "concluída",
-  done: "concluída",
-  running: "em andamento",
-  queued: "na fila",
+  ambiguous: t("ambígua"),
+  finished: t("concluída"),
+  done: t("concluída"),
+  running: t("em andamento"),
+  queued: t("na fila"),
   archived: "arquivado",
 };
 
@@ -79,8 +80,8 @@ export function isPlainObject(v: unknown): v is Record<string, unknown> {
 /** Valor livre → texto: números pt-BR, booleanos "sim/não", datas ISO curtas, vazio "—". */
 export function fmtValue(v: unknown): string {
   if (v === null || v === undefined || v === "") return "—";
-  if (typeof v === "number") return v.toLocaleString("pt-BR");
-  if (typeof v === "boolean") return v ? "sim" : "não";
+  if (typeof v === "number") return v.toLocaleString(intlLocale);
+  if (typeof v === "boolean") return v ? "sim" : t("não");
   if (typeof v === "string") return ISO_RE.test(v) ? fmtDateTimeShort(v) : v;
   if (Array.isArray(v)) return v.length ? v.map(fmtValue).join(", ") : "—";
   return JSON.stringify(v);
@@ -121,7 +122,7 @@ export function centsToInput(cents: number | null | undefined): string {
   return (cents / 100).toFixed(2).replace(".", ",");
 }
 
-export const INTERVAL_LABEL: Record<string, string> = { month: "mês", year: "ano" };
+export const INTERVAL_LABEL: Record<string, string> = { month: t("mês"), year: "ano" };
 
 export function intervalLabel(i: string | null | undefined): string {
   if (!i) return "—";

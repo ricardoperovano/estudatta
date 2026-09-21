@@ -38,8 +38,15 @@ export function safeToReload(): boolean {
   if (location.pathname.startsWith("/app/sessao")) return false;
   if (document.querySelector('[role="dialog"], [role="alertdialog"]')) return false;
   // algo digitado e não enviado (campos de texto com valor)
-  const typed = Array.from(document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea")).some(
-    (el) => !["checkbox", "radio", "hidden", "submit", "button", "file", "range"].includes((el as HTMLInputElement).type) && el.value.trim() !== "" && el.value !== el.defaultValue,
+  const typed = Array.from(
+    document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea"),
+  ).some(
+    (el) =>
+      !["checkbox", "radio", "hidden", "submit", "button", "file", "range"].includes(
+        (el as HTMLInputElement).type,
+      ) &&
+      el.value.trim() !== "" &&
+      el.value !== el.defaultValue,
   );
   if (typed) return false;
   try {

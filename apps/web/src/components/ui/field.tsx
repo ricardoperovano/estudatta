@@ -18,7 +18,10 @@ export function Field({ label, htmlFor, hint, error, className, children, "data-
   return (
     <div className={cn("field flex flex-col", className)} data-tour={tour}>
       {label ? (
-        <label htmlFor={htmlFor} className="mb-[5px] block text-[12px] text-[color-mix(in_srgb,var(--color-text-primary)_70%,transparent)]">
+        <label
+          htmlFor={htmlFor}
+          className="mb-[5px] block text-[12px] text-[color-mix(in_srgb,var(--color-text-primary)_70%,transparent)]"
+        >
           {label}
         </label>
       ) : null}

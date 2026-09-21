@@ -1,3 +1,4 @@
+import { t as tx } from "@/i18n";
 import * as React from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import {
@@ -77,11 +78,13 @@ export default function TodayPage() {
         mascot="think"
         variant="card"
         className="mt-6"
-        title="Não foi possível carregar o plano de hoje."
+        title={tx("Não foi possível carregar o plano de hoje.")}
         description={
-          online ? "Tente de novo em instantes." : "Sem conexão e sem plano salvo neste aparelho ainda."
+          online
+            ? tx("Tente de novo em instantes.")
+            : tx("Sem conexão e sem plano salvo neste aparelho ainda.")
         }
-        action={<Button onClick={() => today.refetch()}>Tentar de novo</Button>}
+        action={<Button onClick={() => today.refetch()}>{tx("Tentar de novo")}</Button>}
       />
     );
   }
@@ -98,16 +101,16 @@ export default function TodayPage() {
 
   const hour = new Date().getHours();
   const syncTag = !online ? (
-    <Tag variant="info">Sem conexão</Tag>
+    <Tag variant="info">{tx("Sem conexão")}</Tag>
   ) : sync.status === "syncing" ? (
     <Tag variant="neutral" icon={<Spinner />}>
-      Sincronizando
+      {tx("Sincronizando")}
     </Tag>
   ) : offline ? (
-    <Tag variant="info">Salvo {savedAt ? fmtTime(savedAt) : ""}</Tag>
+    <Tag variant="info">{tx("Salvo {{v0}}", { v0: savedAt ? fmtTime(savedAt) : "" })}</Tag>
   ) : (
     <Tag variant="success" icon={<Check size={11} weight="bold" aria-hidden />}>
-      Sincronizado
+      {tx("Sincronizado")}
     </Tag>
   );
 
@@ -132,7 +135,7 @@ export default function TodayPage() {
                 onClick={() => setManualFor(first)}
                 data-tour="registrar"
               >
-                Registrar manualmente
+                {tx("Registrar manualmente")}
               </Button>
               <Button
                 variant="primary"
@@ -141,12 +144,12 @@ export default function TodayPage() {
                 onClick={() => nav(`/app/sessao?objetivo=${first.activity.id}`)}
                 data-tour="comecar"
               >
-                Começar sessão
+                {tx("Começar sessão")}
               </Button>
             </>
           ) : (
             <Button asChild variant="primary" size="lg" className="bg-surface">
-              <Link to="/app/objetivos/novo">Criar meu primeiro objetivo</Link>
+              <Link to="/app/objetivos/novo">{tx("Criar meu primeiro objetivo")}</Link>
             </Button>
           )
         }
@@ -154,7 +157,9 @@ export default function TodayPage() {
 
       {offline ? (
         <Banner kind="offline">
-          Saldo provisório: mostrando o último plano sincronizado{savedAt ? ` às ${fmtTime(savedAt)}` : ""}.
+          {tx("Saldo provisório: mostrando o último plano sincronizado{{v0}}.", {
+            v0: savedAt ? " " + tx("às {{v0}}", { v0: fmtTime(savedAt) }) : "",
+          })}
         </Banner>
       ) : null}
 
@@ -169,14 +174,14 @@ export default function TodayPage() {
                 )}
                 aria-hidden
               />
-              {activeTimer.status === "active" ? "Em sessão" : "Sessão pausada"}
+              {activeTimer.status === "active" ? tx("Em sessão") : tx("Sessão pausada")}
             </span>
             <Tag variant="neutral">{activeTimer.activity_title}</Tag>
           </div>
           <div className="flex items-center justify-between gap-3">
             <span className="tnum text-[32px] font-semibold">{fmtMinutes(elapsedSeconds(activeTimer))}</span>
             <Button variant="primary" size="lg" className="bg-surface" onClick={() => nav("/app/sessao")}>
-              Voltar à sessão
+              {tx("Voltar à sessão")}
             </Button>
           </div>
         </Card>
@@ -292,20 +297,25 @@ function ActivityTodayCard({
           <div className="min-w-0">
             <span className="block text-[17px] font-medium">{act.title}</span>
             <Tag variant="info" icon={false}>
-              Pausa planejada · {fmtDayShort(card.pause.start_date)} a {fmtDayShort(card.pause.end_date)}
+              {tx("Pausa planejada · {{v0}} a {{v1}}", {
+                v0: fmtDayShort(card.pause.start_date),
+                v1: fmtDayShort(card.pause.end_date),
+              })}
             </Tag>
           </div>
         </div>
         <p className="text-[15px]">
-          Você marcou estes dias como pausa. Nada entra como pendência e os lembretes ficam em silêncio.
+          {tx(
+            "Você marcou estes dias como pausa. Nada entra como pendência e os lembretes ficam em silêncio.",
+          )}
         </p>
         <p className="text-[13px] text-neutral-400">{card.next_step}</p>
         <div className="flex gap-2">
           <Button asChild variant="secondary" size="lg" className="flex-1">
-            <Link to={`/app/objetivos/${act.id}`}>Encurtar pausa</Link>
+            <Link to={`/app/objetivos/${act.id}`}>{tx("Encurtar pausa")}</Link>
           </Button>
           <Button variant="ghost" size="lg" onClick={onStart}>
-            Estudar mesmo assim
+            {tx("Estudar mesmo assim")}
           </Button>
         </div>
       </Card>
@@ -324,14 +334,16 @@ function ActivityTodayCard({
           <ActivityBadge category={act.category} />
           <div className="min-w-0 flex-1">
             <span className="block text-[17px] font-medium">{act.title}</span>
-            <span className="text-[12px] text-neutral-400">checklist</span>
+            <span className="text-[12px] text-neutral-400">{tx("checklist")}</span>
           </div>
         </div>
         <p className="text-[14px] text-neutral-300">
-          {cl ? `${cl.done} de ${cl.total} tarefas de hoje concluídas.` : "Sem tarefas hoje."}
+          {cl
+            ? tx("{{v0}} de {{v1}} tarefas de hoje concluídas.", { v0: cl.done, v1: cl.total })
+            : tx("Sem tarefas hoje.")}
         </p>
         <Button asChild variant="secondary" size="lg">
-          <Link to={`/app/objetivos/${act.id}`}>Ver tarefas</Link>
+          <Link to={`/app/objetivos/${act.id}`}>{tx("Ver tarefas")}</Link>
         </Button>
       </Card>
     );
@@ -344,16 +356,16 @@ function ActivityTodayCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
             <span className="truncate text-[17px] font-medium desktop:text-[20px]">{act.title}</span>
-            {goalDone ? <Tag variant="success">Dia concluído</Tag> : null}
+            {goalDone ? <Tag variant="success">{tx("Dia concluído")}</Tag> : null}
           </div>
           <span className="block text-[12px] text-neutral-400 desktop:text-[13px]">
             {goalDone ? (
               <>{daysLabel}</>
             ) : s.target === 0 ? (
-              <>Hoje é dia de descanso · {daysLabel}</>
+              <>{tx("Hoje é dia de descanso · {{v0}}", { v0: daysLabel })}</>
             ) : (
               <>
-                meta base {fmtMinutesShort(s.target)}
+                {tx("meta base {{v0}}", { v0: fmtMinutesShort(s.target) })}
                 <span className="hidden desktop:inline"> · {daysLabel}</span>
               </>
             )}
@@ -365,7 +377,7 @@ function ActivityTodayCard({
         <div
           className="h-2.5 rounded-full bg-success desktop:h-3"
           role="img"
-          aria-label="Meta de hoje cumprida"
+          aria-label={tx("Meta de hoje cumprida")}
         />
       ) : (
         <GoalBar
@@ -379,22 +391,22 @@ function ActivityTodayCard({
       <Legend
         className="hidden desktop:flex"
         items={[
-          { swatch: "accent", label: "Registrado" },
-          { swatch: "outline", label: "Falta da meta" },
-          { swatch: "recovery", label: "Recuperação sugerida" },
+          { swatch: "accent", label: tx("Registrado") },
+          { swatch: "outline", label: tx("Falta da meta") },
+          { swatch: "recovery", label: tx("Recuperação sugerida") },
         ]}
       />
 
       {goalDone && s.pending_prior === 0 ? (
         <div className="tnum grid grid-cols-2 gap-2">
-          <Stat value={fmtMinutesShort(s.logged)} label="Registrado hoje" tone="success" />
-          <Stat value="0 min" label="Pendência" />
+          <Stat value={fmtMinutesShort(s.logged)} label={tx("Registrado hoje")} tone="success" />
+          <Stat value="0 min" label={tx("Pendência")} />
         </div>
       ) : (
         <div className="tnum grid grid-cols-2 gap-2 desktop:grid-cols-4 desktop:gap-3">
           <Stat
             value={fmtMinutesShort(s.logged)}
-            label="Registrado hoje"
+            label={tx("Registrado hoje")}
             tone="accent"
             desktopValue={
               s.target > 0 ? (
@@ -409,19 +421,19 @@ function ActivityTodayCard({
           />
           <Stat
             value={fmtMinutesShort(s.missing_today)}
-            label="Falta para a meta"
-            desktopLabel="Falta para a meta de hoje"
+            label={tx("Falta para a meta")}
+            desktopLabel={tx("Falta para a meta de hoje")}
           />
           <Stat
             value={fmtMinutesShort(s.pending_prior)}
-            label="Pendência anterior"
-            desktopLabel="Pendência de dias anteriores"
+            label={tx("Pendência anterior")}
+            desktopLabel={tx("Pendência de dias anteriores")}
             tone={s.pending_prior > 0 ? "pending" : undefined}
           />
           <Stat
             value={fmtMinutesShort(s.suggested_recovery)}
-            label="Recuperação sugerida"
-            desktopLabel="Recuperação sugerida hoje"
+            label={tx("Recuperação sugerida")}
+            desktopLabel={tx("Recuperação sugerida hoje")}
             tone={s.suggested_recovery > 0 ? "pending" : undefined}
           />
         </div>
@@ -435,7 +447,7 @@ function ActivityTodayCard({
           <BookOpen size={16} aria-hidden className="text-accent" />
           {act.current_material
             ? fmtBookmark(act.current_material)
-            : "Defina o livro que está lendo para o marcador avançar sozinho"}
+            : tx("Defina o livro que está lendo para o marcador avançar sozinho")}
         </Link>
       ) : null}
       <div
@@ -453,11 +465,11 @@ function ActivityTodayCard({
           </span>
         )}
         <p className="min-w-0 flex-1 text-[14px] leading-[1.45] desktop:text-[15px]">
-          <strong className="font-medium">Próximo passo:</strong> {card.next_step}
+          <strong className="font-medium">{tx("Próximo passo:")}</strong> {card.next_step}
         </p>
         {s.pending_prior > 0 ? (
           <Button asChild variant="ghost" size="sm" className="hidden shrink-0 desktop:inline-flex">
-            <Link to={`/app/objetivos/${act.id}/recuperar`}>Distribuir pendência</Link>
+            <Link to={`/app/objetivos/${act.id}/recuperar`}>{tx("Distribuir pendência")}</Link>
           </Button>
         ) : null}
       </div>
@@ -470,7 +482,7 @@ function ActivityTodayCard({
           onClick={onStart}
           className={cn(hideActionsOnDesktop && "desktop:hidden")}
         >
-          Estudar mais um pouco
+          {tx("Estudar mais um pouco")}
         </Button>
       ) : (
         <Button
@@ -481,23 +493,25 @@ function ActivityTodayCard({
           className={cn(hideActionsOnDesktop && "desktop:hidden")}
           data-tour="comecar"
         >
-          Começar sessão
+          {tx("Começar sessão")}
         </Button>
       )}
       <div className={cn("-mt-1 flex justify-between", hideActionsOnDesktop && "desktop:hidden")}>
         <Button variant="ghost" size="sm" onClick={onManual} data-tour="registrar">
-          Registrar manualmente
+          {tx("Registrar manualmente")}
         </Button>
         {s.pending_prior > 0 ? (
           <Button asChild variant="ghost" size="sm">
-            <Link to={`/app/objetivos/${act.id}/recuperar`}>Distribuir pendência</Link>
+            <Link to={`/app/objetivos/${act.id}/recuperar`}>{tx("Distribuir pendência")}</Link>
           </Button>
         ) : null}
       </div>
       {pendingAfter > 0 && s.suggested_recovery > 0 ? (
-        <span className="sr-only">Pendência que continua depois: {fmtMinutes(pendingAfter)}</span>
+        <span className="sr-only">
+          {tx("Pendência que continua depois: {{v0}}", { v0: fmtMinutes(pendingAfter) })}
+        </span>
       ) : null}
-      <span className="sr-only">{activeDays} dias ativos por semana</span>
+      <span className="sr-only">{tx("{{v0}} dias ativos por semana", { v0: activeDays })}</span>
     </Card>
   );
 }
@@ -548,9 +562,9 @@ function Stat({
 
 function summarizeDays(m: Record<string, number>): string {
   const on = [0, 1, 2, 3, 4, 5, 6].filter((d) => Number(m[String(d)] ?? 0) > 0);
-  const names = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"];
-  if (on.length === 7) return "todos os dias";
-  if (on.join() === "0,1,2,3,4") return "seg a sex";
+  const names = ["seg", "ter", "qua", "qui", "sex", tx("sáb"), "dom"];
+  if (on.length === 7) return tx("todos os dias");
+  if (on.join() === "0,1,2,3,4") return tx("seg a sex");
   return on.map((d) => names[d]).join(", ");
 }
 
@@ -567,11 +581,11 @@ function Agenda({ items, cards }: { items: AgendaItem[]; cards: TodayCard[] }) {
     >
       <div className="flex items-center justify-between gap-2">
         <h2 id="agenda-hoje" className="kicker">
-          Agenda de hoje
+          {tx("Agenda de hoje")}
         </h2>
         {study.length > 0 ? (
           <Link to="/app/plano" className="text-[12px] no-underline hover:underline">
-            Ver semana
+            {tx("Ver semana")}
           </Link>
         ) : null}
       </div>
@@ -584,13 +598,13 @@ function Agenda({ items, cards }: { items: AgendaItem[]; cards: TodayCard[] }) {
             <CalendarPlus size={20} weight="duotone" />
           </span>
           <div className="min-w-0 flex-1 leading-tight">
-            <p className="text-[14px] font-medium">Nenhum bloco planejado.</p>
+            <p className="text-[14px] font-medium">{tx("Nenhum bloco planejado.")}</p>
             <p className="mt-0.5 text-[12px] text-neutral-400">
-              Distribua o estudo pela semana, com horários, se quiser.
+              {tx("Distribua o estudo pela semana, com horários, se quiser.")}
             </p>
           </div>
           <Button asChild variant="secondary" size="sm" className="shrink-0">
-            <Link to="/app/plano">Planejar</Link>
+            <Link to="/app/plano">{tx("Planejar")}</Link>
           </Button>
         </div>
       ) : (
@@ -613,10 +627,14 @@ function Agenda({ items, cards }: { items: AgendaItem[]; cards: TodayCard[] }) {
               </span>
               <span className={cn("text-[12px]", t.status === "done" ? "text-success" : "text-neutral-400")}>
                 {t.status === "done"
-                  ? `${t.estimated_seconds ? fmtMinutes(t.estimated_seconds) + " · " : ""}concluído`
+                  ? tx("{{v0}}concluído", {
+                      v0: t.estimated_seconds ? fmtMinutes(t.estimated_seconds) + " · " : "",
+                    })
                   : [
                       t.estimated_seconds ? fmtMinutes(t.estimated_seconds) : null,
-                      t.recovery_seconds ? `+ ${Math.round(t.recovery_seconds / 60)} de recuperação` : null,
+                      t.recovery_seconds
+                        ? tx("+ {{v0}} de recuperação", { v0: Math.round(t.recovery_seconds / 60) })
+                        : null,
                       t.page_from ? `p. ${t.page_from}–${t.page_to ?? ""}` : null,
                     ]
                       .filter(Boolean)
@@ -628,7 +646,7 @@ function Agenda({ items, cards }: { items: AgendaItem[]; cards: TodayCard[] }) {
       )}
       {tasks.length > 0 ? (
         <>
-          <span className="kicker mt-2">Tarefas</span>
+          <span className="kicker mt-2">{tx("Tarefas")}</span>
           {tasks.map((t) => (
             <label key={t.id} className="flex min-h-[32px] items-center gap-[10px] text-[14px]">
               <Checkbox
@@ -663,7 +681,7 @@ function ObjectiveRow({ cards }: { cards: TodayCard[] }) {
               <div className="flex items-center gap-2.5">
                 <ActivityBadge category={c.activity.category} />
                 <span className="min-w-0 flex-1 truncate font-medium text-primary">{c.activity.title}</span>
-                <Tag variant="neutral">{perWeek}×/sem</Tag>
+                <Tag variant="neutral">{tx("{{v0}}×/sem", { v0: perWeek })}</Tag>
               </div>
               <div className="h-[6px] overflow-hidden rounded-full bg-track">
                 <div
@@ -675,12 +693,17 @@ function ObjectiveRow({ cards }: { cards: TodayCard[] }) {
               </div>
               <div className="tnum flex justify-between text-[12px] text-neutral-400">
                 <span>
-                  {fmtMinutes(c.week_logged)} de {fmtMinutes(c.week_target)}
+                  {tx("{{v0}} de {{v1}}", {
+                    v0: fmtMinutes(c.week_logged),
+                    v1: fmtMinutes(c.week_target),
+                  })}
                 </span>
                 {pending > 0 ? (
-                  <span className="text-pending">{fmtMinutes(pending)} a recuperar</span>
+                  <span className="text-pending">
+                    {tx("{{v0}} a recuperar", { v0: fmtMinutes(pending) })}
+                  </span>
                 ) : (
-                  <span className="text-success">em dia</span>
+                  <span className="text-success">{tx("em dia")}</span>
                 )}
               </div>
             </Card>
@@ -689,10 +712,10 @@ function ObjectiveRow({ cards }: { cards: TodayCard[] }) {
       })}
       <Card className="items-start justify-center gap-2 rounded-[18px] border border-dashed border-border bg-transparent p-4">
         <span className="text-[14px] text-neutral-400">
-          Novo objetivo: concurso, instrumento, rotina da casa…
+          {tx("Novo objetivo: concurso, instrumento, rotina da casa…")}
         </span>
         <Button asChild variant="secondary">
-          <Link to="/app/objetivos/novo">+ Criar objetivo</Link>
+          <Link to="/app/objetivos/novo">{tx("+ Criar objetivo")}</Link>
         </Button>
       </Card>
     </div>
@@ -720,11 +743,9 @@ function WeekDots({ card }: { card: TodayCard }) {
         ))}
       </div>
       <p className="tnum whitespace-nowrap text-[12px] text-neutral-400">
-        <span aria-hidden>
-          {done} de {planned} dias
-        </span>
+        <span aria-hidden>{tx("{{v0}} de {{v1}} dias", { v0: done, v1: planned })}</span>
         <span className="sr-only">
-          {done} de {planned} dias desta semana com registro.
+          {tx("{{v0}} de {{v1}} dias desta semana com registro.", { v0: done, v1: planned })}
         </span>
       </p>
     </div>

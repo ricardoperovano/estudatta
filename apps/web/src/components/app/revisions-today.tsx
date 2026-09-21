@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { Link } from "react-router";
 import { useRevisions, useRevisionSummary } from "@/api/study";
 import { Card } from "@/components/ui";
@@ -22,7 +23,11 @@ export function RevisionsToday() {
     const days = daysBetween(today, next.due_date);
     return (
       <p className="text-[13px] text-neutral-400">
-        Próxima revisão {days === 1 ? "amanhã" : `em ${days} dias`}: {next.title}. <Link to="/app/revisoes">Ver revisões</Link>
+        {t("Próxima revisão {{v0}}: {{v1}}.", {
+          v0: days === 1 ? t("amanhã") : t("em {{v0}} dias", { v0: days }),
+          v1: next.title,
+        })}{" "}
+        <Link to="/app/revisoes">{t("Ver revisões")}</Link>
       </p>
     );
   }
@@ -33,12 +38,16 @@ export function RevisionsToday() {
     <Card as="section" elev="sm" className="gap-3 p-4" aria-labelledby="revisions-today-title">
       <div className="flex items-baseline justify-between gap-2">
         <h2 id="revisions-today-title" className="text-[17px] font-medium">
-          Revisões de hoje
+          {t("Revisões de hoje")}
         </h2>
         <span className="text-[12px] text-neutral-400">
-          {due.length - overdue > 0 ? `${due.length - overdue} para hoje` : ""}
+          {due.length - overdue > 0 ? t("{{v0}} para hoje", { v0: due.length - overdue }) : ""}
           {due.length - overdue > 0 && overdue > 0 ? " · " : ""}
-          {overdue > 0 ? <span className="text-pending">{overdue === 1 ? "1 atrasada" : `${overdue} atrasadas`}</span> : null}
+          {overdue > 0 ? (
+            <span className="text-pending">
+              {overdue === 1 ? t("1 atrasada") : t("{{v0}} atrasadas", { v0: overdue })}
+            </span>
+          ) : null}
         </span>
       </div>
       <ul className="flex flex-col gap-2">
@@ -47,7 +56,7 @@ export function RevisionsToday() {
         ))}
       </ul>
       <Link to="/app/revisoes" className="self-start text-[13px]">
-        {due.length > shown.length ? `Ver todas (${due.length})` : "Ver todas"}
+        {due.length > shown.length ? t("Ver todas ({{v0}})", { v0: due.length }) : t("Ver todas")}
       </Link>
     </Card>
   );

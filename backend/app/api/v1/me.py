@@ -15,6 +15,7 @@ from app.core.audit import audit
 from app.core.db import get_db
 from app.core.deps import get_current_user
 from app.core.errors import NotFound, Unauthorized, ValidationFailed
+from app.core.i18n import normalize_locale
 from app.core.security import verify_password
 from app.core.timeutil import utcnow, valid_timezone
 from app.models.activity import Activity
@@ -104,7 +105,10 @@ def update_profile(
             raise ValidationFailed("Fuso horário inválido.", code="invalid_timezone")
         user.timezone = payload.timezone
     if payload.locale is not None:
-        user.locale = payload.locale
+        loc = normalize_locale(payload.locale)
+        if loc is None:
+            raise ValidationFailed("Idioma não suportado.", code="invalid_locale")
+        user.locale = loc
     db.commit()
     return UserOut.model_validate(user)
 

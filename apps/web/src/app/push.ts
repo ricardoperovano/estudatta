@@ -6,7 +6,8 @@
 import { rawJson, ApiError } from "@/api/client";
 import { isIOS, isStandalone, supportsPush } from "@/lib/device";
 
-export type PushState = "unsupported" | "ios-needs-install" | "server-disabled" | "denied" | "default" | "granted";
+export type PushState =
+  "unsupported" | "ios-needs-install" | "server-disabled" | "denied" | "default" | "granted";
 
 export async function pushState(): Promise<PushState> {
   if (!supportsPush()) return isIOS() && !isStandalone() ? "ios-needs-install" : "unsupported";
@@ -15,7 +16,8 @@ export async function pushState(): Promise<PushState> {
     await rawJson<{ public_key: string }>("/api/v1/notifications/push/vapid-public-key");
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) return "server-disabled";
-    if (e instanceof ApiError && e.status === 0) return Notification.permission === "granted" ? "granted" : "default";
+    if (e instanceof ApiError && e.status === 0)
+      return Notification.permission === "granted" ? "granted" : "default";
     return "server-disabled";
   }
   return Notification.permission === "granted" ? "granted" : "default";
@@ -40,13 +42,20 @@ export async function subscribeToPush(): Promise<PushState> {
   const reg = await navigator.serviceWorker.ready;
   let sub = await reg.pushManager.getSubscription();
   if (!sub) {
-    sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(public_key) as BufferSource });
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(public_key) as BufferSource,
+    });
   }
   const json = sub.toJSON();
   await rawJson("/api/v1/notifications/push/subscriptions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ endpoint: sub.endpoint, keys: { p256dh: json.keys?.p256dh, auth: json.keys?.auth }, user_agent: navigator.userAgent }),
+    body: JSON.stringify({
+      endpoint: sub.endpoint,
+      keys: { p256dh: json.keys?.p256dh, auth: json.keys?.auth },
+      user_agent: navigator.userAgent,
+    }),
   });
   return "granted";
 }
@@ -57,7 +66,11 @@ export async function unsubscribeFromPush(): Promise<void> {
   const sub = await reg.pushManager.getSubscription();
   if (!sub) return;
   try {
-    await rawJson("/api/v1/notifications/push/subscriptions", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) });
+    await rawJson("/api/v1/notifications/push/subscriptions", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ endpoint: sub.endpoint }),
+    });
   } finally {
     await sub.unsubscribe();
   }
@@ -74,7 +87,11 @@ export async function refreshPushSubscription(): Promise<void> {
     await rawJson("/api/v1/notifications/push/subscriptions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ endpoint: sub.endpoint, keys: { p256dh: json.keys?.p256dh, auth: json.keys?.auth }, user_agent: navigator.userAgent }),
+      body: JSON.stringify({
+        endpoint: sub.endpoint,
+        keys: { p256dh: json.keys?.p256dh, auth: json.keys?.auth },
+        user_agent: navigator.userAgent,
+      }),
     });
   } catch {
     /* silencioso: tenta de novo na próxima abertura */

@@ -1,4 +1,5 @@
 /** Configurações do objetivo: regras de meta, pausas, fuso, status, perdão de pendência e planos de recuperação. */
+import { t, intlLocale } from "@/i18n";
 import { languageShortName } from "@/lib/languages";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, unwrap } from "./client";
@@ -19,7 +20,8 @@ export type Summary = S["SummaryOut"];
 
 export const settingsKeys = {
   goalRules: (id: string) => ["activities", id, "goal-rules"] as const,
-  summary: (period: string, date: string | null, activityId: string | null) => ["reports", "summary", period, date, activityId] as const,
+  summary: (period: string, date: string | null, activityId: string | null) =>
+    ["reports", "summary", period, date, activityId] as const,
 };
 
 function useInvalidateActivity(activityId: string) {
@@ -38,7 +40,12 @@ export function useGoalRules(activityId: string | undefined) {
   return useQuery({
     queryKey: settingsKeys.goalRules(activityId || ""),
     enabled: !!activityId,
-    queryFn: async () => unwrap(await api.GET("/api/v1/activities/{activity_id}/goal-rules", { params: { path: { activity_id: activityId! } } })) as GoalRule[],
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/activities/{activity_id}/goal-rules", {
+          params: { path: { activity_id: activityId! } },
+        }),
+      ) as GoalRule[],
   });
 }
 
@@ -47,7 +54,12 @@ export function useAddGoalRule(activityId: string) {
   const invalidate = useInvalidateActivity(activityId);
   return useMutation({
     mutationFn: async (body: GoalRuleIn) =>
-      unwrap(await api.POST("/api/v1/activities/{activity_id}/goal-rules", { params: { path: { activity_id: activityId } }, body })) as GoalRule,
+      unwrap(
+        await api.POST("/api/v1/activities/{activity_id}/goal-rules", {
+          params: { path: { activity_id: activityId } },
+          body,
+        }),
+      ) as GoalRule,
     onSuccess: invalidate,
   });
 }
@@ -56,7 +68,12 @@ export function useAddPause(activityId: string) {
   const invalidate = useInvalidateActivity(activityId);
   return useMutation({
     mutationFn: async (body: PauseIn) =>
-      unwrap(await api.POST("/api/v1/activities/{activity_id}/pauses", { params: { path: { activity_id: activityId } }, body })) as PauseOut,
+      unwrap(
+        await api.POST("/api/v1/activities/{activity_id}/pauses", {
+          params: { path: { activity_id: activityId } },
+          body,
+        }),
+      ) as PauseOut,
     onSuccess: invalidate,
   });
 }
@@ -65,7 +82,11 @@ export function useDeletePause(activityId: string) {
   const invalidate = useInvalidateActivity(activityId);
   return useMutation({
     mutationFn: async (pauseId: string) =>
-      unwrap(await api.DELETE("/api/v1/activities/{activity_id}/pauses/{pause_id}", { params: { path: { activity_id: activityId, pause_id: pauseId } } })),
+      unwrap(
+        await api.DELETE("/api/v1/activities/{activity_id}/pauses/{pause_id}", {
+          params: { path: { activity_id: activityId, pause_id: pauseId } },
+        }),
+      ),
     onSuccess: invalidate,
   });
 }
@@ -74,7 +95,12 @@ export function useChangeTimezone(activityId: string) {
   const invalidate = useInvalidateActivity(activityId);
   return useMutation({
     mutationFn: async (body: TimezoneChange) =>
-      unwrap(await api.POST("/api/v1/activities/{activity_id}/timezone", { params: { path: { activity_id: activityId } }, body })) as TimezoneOut,
+      unwrap(
+        await api.POST("/api/v1/activities/{activity_id}/timezone", {
+          params: { path: { activity_id: activityId } },
+          body,
+        }),
+      ) as TimezoneOut,
     onSuccess: invalidate,
   });
 }
@@ -83,7 +109,12 @@ export function useChangeStatus(activityId: string) {
   const invalidate = useInvalidateActivity(activityId);
   return useMutation({
     mutationFn: async (status: "active" | "paused" | "archived") =>
-      unwrap(await api.POST("/api/v1/activities/{activity_id}/status", { params: { path: { activity_id: activityId } }, body: { status } })) as ActivityDetail,
+      unwrap(
+        await api.POST("/api/v1/activities/{activity_id}/status", {
+          params: { path: { activity_id: activityId } },
+          body: { status },
+        }),
+      ) as ActivityDetail,
     onSuccess: invalidate,
   });
 }
@@ -93,7 +124,12 @@ export function useChangeAnyStatus() {
   const invalidate = useInvalidateAll();
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "active" | "paused" | "archived" }) =>
-      unwrap(await api.POST("/api/v1/activities/{activity_id}/status", { params: { path: { activity_id: id } }, body: { status } })) as ActivityDetail,
+      unwrap(
+        await api.POST("/api/v1/activities/{activity_id}/status", {
+          params: { path: { activity_id: id } },
+          body: { status },
+        }),
+      ) as ActivityDetail,
     onSuccess: invalidate,
   });
 }
@@ -101,7 +137,8 @@ export function useChangeAnyStatus() {
 export function useDeleteActivity() {
   const invalidate = useInvalidateAll();
   return useMutation({
-    mutationFn: async (id: string) => unwrap(await api.DELETE("/api/v1/activities/{activity_id}", { params: { path: { activity_id: id } } })),
+    mutationFn: async (id: string) =>
+      unwrap(await api.DELETE("/api/v1/activities/{activity_id}", { params: { path: { activity_id: id } } })),
     onSuccess: invalidate,
   });
 }
@@ -110,7 +147,12 @@ export function useUpdateActivity(activityId: string) {
   const invalidate = useInvalidateActivity(activityId);
   return useMutation({
     mutationFn: async (body: ActivityUpdate) =>
-      unwrap(await api.PATCH("/api/v1/activities/{activity_id}", { params: { path: { activity_id: activityId } }, body })) as ActivityDetail,
+      unwrap(
+        await api.PATCH("/api/v1/activities/{activity_id}", {
+          params: { path: { activity_id: activityId } },
+          body,
+        }),
+      ) as ActivityDetail,
     onSuccess: invalidate,
   });
 }
@@ -118,7 +160,12 @@ export function useUpdateActivity(activityId: string) {
 export function useForgivePreview(activityId: string) {
   return useMutation({
     mutationFn: async (body: ForgiveIn) =>
-      unwrap(await api.POST("/api/v1/activities/{activity_id}/forgive/preview", { params: { path: { activity_id: activityId } }, body })) as ForgivePreview,
+      unwrap(
+        await api.POST("/api/v1/activities/{activity_id}/forgive/preview", {
+          params: { path: { activity_id: activityId } },
+          body,
+        }),
+      ) as ForgivePreview,
   });
 }
 
@@ -126,7 +173,12 @@ export function useForgive(activityId: string) {
   const invalidate = useInvalidateActivity(activityId);
   return useMutation({
     mutationFn: async (body: ForgiveIn) =>
-      unwrap(await api.POST("/api/v1/activities/{activity_id}/forgive", { params: { path: { activity_id: activityId } }, body })) as Balance,
+      unwrap(
+        await api.POST("/api/v1/activities/{activity_id}/forgive", {
+          params: { path: { activity_id: activityId } },
+          body,
+        }),
+      ) as Balance,
     onSuccess: invalidate,
   });
 }
@@ -135,7 +187,12 @@ export function useRecoveryPlans(activityId: string | undefined) {
   return useQuery({
     queryKey: keys.recoveryPlans(activityId || ""),
     enabled: !!activityId,
-    queryFn: async () => unwrap(await api.GET("/api/v1/activities/{activity_id}/recovery-plans", { params: { path: { activity_id: activityId! } } })) as RecoveryPlan[],
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/activities/{activity_id}/recovery-plans", {
+          params: { path: { activity_id: activityId! } },
+        }),
+      ) as RecoveryPlan[],
   });
 }
 
@@ -143,16 +200,31 @@ export function useRecoveryPlans(activityId: string | undefined) {
 export function useCancelRecovery(activityId: string) {
   const invalidate = useInvalidateActivity(activityId);
   return useMutation({
-    mutationFn: async () => unwrap(await api.DELETE("/api/v1/activities/{activity_id}/recovery-plans/current", { params: { path: { activity_id: activityId } } })),
+    mutationFn: async () =>
+      unwrap(
+        await api.DELETE("/api/v1/activities/{activity_id}/recovery-plans/current", {
+          params: { path: { activity_id: activityId } },
+        }),
+      ),
     onSuccess: invalidate,
   });
 }
 
-export function useSummary(period: "day" | "week" | "month", date: string | null, activityId: string | null, enabled = true) {
+export function useSummary(
+  period: "day" | "week" | "month",
+  date: string | null,
+  activityId: string | null,
+  enabled = true,
+) {
   return useQuery({
     queryKey: settingsKeys.summary(period, date, activityId),
     enabled,
-    queryFn: async () => unwrap(await api.GET("/api/v1/reports/summary", { params: { query: { period, date, activity_id: activityId } } })) as Summary,
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/reports/summary", {
+          params: { query: { period, date, activity_id: activityId } },
+        }),
+      ) as Summary,
     staleTime: 30_000,
   });
 }
@@ -162,26 +234,26 @@ export const CATEGORY_LABELS: Record<string, string> = {
   idioma: "idioma",
   concurso: "concurso",
   faculdade: "faculdade",
-  certificacao: "certificação",
+  certificacao: t("certificação"),
   curso: "curso",
-  outro_estudo: "outro estudo",
+  outro_estudo: t("outro estudo"),
   leitura: "leitura",
-  pratica: "prática",
+  pratica: t("prática"),
   rotina: "rotina",
   personalizado: "personalizado",
 };
 
 export const CATEGORY_OPTIONS: { value: ActivityUpdate["category"] & string; label: string }[] = [
-  { value: "idioma", label: "Idiomas" },
-  { value: "concurso", label: "Concurso" },
-  { value: "faculdade", label: "Faculdade" },
-  { value: "certificacao", label: "Certificação" },
-  { value: "curso", label: "Curso" },
-  { value: "outro_estudo", label: "Outro estudo" },
-  { value: "leitura", label: "Leitura" },
-  { value: "pratica", label: "Prática (instrumento, esporte…)" },
-  { value: "rotina", label: "Rotina" },
-  { value: "personalizado", label: "Personalizado" },
+  { value: "idioma", label: t("Idiomas") },
+  { value: "concurso", label: t("Concurso") },
+  { value: "faculdade", label: t("Faculdade") },
+  { value: "certificacao", label: t("Certificação") },
+  { value: "curso", label: t("Curso") },
+  { value: "outro_estudo", label: t("Outro estudo") },
+  { value: "leitura", label: t("Leitura") },
+  { value: "pratica", label: t("Prática (instrumento, esporte…)") },
+  { value: "rotina", label: t("Rotina") },
+  { value: "personalizado", label: t("Personalizado") },
 ];
 
 export const TIMEZONE_OPTIONS = [
@@ -208,5 +280,5 @@ export const TIMEZONE_OPTIONS = [
 export function categoryLabel(category: string, language?: string | null): string {
   const base = CATEGORY_LABELS[category] ?? category;
   const lang = category === "idioma" || category === "ingles" ? languageShortName(language ?? "en") : null;
-  return lang ? `${base} · ${lang.toLocaleLowerCase("pt-BR")}` : base;
+  return lang ? `${base} · ${lang.toLocaleLowerCase(intlLocale)}` : base;
 }

@@ -16,7 +16,12 @@ export const inboxKeys = {
 export function useNotificationList(unreadOnly: boolean, limit: number) {
   return useQuery({
     queryKey: inboxKeys.list(unreadOnly, limit),
-    queryFn: async () => unwrap(await api.GET("/api/v1/notifications", { params: { query: { limit, offset: 0, unread_only: unreadOnly } } })) as NotificationList,
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/notifications", {
+          params: { query: { limit, offset: 0, unread_only: unreadOnly } },
+        }),
+      ) as NotificationList,
     staleTime: 15_000,
     placeholderData: (prev) => prev,
   });
@@ -25,7 +30,12 @@ export function useNotificationList(unreadOnly: boolean, limit: number) {
 export function useMarkNotificationRead() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => unwrap(await api.POST("/api/v1/notifications/{notification_id}/read", { params: { path: { notification_id: id } } })) as NotificationItem,
+    mutationFn: async (id: string) =>
+      unwrap(
+        await api.POST("/api/v1/notifications/{notification_id}/read", {
+          params: { path: { notification_id: id } },
+        }),
+      ) as NotificationItem,
     onSuccess: () => qc.invalidateQueries({ queryKey: inboxKeys.all }),
   });
 }
@@ -42,7 +52,8 @@ export function useMarkAllNotificationsRead() {
 export function useSnoozeReminders() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (minutes: number) => unwrap(await api.POST("/api/v1/notifications/snooze", { body: { minutes } })),
+    mutationFn: async (minutes: number) =>
+      unwrap(await api.POST("/api/v1/notifications/snooze", { body: { minutes } })),
     onSuccess: (prefs) => qc.setQueryData(settingsKeys.notificationPrefs, prefs),
   });
 }

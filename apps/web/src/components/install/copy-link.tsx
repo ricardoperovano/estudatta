@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import * as React from "react";
 import { Check, Copy } from "@phosphor-icons/react";
 import { Button, toast } from "@/components/ui";
@@ -10,16 +11,16 @@ export function CopyLinkButton({ path = "/app/instalar" }: { path?: string }) {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      toast("success", "Link copiado. Agora é só colar no navegador.");
+      toast("success", t("Link copiado. Agora é só colar no navegador."));
       window.setTimeout(() => setCopied(false), 2500);
     } catch {
-      toast("info", "Não deu para copiar sozinho", url);
+      toast("info", t("Não deu para copiar sozinho"), url);
     }
   };
   return (
     <Button variant="secondary" size="md" onClick={copy} className="self-start">
       {copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
-      {copied ? "Copiado" : "Copiar link"}
+      {copied ? t("Copiado") : t("Copiar link")}
     </Button>
   );
 }

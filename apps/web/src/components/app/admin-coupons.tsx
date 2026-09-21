@@ -1,4 +1,5 @@
 /** Painel administrativo — cupons (desconto % na assinatura ou dias grátis de um plano). */
+import { t } from "@/i18n";
 import * as React from "react";
 import { Plus } from "@phosphor-icons/react";
 import { useAdminPlans } from "@/api/admin";
@@ -30,17 +31,17 @@ import {
 type Kind = CouponIn["kind"];
 
 const KIND_LABEL: Record<Kind, string> = {
-  percent: "Desconto % na assinatura",
-  trial: "Dias grátis de um plano",
+  percent: t("Desconto % na assinatura"),
+  trial: t("Dias grátis de um plano"),
 };
 
 function couponState(c: Coupon): { label: string; variant: "success" | "neutral" | "error" | "pending" } {
-  if (!c.active) return { label: "Desativado", variant: "neutral" };
-  if (c.valid) return { label: "Válido", variant: "success" };
+  if (!c.active) return { label: t("Desativado"), variant: "neutral" };
+  if (c.valid) return { label: t("Válido"), variant: "success" };
   if (c.expires_at && new Date(c.expires_at).getTime() <= Date.now())
-    return { label: "Expirado", variant: "error" };
-  if (c.max_uses != null && c.uses >= c.max_uses) return { label: "Esgotado", variant: "pending" };
-  return { label: "Inválido", variant: "error" };
+    return { label: t("Expirado"), variant: "error" };
+  if (c.max_uses != null && c.uses >= c.max_uses) return { label: t("Esgotado"), variant: "pending" };
+  return { label: t("Inválido"), variant: "error" };
 }
 
 export function AdminCouponsPage() {
@@ -50,20 +51,22 @@ export function AdminCouponsPage() {
   return (
     <div className="flex flex-col gap-[14px] desktop:gap-6">
       <AdminTitle
-        title="Cupons"
-        subtitle="Quem digita o código em Planos ganha o benefício. Cada pessoa usa um cupom só uma vez."
+        title={t("Cupons")}
+        subtitle={t("Quem digita o código em Planos ganha o benefício. Cada pessoa usa um cupom só uma vez.")}
         actions={
           <Button size="lg" onClick={() => setCreateOpen(true)}>
-            <Plus size={16} aria-hidden /> Novo cupom
+            <Plus size={16} aria-hidden /> {t("Novo cupom")}
           </Button>
         }
       />
 
       <AdminSection
-        title="Todos os cupons"
+        title={t("Todos os cupons")}
         meta={
           coupons.data ? (
-            <span className="tnum">{coupons.data.length.toLocaleString("pt-BR")} no total</span>
+            <span className="tnum">
+              {t("{{v0}} no total", { v0: coupons.data.length.toLocaleString("pt-BR") })}
+            </span>
           ) : null
         }
       >
@@ -71,8 +74,10 @@ export function AdminCouponsPage() {
           {(list) =>
             list.length === 0 ? (
               <EmptyState
-                title="Nenhum cupom ainda."
-                description="Crie um cupom de desconto ou de dias grátis para usar em campanhas ou divulgar."
+                title={t("Nenhum cupom ainda.")}
+                description={t(
+                  "Crie um cupom de desconto ou de dias grátis para usar em campanhas ou divulgar.",
+                )}
               />
             ) : (
               <div className="overflow-x-auto">
@@ -80,28 +85,28 @@ export function AdminCouponsPage() {
                   <thead>
                     <tr className="text-[11px] uppercase tracking-[0.1em] text-neutral-400">
                       <th scope="col" className="py-2 pr-3 font-normal">
-                        Código
+                        {t("Código")}
                       </th>
                       <th scope="col" className="py-2 pr-3 font-normal">
-                        Tipo
+                        {t("Tipo")}
                       </th>
                       <th scope="col" className="py-2 pr-3 font-normal">
-                        Valor
+                        {t("Valor")}
                       </th>
                       <th scope="col" className="py-2 pr-3 font-normal">
-                        Plano
+                        {t("Plano")}
                       </th>
                       <th scope="col" className="py-2 pr-3 font-normal">
-                        Usos
+                        {t("Usos")}
                       </th>
                       <th scope="col" className="py-2 pr-3 font-normal">
-                        Validade
+                        {t("Validade")}
                       </th>
                       <th scope="col" className="py-2 pr-3 font-normal">
-                        Situação
+                        {t("Situação")}
                       </th>
                       <th scope="col" className="py-2 font-normal">
-                        <span className="sr-only">Ações</span>
+                        <span className="sr-only">{t("Ações")}</span>
                       </th>
                     </tr>
                   </thead>
@@ -128,9 +133,9 @@ function CouponRow({ c }: { c: Coupon }) {
   const doToggle = async () => {
     try {
       const r = await toggle.mutateAsync(c.id);
-      toast("success", r.active ? "Cupom ativado" : "Cupom desativado", r.code);
+      toast("success", r.active ? t("Cupom ativado") : t("Cupom desativado"), r.code);
     } catch (e) {
-      toast("error", "Não foi possível alterar o cupom", errorMessage(e));
+      toast("error", t("Não foi possível alterar o cupom"), errorMessage(e));
     }
   };
   return (
@@ -142,17 +147,17 @@ function CouponRow({ c }: { c: Coupon }) {
         ) : null}
       </td>
       <td className="py-2 pr-3">
-        {c.kind === "percent" ? "Desconto %" : c.kind === "trial" ? "Dias grátis" : c.kind}
+        {c.kind === "percent" ? t("Desconto %") : c.kind === "trial" ? t("Dias grátis") : c.kind}
       </td>
       <td className="tnum whitespace-nowrap py-2 pr-3">
-        {c.kind === "percent" ? `${c.value}%` : `${c.value} dias`}
+        {c.kind === "percent" ? `${c.value}%` : t("{{v0}} dias", { v0: c.value })}
       </td>
       <td className="py-2 pr-3">{c.plan_code ?? "qualquer"}</td>
       <td className="tnum whitespace-nowrap py-2 pr-3">
         {c.uses.toLocaleString("pt-BR")} / {c.max_uses != null ? c.max_uses.toLocaleString("pt-BR") : "∞"}
       </td>
       <td className="tnum whitespace-nowrap py-2 pr-3">
-        {c.expires_at ? fmtDate(c.expires_at) : "sem prazo"}
+        {c.expires_at ? fmtDate(c.expires_at) : t("sem prazo")}
       </td>
       <td className="py-2 pr-3">
         <Tag variant={state.variant}>{state.label}</Tag>
@@ -165,7 +170,7 @@ function CouponRow({ c }: { c: Coupon }) {
             loading={toggle.isPending}
             onClick={() => void doToggle()}
           >
-            {c.active ? "Desativar" : "Ativar"}
+            {c.active ? t("Desativar") : t("Ativar")}
           </Button>
         </div>
       </td>
@@ -187,24 +192,24 @@ function CouponCreateDialog({ open, onOpenChange }: { open: boolean; onOpenChang
 
   const planOptions = (plans.data ?? []).filter((p) => p.active && p.code !== "free");
   const valueN = /^\d+$/.test(value) ? Number(value) : NaN;
-  const codeError = COUPON_CODE_RE.test(code) ? null : "3 a 32 caracteres: letras, números, - ou _.";
+  const codeError = COUPON_CODE_RE.test(code) ? null : t("3 a 32 caracteres: letras, números, - ou _.");
   const valueError =
     kind === "percent"
       ? Number.isInteger(valueN) && valueN >= 1 && valueN <= 100
         ? null
-        : "Desconto entre 1% e 100%."
+        : t("Desconto entre 1% e 100%.")
       : Number.isInteger(valueN) && valueN >= 1 && valueN <= 3650
         ? null
-        : "Entre 1 e 3650 dias.";
-  const planError = kind === "trial" && !planCode ? "Dias grátis precisam de um plano." : null;
+        : t("Entre 1 e 3650 dias.");
+  const planError = kind === "trial" && !planCode ? t("Dias grátis precisam de um plano.") : null;
   const maxUsesN = maxUses.trim() === "" ? null : /^\d+$/.test(maxUses) ? Number(maxUses) : NaN;
   const maxUsesError =
     maxUsesN === null || (Number.isInteger(maxUsesN) && maxUsesN >= 1)
       ? null
-      : "Deixe vazio para ilimitado ou informe um número inteiro.";
+      : t("Deixe vazio para ilimitado ou informe um número inteiro.");
   const expiresIso = expires ? endOfDayIso(expires) : null;
-  const expiresError = expires && !expiresIso ? "Data inválida." : null;
-  const noteError = note.length > 300 ? "Máximo de 300 caracteres." : null;
+  const expiresError = expires && !expiresIso ? t("Data inválida.") : null;
+  const noteError = note.length > 300 ? t("Máximo de 300 caracteres.") : null;
 
   const reset = () => {
     setCode("");
@@ -231,11 +236,11 @@ function CouponCreateDialog({ open, onOpenChange }: { open: boolean; onOpenChang
         expires_at: expiresIso,
         note: note.trim() || null,
       });
-      toast("success", "Cupom criado", `${c.code}: ${couponSummary(c)}.`);
+      toast("success", t("Cupom criado"), `${c.code}: ${couponSummary(c)}.`);
       reset();
       onOpenChange(false);
     } catch (err) {
-      toast("error", "Não foi possível criar o cupom", errorMessage(err));
+      toast("error", t("Não foi possível criar o cupom"), errorMessage(err));
     }
   };
 
@@ -243,15 +248,17 @@ function CouponCreateDialog({ open, onOpenChange }: { open: boolean; onOpenChang
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         mode="sheet"
-        title="Novo cupom"
-        description="O código é o que a pessoa digita em Planos. Depois de criado, só dá para ativar ou desativar."
+        title={t("Novo cupom")}
+        description={t(
+          "O código é o que a pessoa digita em Planos. Depois de criado, só dá para ativar ou desativar.",
+        )}
       >
         <form onSubmit={submit} className="flex flex-col gap-3" noValidate>
           <Field
-            label="Código"
+            label={t("Código")}
             htmlFor="coupon-code"
             error={touched ? codeError : null}
-            hint="Maiúsculas automáticas. 3 a 32 caracteres: letras, números, - ou _."
+            hint={t("Maiúsculas automáticas. 3 a 32 caracteres: letras, números, - ou _.")}
           >
             <Input
               id="coupon-code"
@@ -268,12 +275,16 @@ function CouponCreateDialog({ open, onOpenChange }: { open: boolean; onOpenChang
           </Field>
 
           <Field
-            label="Tipo"
+            label={t("Tipo")}
             htmlFor="coupon-kind"
             hint={
               kind === "percent"
-                ? "Reduz o valor da assinatura no checkout e o desconto vale em todos os ciclos enquanto a assinatura durar (ex.: 20% em R$ 19,90 = R$ 15,92 por mês). Não afeta quem já assina."
-                : "Libera o plano escolhido por alguns dias sem cobrança, como uma concessão promocional. Ao terminar, a pessoa volta ao plano gratuito, sem cobrança automática."
+                ? t(
+                    "Reduz o valor da assinatura no checkout e o desconto vale em todos os ciclos enquanto a assinatura durar (ex.: 20% em R$ 19,90 = R$ 15,92 por mês). Não afeta quem já assina.",
+                  )
+                : t(
+                    "Libera o plano escolhido por alguns dias sem cobrança, como uma concessão promocional. Ao terminar, a pessoa volta ao plano gratuito, sem cobrança automática.",
+                  )
             }
           >
             <Select
@@ -291,7 +302,7 @@ function CouponCreateDialog({ open, onOpenChange }: { open: boolean; onOpenChang
 
           <div className="grid grid-cols-1 gap-3 tablet:grid-cols-2">
             <Field
-              label={kind === "percent" ? "Desconto (%)" : "Dias grátis"}
+              label={kind === "percent" ? t("Desconto (%)") : t("Dias grátis")}
               htmlFor="coupon-value"
               error={touched ? valueError : null}
             >
@@ -305,10 +316,10 @@ function CouponCreateDialog({ open, onOpenChange }: { open: boolean; onOpenChang
               />
             </Field>
             <Field
-              label={kind === "trial" ? "Plano (obrigatório)" : "Plano (opcional)"}
+              label={kind === "trial" ? t("Plano (obrigatório)") : t("Plano (opcional)")}
               htmlFor="coupon-plan"
               error={touched ? planError : null}
-              hint={kind === "percent" ? "Vazio = vale para qualquer plano pago." : undefined}
+              hint={kind === "percent" ? t("Vazio = vale para qualquer plano pago.") : undefined}
             >
               <Select
                 id="coupon-plan"
@@ -318,7 +329,11 @@ function CouponCreateDialog({ open, onOpenChange }: { open: boolean; onOpenChang
                 disabled={plans.isLoading}
               >
                 <option value="">
-                  {plans.isLoading ? "Carregando…" : kind === "trial" ? "Escolha…" : "Qualquer plano"}
+                  {plans.isLoading
+                    ? t("Carregando…")
+                    : kind === "trial"
+                      ? t("Escolha…")
+                      : t("Qualquer plano")}
                 </option>
                 {planOptions.map((p) => (
                   <option key={p.id} value={p.code}>
@@ -331,10 +346,10 @@ function CouponCreateDialog({ open, onOpenChange }: { open: boolean; onOpenChang
 
           <div className="grid grid-cols-1 gap-3 tablet:grid-cols-2">
             <Field
-              label="Limite de usos"
+              label={t("Limite de usos")}
               htmlFor="coupon-max"
               error={touched ? maxUsesError : null}
-              hint="Vazio = ilimitado."
+              hint={t("Vazio = ilimitado.")}
             >
               <Input
                 id="coupon-max"
@@ -347,10 +362,10 @@ function CouponCreateDialog({ open, onOpenChange }: { open: boolean; onOpenChang
               />
             </Field>
             <Field
-              label="Válido até"
+              label={t("Válido até")}
               htmlFor="coupon-expires"
               error={touched ? expiresError : null}
-              hint="Vale até o fim desse dia. Vazio = sem prazo."
+              hint={t("Vale até o fim desse dia. Vazio = sem prazo.")}
             >
               <Input
                 id="coupon-expires"
@@ -364,7 +379,7 @@ function CouponCreateDialog({ open, onOpenChange }: { open: boolean; onOpenChang
           </div>
 
           <Field
-            label="Observação (só para o painel)"
+            label={t("Observação (só para o painel)")}
             htmlFor="coupon-note"
             error={touched ? noteError : null}
           >
@@ -374,7 +389,7 @@ function CouponCreateDialog({ open, onOpenChange }: { open: boolean; onOpenChang
               onChange={(e) => setNote(e.target.value)}
               maxLength={300}
               className="min-h-[64px]"
-              placeholder="Ex.: campanha de volta às aulas"
+              placeholder={t("Ex.: campanha de volta às aulas")}
             />
           </Field>
 
@@ -386,10 +401,10 @@ function CouponCreateDialog({ open, onOpenChange }: { open: boolean; onOpenChang
               onClick={() => onOpenChange(false)}
               disabled={create.isPending}
             >
-              Cancelar
+              {t("Cancelar")}
             </Button>
             <Button type="submit" size="lg" loading={create.isPending}>
-              Criar cupom
+              {t("Criar cupom")}
             </Button>
           </DialogActions>
         </form>

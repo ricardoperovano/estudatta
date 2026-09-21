@@ -1,4 +1,5 @@
 /** Painel administrativo — assinaturas: métricas e gestão (cancelar renovação, conceder acesso). */
+import { t } from "@/i18n";
 import * as React from "react";
 import { Link } from "react-router";
 import { ArrowsClockwise } from "@phosphor-icons/react";
@@ -57,8 +58,10 @@ export function AdminSubscriptionsPage() {
   return (
     <div className="flex flex-col gap-[14px] desktop:gap-6">
       <AdminTitle
-        title="Assinaturas"
-        subtitle="Quem paga, quem está em atraso e quem tem acesso promocional. Cancelar aqui só interrompe a renovação: o acesso segue até o fim do período."
+        title={t("Assinaturas")}
+        subtitle={t(
+          "Quem paga, quem está em atraso e quem tem acesso promocional. Cancelar aqui só interrompe a renovação: o acesso segue até o fim do período.",
+        )}
         actions={
           <Button
             variant="secondary"
@@ -69,7 +72,7 @@ export function AdminSubscriptionsPage() {
               void subs.refetch();
             }}
           >
-            <ArrowsClockwise size={16} aria-hidden /> Atualizar
+            <ArrowsClockwise size={16} aria-hidden /> {t("Atualizar")}
           </Button>
         }
       />
@@ -77,22 +80,28 @@ export function AdminSubscriptionsPage() {
       <QueryGate query={metrics}>{(m) => <MetricsGrid m={m} />}</QueryGate>
 
       <AdminSection
-        title="Todas as assinaturas"
+        title={t("Todas as assinaturas")}
         meta={
           subs.data?.total != null ? (
-            <span className="tnum">{subs.data.total.toLocaleString("pt-BR")} no total</span>
+            <span className="tnum">
+              {t("{{v0}} no total", { v0: subs.data.total.toLocaleString("pt-BR") })}
+            </span>
           ) : null
         }
       >
         <div className="flex flex-col gap-3 tablet:flex-row tablet:flex-wrap tablet:items-end">
-          <SearchInput label="Buscar por nome ou e-mail" placeholder="Nome ou e-mail" onCommit={commit} />
-          <Field label="Situação" htmlFor="sub-status" className="w-full tablet:w-[180px]">
+          <SearchInput
+            label={t("Buscar por nome ou e-mail")}
+            placeholder={t("Nome ou e-mail")}
+            onCommit={commit}
+          />
+          <Field label={t("Situação")} htmlFor="sub-status" className="w-full tablet:w-[180px]">
             <Select
               id="sub-status"
               value={filter.status}
               onChange={(e) => setFilter((f) => ({ ...f, status: e.target.value, offset: 0 }))}
             >
-              <option value="">Todas</option>
+              <option value="">{t("Todas")}</option>
               {STATUS_OPTIONS.map((s) => (
                 <option key={s} value={s}>
                   {SUB_STATUS[s].label}
@@ -100,13 +109,13 @@ export function AdminSubscriptionsPage() {
               ))}
             </Select>
           </Field>
-          <Field label="Plano" htmlFor="sub-plan" className="w-full tablet:w-[200px]">
+          <Field label={t("Plano")} htmlFor="sub-plan" className="w-full tablet:w-[200px]">
             <Select
               id="sub-plan"
               value={filter.plan_code}
               onChange={(e) => setFilter((f) => ({ ...f, plan_code: e.target.value, offset: 0 }))}
             >
-              <option value="">Todos</option>
+              <option value="">{t("Todos")}</option>
               {planOptions.map((p) => (
                 <option key={p.id} value={p.code}>
                   {p.name}
@@ -120,11 +129,11 @@ export function AdminSubscriptionsPage() {
           {(page) =>
             page.items.length === 0 ? (
               <EmptyState
-                title="Nenhuma assinatura encontrada."
+                title={t("Nenhuma assinatura encontrada.")}
                 description={
                   filter.q || filter.status || filter.plan_code
-                    ? "Tente outros filtros."
-                    : "Quando alguém assinar, aparece aqui."
+                    ? t("Tente outros filtros.")
+                    : t("Quando alguém assinar, aparece aqui.")
                 }
               />
             ) : (
@@ -134,25 +143,25 @@ export function AdminSubscriptionsPage() {
                     <thead>
                       <tr className="text-[11px] uppercase tracking-[0.1em] text-neutral-400">
                         <th scope="col" className="py-2 pr-3 font-normal">
-                          Pessoa
+                          {t("Pessoa")}
                         </th>
                         <th scope="col" className="py-2 pr-3 font-normal">
-                          Plano
+                          {t("Plano")}
                         </th>
                         <th scope="col" className="py-2 pr-3 font-normal">
-                          Situação
+                          {t("Situação")}
                         </th>
                         <th scope="col" className="py-2 pr-3 font-normal">
-                          Valor
+                          {t("Valor")}
                         </th>
                         <th scope="col" className="py-2 pr-3 font-normal">
-                          Período atual
+                          {t("Período atual")}
                         </th>
                         <th scope="col" className="py-2 pr-3 font-normal">
-                          Renovação
+                          {t("Renovação")}
                         </th>
                         <th scope="col" className="py-2 font-normal">
-                          <span className="sr-only">Ações</span>
+                          <span className="sr-only">{t("Ações")}</span>
                         </th>
                       </tr>
                     </thead>
@@ -185,23 +194,23 @@ function MetricsGrid({ m }: { m: SubscriptionMetrics }) {
   const plans = Object.entries(m.by_plan);
   return (
     <div className="grid grid-cols-2 gap-3 tablet:grid-cols-3 desktop:grid-cols-4">
-      <StatCard label="Usuários" value={n(m.users_total)} />
-      <StatCard label="Assinantes ativos" value={n(m.active)}>
-        <span className="text-[12px] text-neutral-400">inclui em atraso</span>
+      <StatCard label={t("Usuários")} value={n(m.users_total)} />
+      <StatCard label={t("Assinantes ativos")} value={n(m.active)}>
+        <span className="text-[12px] text-neutral-400">{t("inclui em atraso")}</span>
       </StatCard>
       <StatCard label="MRR" value={fmtBRL(m.mrr_cents)}>
-        <span className="text-[12px] text-neutral-400">receita mensal recorrente (anuais ÷ 12)</span>
+        <span className="text-[12px] text-neutral-400">{t("receita mensal recorrente (anuais ÷ 12)")}</span>
       </StatCard>
-      <StatCard label="Novas em 30 dias" value={n(m.new_30d)} />
-      <StatCard label="Canceladas em 30 dias" value={n(m.churned_30d)} />
-      <StatCard label="Em atraso" value={n(m.past_due)} />
-      <StatCard label="Pendentes" value={n(m.pending)}>
-        <span className="text-[12px] text-neutral-400">checkout iniciado, sem pagamento</span>
+      <StatCard label={t("Novas em 30 dias")} value={n(m.new_30d)} />
+      <StatCard label={t("Canceladas em 30 dias")} value={n(m.churned_30d)} />
+      <StatCard label={t("Em atraso")} value={n(m.past_due)} />
+      <StatCard label={t("Pendentes")} value={n(m.pending)}>
+        <span className="text-[12px] text-neutral-400">{t("checkout iniciado, sem pagamento")}</span>
       </StatCard>
-      <StatCard label="Com acesso promocional" value={n(m.promo_active)} />
-      <StatCard label="Por plano">
+      <StatCard label={t("Com acesso promocional")} value={n(m.promo_active)} />
+      <StatCard label={t("Por plano")}>
         {plans.length === 0 ? (
-          <span className="text-[13px] text-neutral-400">Nenhum assinante ativo.</span>
+          <span className="text-[13px] text-neutral-400">{t("Nenhum assinante ativo.")}</span>
         ) : (
           <dl className="flex flex-col gap-1 text-[13px]">
             {plans.map(([code, count]) => (
@@ -214,8 +223,8 @@ function MetricsGrid({ m }: { m: SubscriptionMetrics }) {
         )}
       </StatCard>
       {m.cancelled_access > 0 ? (
-        <StatCard label="Canceladas com acesso" value={n(m.cancelled_access)}>
-          <span className="text-[12px] text-neutral-400">ainda dentro do período pago</span>
+        <StatCard label={t("Canceladas com acesso")} value={n(m.cancelled_access)}>
+          <span className="text-[12px] text-neutral-400">{t("ainda dentro do período pago")}</span>
         </StatCard>
       ) : null}
     </div>
@@ -232,15 +241,15 @@ function SubscriptionRow({ s }: { s: AdminSubscriptionRow }) {
   const doCancel = async () => {
     try {
       const r = await cancel.mutateAsync(s.user_id);
-      toast("success", "Renovação cancelada", r.message ?? undefined);
+      toast("success", t("Renovação cancelada"), r.message ?? undefined);
     } catch (e) {
-      toast("error", "Não foi possível cancelar", errorMessage(e));
+      toast("error", t("Não foi possível cancelar"), errorMessage(e));
     }
     setConfirmCancel(false);
   };
 
   const renewal = s.cancel_at_period_end
-    ? "Não renova"
+    ? t("Não renova")
     : s.status === "active" || s.status === "past_due"
       ? fmtDay(s.current_period_end)
       : "—";
@@ -265,7 +274,9 @@ function SubscriptionRow({ s }: { s: AdminSubscriptionRow }) {
           ? `${fmtBRL(s.amount_cents)}${s.interval ? ` / ${intervalLabel(s.interval)}` : ""}`
           : "—"}
         {s.coupon_code ? (
-          <span className="block text-[12px] text-neutral-400">cupom {s.coupon_code}</span>
+          <span className="block text-[12px] text-neutral-400">
+            {t("cupom {{v0}}", { v0: s.coupon_code })}
+          </span>
         ) : null}
       </td>
       <td className="tnum whitespace-nowrap py-2 pr-3">
@@ -277,21 +288,24 @@ function SubscriptionRow({ s }: { s: AdminSubscriptionRow }) {
       <td className="py-2">
         <div className="flex flex-col items-end gap-1.5 whitespace-nowrap">
           <Button variant="secondary" size="sm" onClick={() => setPromoOpen(true)}>
-            Conceder acesso
+            {t("Conceder acesso")}
           </Button>
           {canCancel ? (
             <Button variant="danger" size="sm" onClick={() => setConfirmCancel(true)}>
-              Cancelar renovação
+              {t("Cancelar renovação")}
             </Button>
           ) : null}
         </div>
         <ConfirmDialog
           open={confirmCancel}
           onOpenChange={setConfirmCancel}
-          title="Cancelar a renovação?"
-          description={`A assinatura de ${s.user_email} não será renovada. O acesso ao ${s.plan_name} continua até ${fmtDate(s.current_period_end)}. A ação fica registrada na auditoria.`}
-          confirmLabel="Cancelar renovação"
-          cancelLabel="Voltar"
+          title={t("Cancelar a renovação?")}
+          description={t(
+            "A assinatura de {{v0}} não será renovada. O acesso ao {{v1}} continua até {{v2}}. A ação fica registrada na auditoria.",
+            { v0: s.user_email, v1: s.plan_name, v2: fmtDate(s.current_period_end) },
+          )}
+          confirmLabel={t("Cancelar renovação")}
+          cancelLabel={t("Voltar")}
           danger
           loading={cancel.isPending}
           onConfirm={doCancel}

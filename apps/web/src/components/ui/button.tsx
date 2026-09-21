@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -13,13 +14,23 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "border-accent text-accent hover:bg-[color-mix(in_srgb,var(--color-action-primary)_12%,transparent)] active:bg-[color-mix(in_srgb,var(--color-action-primary)_22%,transparent)] active:text-accent-300",
-        secondary: "border-divider text-primary hover:bg-[color-mix(in_srgb,var(--color-text-primary)_7%,transparent)] active:bg-[color-mix(in_srgb,var(--color-text-primary)_14%,transparent)]",
-        ghost: "text-accent px-1 hover:bg-[color-mix(in_srgb,var(--color-action-primary)_10%,transparent)] active:bg-[color-mix(in_srgb,var(--color-action-primary)_18%,transparent)]",
-        "ghost-muted": "text-neutral-400 px-1 hover:bg-[color-mix(in_srgb,var(--color-text-primary)_7%,transparent)]",
+        primary: t(
+          "border-accent text-accent hover:bg-[color-mix(in_srgb,var(--color-action-primary)_12%,transparent)] active:bg-[color-mix(in_srgb,var(--color-action-primary)_22%,transparent)] active:text-accent-300",
+        ),
+        secondary: t(
+          "border-divider text-primary hover:bg-[color-mix(in_srgb,var(--color-text-primary)_7%,transparent)] active:bg-[color-mix(in_srgb,var(--color-text-primary)_14%,transparent)]",
+        ),
+        ghost: t(
+          "text-accent px-1 hover:bg-[color-mix(in_srgb,var(--color-action-primary)_10%,transparent)] active:bg-[color-mix(in_srgb,var(--color-action-primary)_18%,transparent)]",
+        ),
+        "ghost-muted": t(
+          "text-neutral-400 px-1 hover:bg-[color-mix(in_srgb,var(--color-text-primary)_7%,transparent)]",
+        ),
         selected: "border-accent text-accent bg-accent-900",
         danger: "border-error text-error hover:bg-error-tint",
-        option: "border-divider text-primary justify-between hover:bg-[color-mix(in_srgb,var(--color-text-primary)_7%,transparent)]",
+        option: t(
+          "border-divider text-primary justify-between hover:bg-[color-mix(in_srgb,var(--color-text-primary)_7%,transparent)]",
+        ),
         "option-selected": "border-accent bg-accent-900 text-primary justify-between",
       },
       size: {
@@ -37,13 +48,17 @@ const buttonVariants = cva(
   },
 );
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   loading?: boolean;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, block, asChild = false, loading = false, children, disabled, ...props }, ref) => {
+  (
+    { className, variant, size, block, asChild = false, loading = false, children, disabled, ...props },
+    ref,
+  ) => {
     if (asChild) {
       return (
         <Slot ref={ref} className={cn(buttonVariants({ variant, size, block }), className)} {...props}>

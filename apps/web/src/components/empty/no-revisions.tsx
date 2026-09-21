@@ -2,6 +2,7 @@
  * Revisões sem nada pendente: como as revisões aparecem sozinhas (linha do tempo com os
  * intervalos da pessoa) e um exemplo apagado de como fica uma revisão na lista.
  */
+import { t } from "@/i18n";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { ArrowsClockwise, BookOpen } from "@phosphor-icons/react";
@@ -27,14 +28,14 @@ export function SpacedTimeline({ className }: { className?: string }) {
       )}
     >
       <h2 id="linha-revisoes" className="text-[15px] font-medium">
-        Como as revisões aparecem
+        {t("Como as revisões aparecem")}
       </h2>
       <ol className="m-0 flex list-none items-start gap-0 p-0">
         <Stop
           icon={<BookOpen size={18} weight="duotone" />}
           tone="accent"
-          title="Você estuda"
-          sub="teoria, aula, leitura…"
+          title={t("Você estuda")}
+          sub={t("teoria, aula, leitura…")}
           first
         />
         {intervals.map((d, i) => (
@@ -43,14 +44,14 @@ export function SpacedTimeline({ className }: { className?: string }) {
             icon={<span className="tnum text-[12px] font-semibold">{i + 1}ª</span>}
             tone={i === intervals.length - 1 ? "success" : "info"}
             title={`+${plural(d, "dia", "dias")}`}
-            sub={`${i + 1}ª revisão`}
+            sub={t("{{v0}}ª revisão", { v0: i + 1 })}
           />
         ))}
       </ol>
       <p className="m-0 text-[13px] leading-[1.45] text-neutral-400">
-        Basta escolher a matéria ao registrar uma sessão. Uma sessão do tipo{" "}
-        <strong className="font-medium text-neutral-300">Revisão</strong> na mesma matéria conclui a revisão
-        do dia e agenda a próxima.
+        {t("Basta escolher a matéria ao registrar uma sessão. Uma sessão do tipo")}{" "}
+        <strong className="font-medium text-neutral-300">{t("Revisão")}</strong>{" "}
+        {t("na mesma matéria conclui a revisão do dia e agenda a próxima.")}
       </p>
     </section>
   );
@@ -126,9 +127,9 @@ function ExampleRow({
       {today ? (
         <span className="mt-1 flex gap-2">
           <span className="rounded-md border border-accent px-2.5 py-1 text-[12px] text-accent">
-            Revisar agora
+            {t("Revisar agora")}
           </span>
-          <span className="rounded-md border border-divider px-2.5 py-1 text-[12px]">Concluir</span>
+          <span className="rounded-md border border-divider px-2.5 py-1 text-[12px]">{t("Concluir")}</span>
         </span>
       ) : null}
     </div>
@@ -139,14 +140,14 @@ export function NoRevisions() {
   return (
     <div className="flex flex-col gap-4">
       <EmptyHero
-        kicker="Nada para revisar"
-        title="As revisões chegam sozinhas"
+        kicker={t("Nada para revisar")}
+        title={t("As revisões chegam sozinhas")}
         mood="think"
         icon={ArrowsClockwise}
         actions={
           <>
             <Button asChild variant="primary" size="lg" className="bg-surface">
-              <Link to="/app/sessao">Começar sessão</Link>
+              <Link to="/app/sessao">{t("Começar sessão")}</Link>
             </Button>
             <Button
               asChild
@@ -155,29 +156,36 @@ export function NoRevisions() {
               className="bg-surface"
               data-tour="revisoes-intervalos"
             >
-              <Link to="/app/preferencias">Mudar intervalos</Link>
+              <Link to="/app/preferencias">{t("Mudar intervalos")}</Link>
             </Button>
           </>
         }
       >
         <p className="m-0">
-          Estudou um conteúdo? A revisão aparece aqui na hora certa, para ele não escapar da memória. Você não
-          precisa criar nada.
+          {t(
+            "Estudou um conteúdo? A revisão aparece aqui na hora certa, para ele não escapar da memória. Você não precisa criar nada.",
+          )}
         </p>
       </EmptyHero>
       <SpacedTimeline />
       <ExamplePreview
-        title="Assim fica uma revisão"
-        summary="revisão de Verbos irregulares para hoje, primeira revisão um dia depois, com os botões Revisar agora e Concluir; e Crase, segunda revisão, em 5 dias."
+        title={t("Assim fica uma revisão")}
+        summary={t(
+          "revisão de Verbos irregulares para hoje, primeira revisão um dia depois, com os botões Revisar agora e Concluir; e Crase, segunda revisão, em 5 dias.",
+        )}
       >
         <div className="flex flex-col gap-2">
           <ExampleRow
-            title="Verbos irregulares"
-            due="para hoje"
-            step="1ª revisão · 1 dia depois · Inglês"
+            title={t("Verbos irregulares")}
+            due={t("para hoje")}
+            step={t("1ª revisão · 1 dia depois · Inglês")}
             today
           />
-          <ExampleRow title="Crase" due="em 5 dias" step="2ª revisão · 7 dias depois · Português" />
+          <ExampleRow
+            title={t("Crase")}
+            due={t("em 5 dias")}
+            step={t("2ª revisão · 7 dias depois · Português")}
+          />
         </div>
       </ExamplePreview>
     </div>

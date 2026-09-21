@@ -20,6 +20,7 @@ from app.core.errors import (
     http_error_handler,
     validation_error_handler,
 )
+from app.core.i18n import from_accept_language, set_locale
 from app.core.logging import configure_logging, get_logger
 
 log = get_logger("api")
@@ -29,6 +30,8 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         rid = request.headers.get("x-request-id") or uuid.uuid4().hex[:16]
         request.state.request_id = rid
+        # idioma das mensagens: Accept-Language; a conta sobrescreve ao autenticar (deps)
+        set_locale(from_accept_language(request.headers.get("accept-language")))
         structlog.contextvars.bind_contextvars(
             request_id=rid, path=request.url.path, method=request.method
         )

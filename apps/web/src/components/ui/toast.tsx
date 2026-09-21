@@ -1,3 +1,4 @@
+import { t as tx } from "@/i18n";
 import * as React from "react";
 import * as ToastPrimitive from "@radix-ui/react-toast";
 import { Check, Info, Warning, WifiSlash, X } from "@phosphor-icons/react";
@@ -56,16 +57,24 @@ export function Toaster() {
           <span className="mt-0.5 shrink-0">{icon[t.kind]}</span>
           <div className="flex flex-1 flex-col gap-0.5">
             <ToastPrimitive.Title className="font-medium">{t.title}</ToastPrimitive.Title>
-            {t.description ? <ToastPrimitive.Description className="text-[13px] text-neutral-400">{t.description}</ToastPrimitive.Description> : null}
+            {t.description ? (
+              <ToastPrimitive.Description className="text-[13px] text-neutral-400">
+                {t.description}
+              </ToastPrimitive.Description>
+            ) : null}
             {t.action ? (
               <ToastPrimitive.Action altText={t.action.label} asChild>
-                <button type="button" onClick={t.action.onClick} className="mt-1 self-start text-[13px] text-accent">
+                <button
+                  type="button"
+                  onClick={t.action.onClick}
+                  className="mt-1 self-start text-[13px] text-accent"
+                >
                   {t.action.label}
                 </button>
               </ToastPrimitive.Action>
             ) : null}
           </div>
-          <ToastPrimitive.Close aria-label="Fechar" className="text-neutral-500 hover:text-primary">
+          <ToastPrimitive.Close aria-label={tx("Fechar")} className="text-neutral-500 hover:text-primary">
             <X size={14} />
           </ToastPrimitive.Close>
         </ToastPrimitive.Root>

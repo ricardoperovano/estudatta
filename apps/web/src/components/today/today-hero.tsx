@@ -2,6 +2,7 @@
  * Topo da tela Hoje: saudação com o nome, data, Tatá com a fala do dia, nível (Conquistas),
  * situação da sincronização e — quando há objetivo — o resumo do dia (anel + semana).
  */
+import { t as tx } from "@/i18n";
 import type { ReactNode } from "react";
 import { Moon, Sparkle } from "@phosphor-icons/react";
 import type { TodayCard } from "@/api/types";
@@ -26,23 +27,36 @@ interface Props {
   week?: ReactNode;
 }
 
-export function TodayHero({ cards, inSession, hour, userName, dateShort, dateLong, status, actions, week }: Props) {
+export function TodayHero({
+  cards,
+  inSession,
+  hour,
+  userName,
+  dateShort,
+  dateLong,
+  status,
+  actions,
+  week,
+}: Props) {
   const name = firstName(userName);
   const hello = `${greetingFor(hour)}${name ? `, ${name}` : ""}!`;
   const totals = dayTotals(cards);
   return (
-    <section aria-labelledby="hoje-titulo" className="hero-soft rise-in relative overflow-hidden rounded-[22px] p-4 shadow-sm desktop:p-7">
+    <section
+      aria-labelledby="hoje-titulo"
+      className="hero-soft rise-in relative overflow-hidden rounded-[22px] p-4 shadow-sm desktop:p-7"
+    >
       <Deco />
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[13px] text-neutral-400">
-            <span className="font-medium text-accent">Hoje</span>
+            <span className="font-medium text-accent">{tx("Hoje")}</span>
             <span aria-hidden> · </span>
             <span className="desktop:hidden">{dateShort}</span>
             <span className="hidden desktop:inline">{dateLong}</span>
           </p>
           <h1 id="hoje-titulo" className="mt-1 text-[26px] leading-[1.12] desktop:text-[34px]">
-            <span className="sr-only">Hoje: </span>
+            <span className="sr-only">{tx("Hoje:")} </span>
             {hello}
           </h1>
         </div>
@@ -52,8 +66,19 @@ export function TodayHero({ cards, inSession, hour, userName, dateShort, dateLon
         </div>
       </div>
 
-      <div className={cn("relative mt-3 flex flex-col gap-4", (totals.hasTimeGoal || actions) && "desktop:flex-row desktop:items-end desktop:justify-between desktop:gap-8")}>
-        <TodayTata cards={cards} inSession={inSession} hour={hour} className="desktop:max-w-[460px] desktop:flex-1" />
+      <div
+        className={cn(
+          "relative mt-3 flex flex-col gap-4",
+          (totals.hasTimeGoal || actions) &&
+            "desktop:flex-row desktop:items-end desktop:justify-between desktop:gap-8",
+        )}
+      >
+        <TodayTata
+          cards={cards}
+          inSession={inSession}
+          hour={hour}
+          className="desktop:max-w-[460px] desktop:flex-1"
+        />
         {totals.hasTimeGoal || actions ? (
           <div className="flex flex-col gap-3 desktop:items-end">
             {totals.hasTimeGoal ? <DaySummary cards={cards} week={week} /> : null}
@@ -78,21 +103,32 @@ function DaySummary({ cards, week }: { cards: TodayCard[]; week?: ReactNode }) {
         ) : t.allDone ? (
           <Sparkle size={16} weight="fill" className="text-success" />
         ) : (
-          <span className="tnum text-[11px] font-semibold text-neutral-200">{Math.min(100, Math.round(pct * 100))}%</span>
+          <span className="tnum text-[11px] font-semibold text-neutral-200">
+            {Math.min(100, Math.round(pct * 100))}%
+          </span>
         )}
       </DayRing>
       <div className="min-w-0 flex-1 leading-tight">
         {t.rest ? (
           <>
-            <span className="block text-[15px] font-medium">Dia de descanso</span>
-            <span className="text-[12px] text-neutral-400">{t.logged > 0 ? `${fmtMinutesShort(t.logged)} registrados hoje` : "Sem meta de tempo hoje"}</span>
+            <span className="block text-[15px] font-medium">{tx("Dia de descanso")}</span>
+            <span className="text-[12px] text-neutral-400">
+              {t.logged > 0
+                ? tx("{{v0}} registrados hoje", { v0: fmtMinutesShort(t.logged) })
+                : tx("Sem meta de tempo hoje")}
+            </span>
           </>
         ) : (
           <>
             <span className="tnum block text-[15px] font-medium">
-              {fmtMinutesShort(t.logged)} <span className="font-normal text-neutral-400">de {fmtMinutesShort(t.target)}</span>
+              {fmtMinutesShort(t.logged)}{" "}
+              <span className="font-normal text-neutral-400">
+                {tx("de {{v0}}", { v0: fmtMinutesShort(t.target) })}
+              </span>
             </span>
-            <span className="text-[12px] text-neutral-400">{t.allDone ? "Meta de hoje cumprida" : "da meta de hoje"}</span>
+            <span className="text-[12px] text-neutral-400">
+              {t.allDone ? tx("Meta de hoje cumprida") : tx("da meta de hoje")}
+            </span>
           </>
         )}
       </div>
@@ -104,7 +140,12 @@ function DaySummary({ cards, week }: { cards: TodayCard[]; week?: ReactNode }) {
 /** Enfeites do cartão: estrelinhas e bolinhas bem suaves (decorativos). */
 function Deco() {
   return (
-    <svg className="pointer-events-none absolute right-10 top-6 hidden h-24 w-40 text-accent opacity-30 desktop:block" viewBox="0 0 160 96" fill="currentColor" aria-hidden>
+    <svg
+      className="pointer-events-none absolute right-10 top-6 hidden h-24 w-40 text-accent opacity-30 desktop:block"
+      viewBox="0 0 160 96"
+      fill="currentColor"
+      aria-hidden
+    >
       <path d="M130 10 l3 8 l8 3 l-8 3 l-3 8 l-3 -8 l-8 -3 l8 -3 Z" />
       <path d="M40 58 l2 5 l5 2 l-5 2 l-2 5 l-2 -5 l-5 -2 l5 -2 Z" />
       <circle cx="150" cy="60" r="3" />

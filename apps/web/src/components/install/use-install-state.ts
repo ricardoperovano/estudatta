@@ -5,7 +5,13 @@
  */
 import * as React from "react";
 import { create } from "zustand";
-import { detectInstallEnv, isStandalone, type InstallEnv, type InstallPlatform, type PlatformGroup } from "@/lib/device";
+import {
+  detectInstallEnv,
+  isStandalone,
+  type InstallEnv,
+  type InstallPlatform,
+  type PlatformGroup,
+} from "@/lib/device";
 import { usePwaStore } from "@/pwa/register";
 
 const DISMISS_KEY = "estudatta.install_banner_dismissed_at";
@@ -75,7 +81,11 @@ export function useInstallState(): InstallState {
   const installPrompt = usePwaStore((s) => s.installPrompt);
   const setPwa = usePwaStore((s) => s.set);
   const { dismissedAt, installedNow, set } = useInstallUi();
-  const installed = React.useSyncExternalStore(subscribeDisplayMode, () => isStandalone(), () => false);
+  const installed = React.useSyncExternalStore(
+    subscribeDisplayMode,
+    () => isStandalone(),
+    () => false,
+  );
   const env = React.useMemo(() => detectInstallEnv(), []);
   // relógio lido uma vez por montagem (render puro)
   const [now] = React.useState(() => Date.now());

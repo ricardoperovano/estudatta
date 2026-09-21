@@ -3,6 +3,7 @@
  * Cada sessão registrada com "li N páginas" avança o marcador sozinho; aqui a pessoa escolhe o
  * livro (ou cadastra um novo) e corrige a página quando precisar.
  */
+import { t } from "@/i18n";
 import * as React from "react";
 import { BookOpen, PencilSimple } from "@phosphor-icons/react";
 import {
@@ -50,21 +51,23 @@ export function CurrentMaterialCard({
             <BookOpen size={18} weight="duotone" />
           </span>
           <div className="flex min-w-0 flex-col">
-            <span className="kicker">{reading ? "Lendo agora" : "Material em andamento"}</span>
+            <span className="kicker">{reading ? t("Lendo agora") : t("Material em andamento")}</span>
             {cur ? (
               <>
                 <span className="truncate text-[17px] font-medium leading-[1.2]">{cur.title}</span>
                 <span className="tnum text-[12px] text-neutral-400">
-                  {cur.current_page ? `p. ${cur.current_page}` : "ainda sem marcador"}
-                  {cur.pages_total ? ` de ${cur.pages_total}` : ""}
+                  {cur.current_page ? `p. ${cur.current_page}` : t("ainda sem marcador")}
+                  {cur.pages_total ? " " + t("de {{v0}}", { v0: cur.pages_total }) : ""}
                   {cur.percent != null ? ` · ${cur.percent}%` : ""}
                 </span>
               </>
             ) : (
               <span className="text-[14px] text-neutral-300">
                 {reading
-                  ? "Qual livro você está lendo? O marcador de página avança a cada sessão registrada."
-                  : "Escolha a apostila ou livro em uso: as sessões herdam o material e o marcador avança sozinho."}
+                  ? t("Qual livro você está lendo? O marcador de página avança a cada sessão registrada.")
+                  : t(
+                      "Escolha a apostila ou livro em uso: as sessões herdam o material e o marcador avança sozinho.",
+                    )}
               </span>
             )}
           </div>
@@ -77,10 +80,10 @@ export function CurrentMaterialCard({
         >
           {cur ? (
             <>
-              <PencilSimple size={14} aria-hidden /> Ajustar
+              <PencilSimple size={14} aria-hidden /> {t("Ajustar")}
             </>
           ) : (
-            `Definir ${noun}`
+            t("Definir {{v0}}", { v0: noun })
           )}
         </Button>
       </div>
@@ -88,17 +91,21 @@ export function CurrentMaterialCard({
         <Bar
           value={(cur.current_page ?? 0) / cur.pages_total}
           height={6}
-          label={`${cur.current_page ?? 0} de ${cur.pages_total} páginas`}
+          label={t("{{v0}} de {{v1}} páginas", { v0: cur.current_page ?? 0, v1: cur.pages_total })}
         />
       ) : null}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
           mode="sheet"
-          title={reading ? "Livro atual" : "Material atual"}
+          title={reading ? t("Livro atual") : t("Material atual")}
           description={
             reading
-              ? "Diga em que página está. A cada sessão, informe quantas páginas leu e o marcador avança sozinho."
-              : "As sessões deste objetivo herdam este material; informe as páginas lidas e o marcador avança."
+              ? t(
+                  "Diga em que página está. A cada sessão, informe quantas páginas leu e o marcador avança sozinho.",
+                )
+              : t(
+                  "As sessões deste objetivo herdam este material; informe as páginas lidas e o marcador avança.",
+                )
           }
         >
           {/* montado só enquanto aberto: cada abertura parte do estado atual do objetivo */}
@@ -139,15 +146,16 @@ function BookmarkForm({ activity, onClose }: { activity: ActivityDetail; onClose
     setError(null);
     const pageNum = page.trim() === "" ? null : Number(page);
     if (pageNum != null && (!Number.isInteger(pageNum) || pageNum < 0))
-      return setError("Página atual: use só números.");
+      return setError(t("Página atual: use só números."));
     if (pagesTotal != null && pageNum != null && pageNum > pagesTotal)
-      return setError("A página atual não pode passar do total de páginas.");
+      return setError(t("A página atual não pode passar do total de páginas."));
     try {
       let id = materialId;
       if (creating) {
-        if (!title.trim()) return setError(`Dê um nome ao ${reading ? "livro" : "material"}.`);
+        if (!title.trim())
+          return setError(t("Dê um nome ao {{v0}}.", { v0: reading ? "livro" : "material" }));
         if (total.trim() && (!Number.isInteger(Number(total)) || Number(total) < 1))
-          return setError("Total de páginas: use um número inteiro maior que zero.");
+          return setError(t("Total de páginas: use um número inteiro maior que zero."));
         const m = await createPhysical.mutateAsync({
           activity_id: activity.id,
           title: title.trim(),
@@ -157,7 +165,7 @@ function BookmarkForm({ activity, onClose }: { activity: ActivityDetail; onClose
       }
       if (!id) {
         await updateActivity.mutateAsync({ clear_end_date: false, clear_current_material: true });
-        toast.success(reading ? "Livro atual removido" : "Material atual removido");
+        toast.success(reading ? t("Livro atual removido") : t("Material atual removido"));
         onClose();
         return;
       }
@@ -166,13 +174,17 @@ function BookmarkForm({ activity, onClose }: { activity: ActivityDetail; onClose
       if (pageNum !== prevPage) {
         await updateMaterial.mutateAsync({
           id,
-          body: { clear_activity: false, ...(pageNum == null ? { clear_current_page: true } : { current_page: pageNum }) },
+          body: {
+            clear_activity: false,
+            ...(pageNum == null ? { clear_current_page: true } : { current_page: pageNum }),
+          },
         });
       }
-      if (id !== cur?.id) await updateActivity.mutateAsync({ clear_end_date: false, current_material_id: id });
+      if (id !== cur?.id)
+        await updateActivity.mutateAsync({ clear_end_date: false, current_material_id: id });
       toast.success(
-        reading ? "Marcador atualizado" : "Material atual salvo",
-        pageNum != null ? `Você está na página ${pageNum}.` : undefined,
+        reading ? t("Marcador atualizado") : t("Material atual salvo"),
+        pageNum != null ? t("Você está na página {{v0}}.", { v0: pageNum }) : undefined,
       );
       onClose();
     } catch (err) {
@@ -183,9 +195,11 @@ function BookmarkForm({ activity, onClose }: { activity: ActivityDetail; onClose
   return (
     <form onSubmit={save} className="flex flex-col gap-[14px]" noValidate>
       {error ? <Banner kind="error">{error}</Banner> : null}
-      {materials.isError ? <Banner kind="error">Não foi possível carregar os materiais.</Banner> : null}
+      {materials.isError ? (
+        <Banner kind="error">{t("Não foi possível carregar os materiais.")}</Banner>
+      ) : null}
       {list.length > 0 ? (
-        <Field label={reading ? "Livro" : "Material"} htmlFor="bm-material">
+        <Field label={reading ? t("Livro") : t("Material")} htmlFor="bm-material">
           <Select
             id="bm-material"
             value={creating ? NEW : materialId}
@@ -196,33 +210,33 @@ function BookmarkForm({ activity, onClose }: { activity: ActivityDetail; onClose
               setPage(m?.current_page != null ? String(m.current_page) : "");
             }}
           >
-            <option value="">{cur ? "Nenhum (remover)" : "Escolha…"}</option>
+            <option value="">{cur ? t("Nenhum (remover)") : t("Escolha…")}</option>
             {list.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.title}
-                {m.pages_total ? ` · ${m.pages_total} p.` : ""}
+                {m.pages_total ? " " + t("· {{v0}} p.", { v0: m.pages_total }) : ""}
               </option>
             ))}
-            <option value={NEW}>{reading ? "+ Novo livro" : "+ Novo material físico"}</option>
+            <option value={NEW}>{reading ? t("+ Novo livro") : t("+ Novo material físico")}</option>
           </Select>
         </Field>
       ) : null}
       {creating ? (
         <>
-          <Field label={reading ? "Título do livro" : "Nome do material"} htmlFor="bm-title">
+          <Field label={reading ? t("Título do livro") : t("Nome do material")} htmlFor="bm-title">
             <Input
               id="bm-title"
               value={title}
               maxLength={200}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={reading ? "Ex.: Dom Casmurro" : "Ex.: Apostila de Direito Constitucional"}
+              placeholder={reading ? t("Ex.: Dom Casmurro") : t("Ex.: Apostila de Direito Constitucional")}
               autoFocus
             />
           </Field>
           <Field
-            label="Total de páginas (opcional)"
+            label={t("Total de páginas (opcional)")}
             htmlFor="bm-total"
-            hint="Com o total, mostramos a porcentagem lida."
+            hint={t("Com o total, mostramos a porcentagem lida.")}
           >
             <Input
               id="bm-total"
@@ -239,12 +253,12 @@ function BookmarkForm({ activity, onClose }: { activity: ActivityDetail; onClose
       ) : null}
       {creating || materialId ? (
         <Field
-          label="Página atual"
+          label={t("Página atual")}
           htmlFor="bm-page"
           hint={
             pagesTotal
-              ? `De 0 a ${pagesTotal}. Deixe em branco para começar do início.`
-              : "Onde o marcador está agora."
+              ? t("De 0 a {{v0}}. Deixe em branco para começar do início.", { v0: pagesTotal })
+              : t("Onde o marcador está agora.")
           }
         >
           <Input
@@ -256,16 +270,16 @@ function BookmarkForm({ activity, onClose }: { activity: ActivityDetail; onClose
             className="tnum"
             value={page}
             onChange={(e) => setPage(e.target.value)}
-            placeholder="ex.: 42"
+            placeholder={t("ex.: 42")}
           />
         </Field>
       ) : null}
       <DialogActions>
         <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>
-          Cancelar
+          {t("Cancelar")}
         </Button>
         <Button type="submit" variant="primary" size="lg" loading={busy}>
-          Salvar
+          {t("Salvar")}
         </Button>
       </DialogActions>
     </form>

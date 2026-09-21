@@ -54,13 +54,25 @@ const ICONS: Record<string, Icon> = {
 };
 
 /** Medalha redonda: colorida quando desbloqueada, em traço quando não. */
-export function AchievementBadge({ icon, unlocked, size = 48, className }: { icon: string; unlocked: boolean; size?: number; className?: string }) {
+export function AchievementBadge({
+  icon,
+  unlocked,
+  size = 48,
+  className,
+}: {
+  icon: string;
+  unlocked: boolean;
+  size?: number;
+  className?: string;
+}) {
   const I = ICONS[icon] ?? Medal;
   return (
     <span
       className={cn(
         "inline-flex shrink-0 items-center justify-center rounded-full",
-        unlocked ? "bg-accent-800 text-accent-100 shadow-accent-ring" : "border border-dashed border-neutral-600 text-neutral-600",
+        unlocked
+          ? "bg-accent-800 text-accent-100 shadow-accent-ring"
+          : "border border-dashed border-neutral-600 text-neutral-600",
         className,
       )}
       style={{ width: size, height: size }}

@@ -21,11 +21,14 @@ export function TabsList({ className, ...props }: React.ComponentPropsWithoutRef
   );
 }
 
-export function TabsTrigger({ className, ...props }: React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>) {
+export function TabsTrigger({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>) {
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        "min-h-[44px] shrink-0 whitespace-nowrap border-b-2 border-transparent py-[10px] text-neutral-500 transition-colors duration-base data-[state=active]:border-accent data-[state=active]:text-primary hover:text-primary cursor-pointer",
+        "min-h-[44px] shrink-0 cursor-pointer whitespace-nowrap border-b-2 border-transparent py-[10px] text-neutral-500 transition-colors duration-base hover:text-primary data-[state=active]:border-accent data-[state=active]:text-primary",
         className,
       )}
       {...props}

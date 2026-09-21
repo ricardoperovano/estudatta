@@ -10,6 +10,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.core.i18n import translate
+
 
 class ApiError(Exception):
     status_code = 400
@@ -84,7 +86,8 @@ def _payload(code: str, message: str, details: Any = None, request: Request | No
 
 async def api_error_handler(request: Request, exc: ApiError) -> JSONResponse:
     return JSONResponse(
-        status_code=exc.status_code, content=_payload(exc.code, exc.message, exc.details, request)
+        status_code=exc.status_code,
+        content=_payload(exc.code, translate(exc.message), exc.details, request),
     )
 
 

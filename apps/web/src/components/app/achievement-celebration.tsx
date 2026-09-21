@@ -2,6 +2,7 @@
  * Comemoração de conquistas novas: aparece uma vez por conquista (depois fica "vista"), nunca
  * durante o cronômetro e nem na própria página de Conquistas. O Tatá pula junto, se estiver ligado.
  */
+import { t } from "@/i18n";
 import * as React from "react";
 import { useLocation, useNavigate } from "react-router";
 import { Button, Dialog, DialogActions, DialogContent } from "@/components/ui";
@@ -24,7 +25,10 @@ export function AchievementCelebration() {
 
   const unseen = g.data?.unseen ?? [];
   const key = unseen.map((a) => a.code).join(",");
-  const blocked = pathname.startsWith("/app/sessao") || pathname.startsWith("/app/conquistas") || !user?.onboarding_completed_at;
+  const blocked =
+    pathname.startsWith("/app/sessao") ||
+    pathname.startsWith("/app/conquistas") ||
+    !user?.onboarding_completed_at;
   const open = unseen.length > 0 && !blocked && !touring && dismissed !== key;
   if (!open) return null;
 
@@ -35,11 +39,15 @@ export function AchievementCelebration() {
   };
   const shown = unseen.slice(0, 3);
   const more = unseen.length - shown.length;
-  const title = unseen.length === 1 ? "Conquista nova!" : `${unseen.length} conquistas novas!`;
+  const title =
+    unseen.length === 1 ? t("Conquista nova!") : t("{{v0}} conquistas novas!", { v0: unseen.length });
 
   return (
     <Dialog open onOpenChange={(o) => !o && close()}>
-      <DialogContent title={title} description="Veio direto dos seus registros. Conquistas não são retiradas.">
+      <DialogContent
+        title={title}
+        description={t("Veio direto dos seus registros. Conquistas não são retiradas.")}
+      >
         <div className="flex flex-col items-center gap-3">
           {tata ? <TataSvg mood="cheer" size={110} /> : null}
           <ul className="m-0 flex w-full list-none flex-col gap-2 p-0">
@@ -53,14 +61,16 @@ export function AchievementCelebration() {
               </li>
             ))}
           </ul>
-          {more > 0 ? <span className="text-[13px] text-neutral-400">e mais {more}.</span> : null}
+          {more > 0 ? (
+            <span className="text-[13px] text-neutral-400">{t("e mais {{v0}}.", { v0: more })}</span>
+          ) : null}
         </div>
         <DialogActions>
           <Button variant="ghost" onClick={() => close()}>
-            Fechar
+            {t("Fechar")}
           </Button>
           <Button variant="primary" onClick={() => close("/app/conquistas")}>
-            Ver conquistas
+            {t("Ver conquistas")}
           </Button>
         </DialogActions>
       </DialogContent>

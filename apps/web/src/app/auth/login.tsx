@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import * as React from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import { useForm } from "react-hook-form";
@@ -10,8 +11,8 @@ import { useAuthActions, usePublicConfig } from "@/api/session";
 import { errorMessage, API_BASE } from "@/api/client";
 
 const schema = z.object({
-  email: z.string().email("Informe um e-mail válido."),
-  password: z.string().min(1, "Informe sua senha."),
+  email: z.string().email(t("Informe um e-mail válido.")),
+  password: z.string().min(1, t("Informe sua senha.")),
 });
 type Form = z.infer<typeof schema>;
 
@@ -21,7 +22,13 @@ export default function LoginPage() {
   const loc = useLocation();
   const [params] = useSearchParams();
   const cfg = usePublicConfig();
-  const [error, setError] = React.useState<string | null>(params.get("erro") === "google" ? "Não foi possível entrar com o Google. Tente de novo ou use e-mail e senha." : params.get("erro") === "vincular" ? "Já existe uma conta com este e-mail. Entre com e-mail e senha para vinculá-la." : null);
+  const [error, setError] = React.useState<string | null>(
+    params.get("erro") === "google"
+      ? t("Não foi possível entrar com o Google. Tente de novo ou use e-mail e senha.")
+      : params.get("erro") === "vincular"
+        ? t("Já existe uma conta com este e-mail. Entre com e-mail e senha para vinculá-la.")
+        : null,
+  );
   const { register, handleSubmit, formState } = useForm<Form>({ resolver: zodResolver(schema) });
   const from = (loc.state as { from?: string } | null)?.from || "/app";
 
@@ -36,25 +43,47 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthLayout title="Entrar" subtitle="Continue de onde parou." greeting="Oi! Que bom te ver de novo. Seu plano de hoje está esperando." footer={<span>Ainda não tem conta? <Link to="/cadastro">Criar conta</Link></span>}>
+    <AuthLayout
+      title={t("Entrar")}
+      subtitle={t("Continue de onde parou.")}
+      greeting={t("Oi! Que bom te ver de novo. Seu plano de hoje está esperando.")}
+      footer={
+        <span>
+          {t("Ainda não tem conta?")} <Link to="/cadastro">{t("Criar conta")}</Link>
+        </span>
+      }
+    >
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
         {error ? <Banner kind="error">{error}</Banner> : null}
-        <Field label="E-mail" htmlFor="email" error={formState.errors.email?.message}>
-          <Input id="email" type="email" autoComplete="email" inputMode="email" invalid={!!formState.errors.email} {...register("email")} />
+        <Field label={t("E-mail")} htmlFor="email" error={formState.errors.email?.message}>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            invalid={!!formState.errors.email}
+            {...register("email")}
+          />
         </Field>
-        <Field label="Senha" htmlFor="password" error={formState.errors.password?.message}>
-          <Input id="password" type="password" autoComplete="current-password" invalid={!!formState.errors.password} {...register("password")} />
+        <Field label={t("Senha")} htmlFor="password" error={formState.errors.password?.message}>
+          <Input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            invalid={!!formState.errors.password}
+            {...register("password")}
+          />
         </Field>
         <Button type="submit" size="xl" block loading={formState.isSubmitting}>
-          Entrar
+          {t("Entrar")}
         </Button>
         <Link to="/recuperar-senha" className="self-start text-[13px]">
-          Esqueci minha senha
+          {t("Esqueci minha senha")}
         </Link>
         {cfg.data?.google_oauth_enabled ? (
           <Button asChild variant="secondary" size="lg" block>
             <a href={`${API_BASE}/api/v1/auth/google/start?next=${encodeURIComponent(from)}`}>
-              <GoogleLogo size={18} aria-hidden /> Entrar com Google
+              <GoogleLogo size={18} aria-hidden /> {t("Entrar com Google")}
             </a>
           </Button>
         ) : null}

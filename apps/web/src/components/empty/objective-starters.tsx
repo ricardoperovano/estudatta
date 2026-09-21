@@ -3,6 +3,7 @@
  * (nome, categoria, meta por dia, dias e modo), e a pessoa ajusta o que quiser.
  * Os modelos e os parâmetros da URL ficam em ./starters.
  */
+import { t } from "@/i18n";
 import { Link } from "react-router";
 import { CaretRight, Plus } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
@@ -13,10 +14,10 @@ export function ObjectiveStarters({ className }: { className?: string }) {
     <section aria-labelledby="modelos-objetivo" className={cn("rise-in flex flex-col gap-3", className)}>
       <div>
         <h2 id="modelos-objetivo" className="text-[15px] font-medium">
-          Comece por um modelo
+          {t("Comece por um modelo")}
         </h2>
         <p className="mt-0.5 text-[13px] text-neutral-400">
-          Um toque abre o formulário já preenchido. Dá para mudar tudo antes de criar.
+          {t("Um toque abre o formulário já preenchido. Dá para mudar tudo antes de criar.")}
         </p>
       </div>
       <ul className="m-0 grid list-none grid-cols-2 gap-2.5 p-0 tablet:grid-cols-3 desktop:grid-cols-2">
@@ -54,7 +55,7 @@ export function ObjectiveStarters({ className }: { className?: string }) {
         to="/app/objetivos/novo"
         className="inline-flex min-h-[44px] items-center justify-center gap-1.5 self-stretch rounded-[16px] border border-dashed border-neutral-700 px-4 text-[14px] text-neutral-300 no-underline hover:border-accent hover:text-accent"
       >
-        <Plus size={14} aria-hidden /> Outro assunto: começar do zero
+        <Plus size={14} aria-hidden /> {t("Outro assunto: começar do zero")}
       </Link>
     </section>
   );

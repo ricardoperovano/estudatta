@@ -1,4 +1,5 @@
 /** Plano com objetivo mas semana ainda sem tarefas nem registros: dica curta e acolhedora. */
+import { t } from "@/i18n";
 import { CalendarPlus } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { EmptyArt } from "./empty-hero";
@@ -15,12 +16,12 @@ export function PlanWeekTip({ className }: { className?: string }) {
       <EmptyArt mood="idle" icon={CalendarPlus} className="w-[52px]" />
       <div className="min-w-0 flex-1">
         <h2 id="semana-livre" className="text-[15px] font-medium leading-[1.25]">
-          Semana pronta para planejar
+          {t("Semana pronta para planejar")}
         </h2>
         <p className="mt-1 text-[13px] leading-[1.45] text-neutral-300">
-          A meta de cada objetivo já está nos dias escolhidos. Quer mais roteiro? Marque horários com{" "}
-          <span className="font-medium">+ Nova tarefa</span> ou direto em um dia da semana. Estudar sem
-          horário marcado também vale.
+          {t("A meta de cada objetivo já está nos dias escolhidos. Quer mais roteiro? Marque horários com")}{" "}
+          <span className="font-medium">{t("+ Nova tarefa")}</span>{" "}
+          {t("ou direto em um dia da semana. Estudar sem horário marcado também vale.")}
         </p>
       </div>
     </section>
