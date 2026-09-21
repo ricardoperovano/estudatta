@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.core.deps import get_current_user
+from app.core.i18n import _
 from app.models.user import User
 from app.schemas.common import OkResponse, ORMModel
 from app.services import activities as activity_service
@@ -102,7 +103,7 @@ def revision_skip(
 ) -> OkResponse:
     revision_service.skip(db, revision_service.get_revision(db, user, revision_id))
     db.commit()
-    return OkResponse(message="Revisão dispensada.")
+    return OkResponse(message=_("Revisão dispensada."))
 
 
 @router.post("/revisions/{revision_id}/reschedule", response_model=RevisionOut)
@@ -242,7 +243,7 @@ def mock_delete(
 ) -> OkResponse:
     db.delete(mock_service.get_exam(db, user, exam_id))
     db.commit()
-    return OkResponse(message="Simulado excluído.")
+    return OkResponse(message=_("Simulado excluído."))
 
 
 # ---------------------------------------------------------------- análise

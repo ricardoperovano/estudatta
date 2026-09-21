@@ -15,7 +15,7 @@ from app.core.audit import audit
 from app.core.db import get_db
 from app.core.deps import get_current_user
 from app.core.errors import NotFound, Unauthorized, ValidationFailed
-from app.core.i18n import normalize_locale
+from app.core.i18n import _, normalize_locale, set_locale
 from app.core.security import verify_password
 from app.core.timeutil import utcnow, valid_timezone
 from app.models.activity import Activity
@@ -109,6 +109,7 @@ def update_profile(
         if loc is None:
             raise ValidationFailed("Idioma não suportado.", code="invalid_locale")
         user.locale = loc
+        set_locale(loc)
     db.commit()
     return UserOut.model_validate(user)
 
@@ -320,7 +321,7 @@ def delete_account(
     db.delete(user)
     db.commit()
 
-    resp = OkResponse(message="Conta excluída.")
+    resp = OkResponse(message=_("Conta excluída."))
     return resp
 
 

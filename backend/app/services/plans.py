@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
+from app.core.i18n import _
 from app.core.timeutil import utcnow
 from app.models.billing import Plan, PromoGrant, Subscription
 
@@ -214,7 +215,7 @@ def get_entitlements(db: Session, user_id: uuid.UUID) -> Entitlements:
     free = db.execute(select(Plan).where(Plan.code == "free")).scalar_one_or_none()
     base = Entitlements(
         plan_code="free",
-        plan_name=free.name if free else "Gratuito",
+        plan_name=_(free.name) if free else _("Gratuito"),
         limits=(free.limits if free else DEFAULT_FREE_LIMITS),
         source="free",
     )
@@ -238,7 +239,7 @@ def get_entitlements(db: Session, user_id: uuid.UUID) -> Entitlements:
             if plan and plan.active:
                 return Entitlements(
                     plan_code=plan.code,
-                    plan_name=plan.name,
+                    plan_name=_(plan.name),
                     limits=plan.limits,
                     source="subscription",
                     subscription_status=sub.status,
@@ -265,7 +266,7 @@ def get_entitlements(db: Session, user_id: uuid.UUID) -> Entitlements:
         if plan:
             return Entitlements(
                 plan_code=plan.code,
-                plan_name=plan.name,
+                plan_name=_(plan.name),
                 limits=plan.limits,
                 source="promo",
                 current_period_end=grant.ends_at.isoformat() if grant.ends_at else None,

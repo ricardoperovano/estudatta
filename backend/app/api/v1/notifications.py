@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.core.db import get_db
 from app.core.deps import get_current_user, get_device_id, rate_limit
 from app.core.errors import NotFound
+from app.core.i18n import _
 from app.models.user import User
 from app.schemas.common import OkResponse
 from app.schemas.notifications import (
@@ -116,7 +117,7 @@ def unread_count(
 def read_all(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> OkResponse:
     n = svc.mark_all_read(db, user)
     db.commit()
-    return OkResponse(message=f"{n} notificações marcadas como lidas.")
+    return OkResponse(message=_("{n} notificações marcadas como lidas.", n=n))
 
 
 @router.post("/{notification_id}/read", response_model=NotificationOut)
@@ -181,7 +182,7 @@ def unsubscribe_push(
     db.commit()
     return OkResponse(
         ok=True,
-        message="Assinatura removida." if removed else "Nenhuma assinatura com esse endpoint.",
+        message=_("Assinatura removida.") if removed else "Nenhuma assinatura com esse endpoint.",
     )
 
 
@@ -194,5 +195,5 @@ def test_push(db: Session = Depends(get_db), user: User = Depends(get_current_us
     row = svc.enqueue_test_push(db, user)
     db.commit()
     return PushTestOut(
-        outbox_id=row.id, message="Notificação de teste enfileirada; deve chegar em instantes."
+        outbox_id=row.id, message=_("Notificação de teste enfileirada; deve chegar em instantes.")
     )

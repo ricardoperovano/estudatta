@@ -14,6 +14,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.errors import NotFound, ValidationFailed
+from app.core.i18n import _
 from app.core.timeutil import utcnow
 from app.models.activity import Activity
 from app.models.content import Material, MaterialTopic, Subject, Topic
@@ -217,7 +218,9 @@ def _resolve_parent(
             )
     height = _height_of(db, moving) if moving is not None else 1
     if _depth_of(db, parent) + height > MAX_DEPTH:
-        raise ValidationFailed(f"Os tópicos têm no máximo {MAX_DEPTH} níveis.", code="max_depth")
+        raise ValidationFailed(
+            _("Os tópicos têm no máximo {n} níveis.", n=MAX_DEPTH), code="max_depth"
+        )
     return parent
 
 

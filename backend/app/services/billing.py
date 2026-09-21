@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.core.audit import audit
 from app.core.config import settings
 from app.core.errors import Conflict, NotFound, ServiceUnavailable, ValidationFailed
+from app.core.i18n import _, current_locale, set_locale
 from app.core.logging import get_logger
 from app.core.timeutil import utcnow
 from app.integrations.mercadopago import (
@@ -188,7 +189,7 @@ def start_checkout(
     if coupon_code:
         from app.services import growth
 
-        coupon, _ = growth.check_coupon(db, user, coupon_code, plan_code=plan.code)
+        coupon, _unused = growth.check_coupon(db, user, coupon_code, plan_code=plan.code)
         if coupon.kind != "percent":
             raise ValidationFailed(
                 "Este cupom dá dias grátis: use-o em Planos, sem pagamento.", code="coupon_kind"
@@ -285,7 +286,7 @@ def compute_period_end(remote: ProviderSubscription, now: datetime) -> datetime 
     start = parse_provider_datetime(ar.get("start_date")) or remote.date_created or now
     step = relativedelta(months=freq) if ftype == "months" else relativedelta(days=freq)
     end = start
-    for _ in range(1000):
+    for _i in range(1000):
         end = end + step
         if end > now:
             break
@@ -401,6 +402,11 @@ def _expire(db: Session, sub: Subscription, now: datetime, *, reason: str) -> No
     _on_transition(db, sub, previous, now)
 
 
+def _fmt_date(d) -> str:
+    """Data curta no idioma da conta (dd/mm/aaaa ou mm/dd/yyyy)."""
+    return f"{d:%m/%d/%Y}" if current_locale() == "en" else f"{d:%d/%m/%Y}"
+
+
 def _on_transition(db: Session, sub: Subscription, previous: str, now: datetime) -> None:
     audit(
         db,
@@ -411,23 +417,29 @@ def _on_transition(db: Session, sub: Subscription, previous: str, now: datetime)
         metadata={"from": previous, "to": sub.status, "provider_ref": sub.provider_ref},
     )
     user = db.get(User, sub.user_id)
+    if user is not None:
+        set_locale(user.locale)
     if user is None:
         return
     plan = db.get(Plan, sub.plan_id)
-    plan_name = plan.name if plan else "Completo"
+    plan_name = _(plan.name) if plan else _("Completo")
     if sub.status == "active" and previous != "active":
         notify_inapp(
             db,
             user_id=user.id,
             kind="billing_active",
-            title=f"Plano {plan_name} ativado",
-            body="Sua assinatura foi confirmada. Todos os recursos do plano já estão liberados.",
+            title=_("Plano {plan} ativado", plan=plan_name),
+            body=_("Sua assinatura foi confirmada. Todos os recursos do plano já estão liberados."),
             url="/app/planos",
         )
     elif sub.status == "cancelled" and previous not in ("cancelled", "expired"):
         until = sub.current_period_end
         extra = (
-            f" Você mantém o acesso ao plano {plan_name} até {until:%d/%m/%Y}."
+            _(
+                " Você mantém o acesso ao plano {plan} até {until}.",
+                plan=plan_name,
+                until=_fmt_date(until),
+            )
             if until and until > now
             else ""
         )
@@ -435,8 +447,8 @@ def _on_transition(db: Session, sub: Subscription, previous: str, now: datetime)
             db,
             user_id=user.id,
             kind="billing_cancelled",
-            title="Renovação cancelada",
-            body=f"A renovação automática foi cancelada.{extra} Nada será apagado.",
+            title=_("Renovação cancelada"),
+            body=_("A renovação automática foi cancelada.{extra} Nada será apagado.", extra=extra),
             url="/app/planos",
         )
     elif sub.status == "paused" and previous != "paused":
@@ -444,8 +456,10 @@ def _on_transition(db: Session, sub: Subscription, previous: str, now: datetime)
             db,
             user_id=user.id,
             kind="billing_paused",
-            title="Assinatura pausada",
-            body="A cobrança está pausada no provedor de pagamento. O plano gratuito continua disponível e seus dados estão guardados.",
+            title=_("Assinatura pausada"),
+            body=_(
+                "A cobrança está pausada no provedor de pagamento. O plano gratuito continua disponível e seus dados estão guardados."
+            ),
             url="/app/planos",
         )
     elif sub.status == "past_due" and previous != "past_due":
@@ -453,8 +467,10 @@ def _on_transition(db: Session, sub: Subscription, previous: str, now: datetime)
             db,
             user_id=user.id,
             kind="billing_past_due",
-            title="Pagamento pendente",
-            body="Não recebemos a confirmação da última cobrança. Verifique a forma de pagamento para manter o plano.",
+            title=_("Pagamento pendente"),
+            body=_(
+                "Não recebemos a confirmação da última cobrança. Verifique a forma de pagamento para manter o plano."
+            ),
             url="/app/planos",
         )
     elif sub.status == "expired" and previous not in ("pending", "expired"):
@@ -462,8 +478,10 @@ def _on_transition(db: Session, sub: Subscription, previous: str, now: datetime)
             db,
             user_id=user.id,
             kind="billing_expired",
-            title="Assinatura encerrada",
-            body="Seu período de acesso terminou. Seus objetivos e registros continuam guardados no plano gratuito.",
+            title=_("Assinatura encerrada"),
+            body=_(
+                "Seu período de acesso terminou. Seus objetivos e registros continuam guardados no plano gratuito."
+            ),
             url="/app/planos",
         )
     apply_entitlement_changes(db, user, now=now)
@@ -532,8 +550,9 @@ def cancel_subscription(
         db.flush()
         return (
             sub,
-            "Cancelamento registrado. Vamos confirmar com o provedor de pagamento em breve; "
-            "você não será cobrado novamente.",
+            _(
+                "Cancelamento registrado. Vamos confirmar com o provedor de pagamento em breve; você não será cobrado novamente."
+            ),
         )
 
     previous = sub.status
@@ -557,8 +576,10 @@ def cancel_subscription(
         _on_transition(db, sub, previous, now)
     until = sub.current_period_end
     if until and until > now:
-        return sub, f"Renovação cancelada. Você mantém o acesso até {until:%d/%m/%Y}."
-    return sub, "Assinatura cancelada."
+        return sub, _(
+            "Renovação cancelada. Você mantém o acesso até {until}.", until=_fmt_date(until)
+        )
+    return sub, _("Assinatura cancelada.")
 
 
 # --- Webhook -------------------------------------------------------------------------
@@ -1058,18 +1079,21 @@ def apply_entitlement_changes(
                 "kept": [str(a.id) for a in keep],
             },
         )
-    kept_titles = ", ".join(f"“{a.title}”" for a in keep) or "nenhum"
+    set_locale(user.locale)
+    kept_titles = ", ".join(f"“{a.title}”" for a in keep) or _("nenhum")
     paused_titles = ", ".join(f"“{a.title}”" for a in pause)
-    plural = "objetivo ativo" if limit == 1 else "objetivos ativos"
+    plural = _("objetivo ativo") if limit == 1 else _("objetivos ativos")
     notify_inapp(
         db,
         user_id=user.id,
         kind="plan_downgrade",
-        title="Seu plano mudou",
-        body=(
-            f"Seu plano atual permite {limit} {plural}. Mantivemos {kept_titles} ativo e "
-            f"pausamos {paused_titles}. Nada foi apagado: você pode reativar quando quiser "
-            "ou ampliar o plano."
+        title=_("Seu plano mudou"),
+        body=_(
+            "Seu plano atual permite {limit} {plural}. Mantivemos {kept} ativo e pausamos {paused}. Nada foi apagado: você pode reativar quando quiser ou ampliar o plano.",
+            limit=limit,
+            plural=plural,
+            kept=kept_titles,
+            paused=paused_titles,
         ),
         url="/app/objetivos",
         data={"paused": [str(a.id) for a in pause], "kept": [str(a.id) for a in keep]},

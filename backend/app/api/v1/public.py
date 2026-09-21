@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.core.deps import rate_limit
+from app.core.i18n import _
 from app.core.timeutil import utcnow
 from app.models.system import ContactMessage, WaitlistEntry
 from app.schemas.billing import (
@@ -34,9 +35,9 @@ def public_plans(db: Session = Depends(get_db)) -> PublicPlansOut:
         plans=[
             PublicPlanOut(
                 code=p.code,
-                name=p.name,
-                description=p.description,
-                features=list(p.features or []),
+                name=_(p.name),
+                description=_(p.description) if p.description else p.description,
+                features=[_(f) for f in (p.features or [])],
                 limits=dict(p.limits or {}),
                 recommended=p.recommended,
                 prices=[PlanPriceOut.model_validate(pr) for pr in billing_service.active_prices(p)],
@@ -61,7 +62,7 @@ def join_waitlist(payload: WaitlistIn, db: Session = Depends(get_db)) -> OkRespo
         source = (payload.source or "").strip()[:64] or None
         db.add(WaitlistEntry(email=email, source=source, created_at=utcnow()))
         db.commit()
-    return OkResponse(message="Pronto! Avisaremos você por e-mail quando houver novidades.")
+    return OkResponse(message=_("Pronto! Avisaremos você por e-mail quando houver novidades."))
 
 
 @router.post(
@@ -72,7 +73,7 @@ def join_waitlist(payload: WaitlistIn, db: Session = Depends(get_db)) -> OkRespo
 def contact(payload: ContactIn, db: Session = Depends(get_db)) -> OkResponse:
     message = payload.message.strip()
     if not message:
-        return OkResponse(message="Escreva uma mensagem antes de enviar.", ok=False)
+        return OkResponse(message=_("Escreva uma mensagem antes de enviar."), ok=False)
     db.add(
         ContactMessage(
             email=normalize_email(payload.email),
@@ -83,7 +84,7 @@ def contact(payload: ContactIn, db: Session = Depends(get_db)) -> OkResponse:
         )
     )
     db.commit()
-    return OkResponse(message="Mensagem recebida. Respondemos pelo e-mail informado.")
+    return OkResponse(message=_("Mensagem recebida. Respondemos pelo e-mail informado."))
 
 
 _UNSUB_PAGE = """<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Estudatta</title></head>

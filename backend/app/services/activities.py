@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.errors import NotFound, PlanLimit, ValidationFailed
+from app.core.i18n import _
 from app.core.timeutil import today_in, utcnow, valid_timezone
 from app.models.activity import Activity, ActivityPause, ActivityTimezone, GoalRule
 from app.models.user import User
@@ -76,7 +77,10 @@ def assert_can_activate(db: Session, user: User, *, excluding: uuid.UUID | None 
             active -= 1
     if active >= int(limit):
         raise PlanLimit(
-            f"Seu plano permite {limit} objetivo ativo. Pause outro objetivo ou amplie o plano.",
+            _(
+                "Seu plano permite {n} objetivo ativo. Pause outro objetivo ou amplie o plano.",
+                n=limit,
+            ),
             code="activity_limit",
             details={"limit": limit, "active": active},
         )

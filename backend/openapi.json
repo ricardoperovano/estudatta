@@ -16961,6 +16961,12 @@
             "maxLength": 64,
             "title": "Timezone",
             "default": "America/Sao_Paulo"
+          },
+          "locale": {
+            "type": "string",
+            "maxLength": 16,
+            "title": "Locale",
+            "default": "pt-BR"
           }
         },
         "type": "object",

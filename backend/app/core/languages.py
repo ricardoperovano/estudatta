@@ -114,5 +114,31 @@ LANGUAGES: dict[str, str] = {**POPULAR, **OTHERS}
 LANGUAGE_CODES: tuple[str, ...] = tuple(LANGUAGES)
 
 
+EN_OVERRIDES = {
+    "bzs": "Libras (Brazilian Sign Language)",
+    "ase": "American Sign Language",
+    "zh": "Chinese (Mandarin)",
+    "nah": "Nahuatl",
+    "und": "Other language",
+}
+
+
 def language_name(code: str | None) -> str | None:
-    return LANGUAGES.get(code) if code else None
+    """Nome do idioma no idioma da conta/requisição. Em inglês usa os nomes do Babel quando
+    disponível; sem Babel, os nomes em português continuam valendo."""
+    if not code or code not in LANGUAGES:
+        return None
+    from app.core.i18n import current_locale
+
+    if current_locale() == "en":
+        if code in EN_OVERRIDES:
+            return EN_OVERRIDES[code]
+        try:
+            from babel import Locale
+
+            name = Locale("en").languages.get(code)
+            if name:
+                return name[0].upper() + name[1:]
+        except Exception:  # noqa: BLE001 - nome é auxiliar
+            pass
+    return LANGUAGES[code]

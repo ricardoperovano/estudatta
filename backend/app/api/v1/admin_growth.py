@@ -14,6 +14,7 @@ from app.core.audit import audit
 from app.core.db import get_db
 from app.core.deps import client_ip, get_admin_user
 from app.core.errors import NotFound
+from app.core.i18n import _
 from app.integrations.mercadopago import get_provider
 from app.models.user import User
 from app.schemas.common import OkResponse, Page
@@ -324,4 +325,4 @@ def delete_campaign(campaign_id: UUID, db: Session = Depends(get_db)) -> OkRespo
         raise NotFound("Só rascunhos podem ser apagados.", code="campaign_sent")
     db.delete(c)
     db.commit()
-    return OkResponse(message="Rascunho apagado.")
+    return OkResponse(message=_("Rascunho apagado."))

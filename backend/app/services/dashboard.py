@@ -7,6 +7,7 @@ from datetime import date, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.i18n import _
 from app.core.timeutil import today_in
 from app.domain.messages import fmt_minutes
 from app.models.activity import Activity, ActivityPause
@@ -19,25 +20,33 @@ from app.services.activities import list_activities
 
 def next_step_sentence(summary, has_plan: bool) -> str:
     if not summary.in_range:
-        return "Este objetivo ainda não começou ou já terminou. Você pode ajustar as datas."
+        return _("Este objetivo ainda não começou ou já terminou. Você pode ajustar as datas.")
     if summary.is_paused:
-        return "Pausa planejada: nada entra como pendência e os lembretes ficam em silêncio."
+        return _("Pausa planejada: nada entra como pendência e os lembretes ficam em silêncio.")
     if summary.is_rest and summary.pending_prior == 0:
-        return "Hoje é dia de descanso. Nada a fazer aqui."
+        return _("Hoje é dia de descanso. Nada a fazer aqui.")
     if summary.is_rest and summary.pending_prior > 0:
-        return f"Dia de descanso. Se quiser, recupere parte dos {fmt_minutes(summary.pending_prior)} pendentes — sem obrigação."
+        return _(
+            "Dia de descanso. Se quiser, recupere parte dos {pending} pendentes — sem obrigação.",
+            pending=fmt_minutes(summary.pending_prior),
+        )
     if summary.goal_met and summary.pending_prior == 0:
-        extra = f" Tempo extra: {fmt_minutes(summary.extra)}." if summary.extra else ""
-        return f"Meta de hoje cumprida.{extra}"
+        extra = (
+            _(" Tempo extra: {extra}.", extra=fmt_minutes(summary.extra)) if summary.extra else ""
+        )
+        return _("Meta de hoje cumprida.") + extra
     if summary.goal_met and summary.pending_prior > 0:
-        return f"Meta de hoje cumprida. Ainda ficam {fmt_minutes(summary.pending_prior)} a recuperar de dias anteriores."
+        return _(
+            "Meta de hoje cumprida. Ainda ficam {pending} a recuperar de dias anteriores.",
+            pending=fmt_minutes(summary.pending_prior),
+        )
     parts = []
     if summary.missing_today:
-        parts.append(f"{fmt_minutes(summary.missing_today)} da meta")
+        parts.append(_("{v} da meta", v=fmt_minutes(summary.missing_today)))
     if summary.suggested_recovery:
-        parts.append(f"{fmt_minutes(summary.suggested_recovery)} de recuperação")
+        parts.append(_("{v} de recuperação", v=fmt_minutes(summary.suggested_recovery)))
     total = summary.next_step_seconds
-    sentence = f"Mais {fmt_minutes(total)} hoje"
+    sentence = _("Mais {v} hoje", v=fmt_minutes(total))
     if len(parts) == 2:
         sentence += f": {parts[0]} + {parts[1]}"
     elif parts:
@@ -46,9 +55,9 @@ def next_step_sentence(summary, has_plan: bool) -> str:
     if summary.pending_prior:
         after = summary.pending_after_plan
         if after > 0:
-            sentence += f" Depois disso, ficam {fmt_minutes(after)} a recuperar."
+            sentence += _(" Depois disso, ficam {v} a recuperar.", v=fmt_minutes(after))
         elif summary.suggested_recovery:
-            sentence += " Depois disso, a pendência zera."
+            sentence += _(" Depois disso, a pendência zera.")
     return sentence
 
 

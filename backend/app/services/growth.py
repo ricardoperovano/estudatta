@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.errors import Conflict, NotFound, ValidationFailed
+from app.core.i18n import _
 from app.core.logging import get_logger
 from app.core.timeutil import utcnow
 from app.models.activity import Activity
@@ -241,7 +242,7 @@ def check_coupon(
         raise ValidationFailed(problem, code="coupon_invalid")
     if plan_code and c.plan_code and c.plan_code != plan_code:
         raise ValidationFailed(
-            "Este cupom vale só para o plano " + c.plan_code + ".", code="coupon_plan"
+            _("Este cupom vale só para o plano {plan}.", plan=c.plan_code), code="coupon_plan"
         )
     used = db.execute(
         select(CouponRedemption).where(
@@ -253,7 +254,7 @@ def check_coupon(
     desc = (
         f"{c.value}% de desconto na assinatura"
         if c.kind == "percent"
-        else f"{c.value} dias grátis do plano {c.plan_code}"
+        else _("{n} dias grátis do plano {plan}", n=c.value, plan=c.plan_code)
     )
     return c, {
         "code": c.code,
@@ -274,7 +275,7 @@ def redeem_trial(db: Session, user: User, coupon: Coupon) -> PromoGrant:
         user,
         plan_code=coupon.plan_code or "",
         days=coupon.value,
-        reason=f"Cupom {coupon.code}",
+        reason=_("Cupom {code}", code=coupon.code),
     )
     grant.granted_by = None
     db.add(
@@ -439,7 +440,7 @@ def campaign_out(c: Campaign) -> dict:
         "cta_label": c.cta_label,
         "cta_url": c.cta_url,
         "segment": c.segment,
-        "segment_label": SEGMENTS.get(c.segment, c.segment),
+        "segment_label": _(SEGMENTS.get(c.segment, c.segment)),
         "coupon_code": c.coupon_code,
         "status": c.status,
         "recipients": c.recipients,
@@ -492,7 +493,7 @@ def send_campaign(
                 "title": subject,
                 "body": body,
                 "url": url,
-                "cta_label": c.cta_label or "Abrir o Estudatta",
+                "cta_label": c.cta_label or _("Abrir o Estudatta"),
                 "campaign_id": str(c.id),
             },
             channels=["email"],

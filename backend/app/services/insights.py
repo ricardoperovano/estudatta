@@ -9,6 +9,7 @@ from datetime import date, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.i18n import _
 from app.core.timeutil import today_in
 from app.models.activity import Activity
 from app.models.content import Subject, Topic
@@ -89,7 +90,7 @@ def next_subject(db: Session, act: Activity) -> dict | None:
         key = (ratio, idx)
         if best is None or key < best[0]:
             best = (key, s, share, done)
-    _, subj, share, done = best
+    _score, subj, share, done = best
     topic = (
         db.execute(
             select(Topic)
@@ -102,9 +103,13 @@ def next_subject(db: Session, act: Activity) -> dict | None:
     expected = round(share * 100)
     actual = round(100 * done / total_recent) if total_recent else 0
     if total_recent == 0:
-        reason = "Nenhuma matéria estudada nos últimos 14 dias: comece pela primeira do ciclo."
+        reason = _("Nenhuma matéria estudada nos últimos 14 dias: comece pela primeira do ciclo.")
     else:
-        reason = f"Recebeu {actual}% do seu tempo nos últimos 14 dias; pelo peso e dificuldade, o equilíbrio seria {expected}%."
+        reason = _(
+            "Recebeu {actual}% do seu tempo nos últimos 14 dias; pelo peso e dificuldade, o equilíbrio seria {expected}%.",
+            actual=actual,
+            expected=expected,
+        )
     return {
         "subject_id": subj.id,
         "subject_title": subj.title,
@@ -186,7 +191,7 @@ def accuracy_by_subject(db: Session, act: Activity, since: date | None = None) -
     out = [
         {
             "subject_id": sid,
-            "subject_title": titles.get(sid, "Sem matéria"),
+            "subject_title": titles.get(sid, _("Sem matéria")),
             "questions": t,
             "correct": c,
             "percent": round(100 * c / t, 1) if t else None,
@@ -226,7 +231,7 @@ def week_stats(db: Session, act: Activity, on: date | None = None) -> dict:
         "questions_goal": act.weekly_questions_goal,
         "pages_goal": act.weekly_pages_goal,
         "by_type": [
-            {"study_type": k, "label": TYPE_LABEL.get(k, k), "seconds": v}
+            {"study_type": k, "label": _(TYPE_LABEL.get(k, k)), "seconds": v}
             for k, v in sorted(by_type.items(), key=lambda kv: -kv[1])
         ],
     }

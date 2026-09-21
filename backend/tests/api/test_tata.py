@@ -3,6 +3,8 @@ e fallback quando a cota acaba."""
 
 from __future__ import annotations
 
+import pathlib
+
 import httpx
 import pytest
 
@@ -92,7 +94,19 @@ def test_chat_counts_ai_actions_and_free_plan_quota(user_client, ai):
     assert user_client.get(f"{API}/tata/status").json()["chat_enabled"] is False
 
 
-def test_voice_quota_cache_and_fallback(user_client, voice):
+@pytest.fixture
+def clean_voice_cache():
+    """O cache de falas fica no storage local e sobreviveria entre execuções."""
+    import shutil
+
+    from app.core.config import settings
+
+    shutil.rmtree(pathlib.Path(settings.STORAGE_LOCAL_PATH) / "tata-voice", ignore_errors=True)
+    yield
+    shutil.rmtree(pathlib.Path(settings.STORAGE_LOCAL_PATH) / "tata-voice", ignore_errors=True)
+
+
+def test_voice_quota_cache_and_fallback(clean_voice_cache, user_client, voice):
     set_free_plan_limits(tata_voice_monthly=2)
     r = user_client.post(f"{API}/tata/voice", json={"text": "Bora! Eu fico aqui quietinho."})
     assert (

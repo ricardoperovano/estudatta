@@ -12,6 +12,7 @@ from app.core.audit import audit
 from app.core.db import get_db
 from app.core.deps import client_ip, get_admin_user
 from app.core.errors import NotFound
+from app.core.i18n import _
 from app.models.notification import NotificationOutbox
 from app.models.user import User
 from app.schemas.admin import (
@@ -460,4 +461,4 @@ def audit_log(
 
 @router.get("/ping", response_model=OkResponse, include_in_schema=False)
 def ping() -> OkResponse:
-    return OkResponse(message="admin")
+    return OkResponse(message=_("admin"))

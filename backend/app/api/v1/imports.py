@@ -15,6 +15,7 @@ from app.core.audit import audit
 from app.core.db import get_db
 from app.core.deps import get_current_user
 from app.core.errors import ValidationFailed
+from app.core.i18n import _
 from app.core.logging import get_logger
 from app.jobs.celery_app import run_now_if_eager
 from app.models.content import ImportJob
@@ -133,7 +134,7 @@ async def create_import(
         form = await request.form()
         upload = form.get("file")
         if upload is None or not hasattr(upload, "filename"):
-            raise ValidationFailed("Envie o arquivo no campo 'file'.", code="missing_file")
+            raise ValidationFailed(_("Envie o arquivo no campo 'file'."), code="missing_file")
         activity_id = _parse_optional_uuid(form.get("activity_id"), "activity_id")
         if activity_id is None:
             raise ValidationFailed("Informe o objetivo (activity_id).", code="missing_activity")

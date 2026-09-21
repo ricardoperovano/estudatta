@@ -32,6 +32,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.errors import NotFound, ServiceUnavailable, ValidationFailed
+from app.core.i18n import _, set_locale
 from app.core.logging import get_logger
 from app.core.timeutil import local_datetime_to_utc, local_midnight_utc, today_in, utcnow
 from app.domain.balance import TodaySummary
@@ -92,7 +93,7 @@ def update_preferences(db: Session, user: User, data: dict) -> NotificationPrefe
     ceiling = settings.NOTIFICATIONS_SYSTEM_CEILING_PER_DAY
     if data.get("max_per_day") is not None and data["max_per_day"] > ceiling:
         raise ValidationFailed(
-            f"O limite diário máximo é {ceiling} lembretes.",
+            _("O limite diário máximo é {n} lembretes.", n=ceiling),
             code="max_per_day_ceiling",
             details={"ceiling": ceiling},
         )
@@ -134,7 +135,7 @@ def preview(db: Session, user: User, *, tone: str, kind: str) -> tuple[str, str]
         .scalars()
         .first()
     )
-    title = act.title if act else "Inglês"
+    title = act.title if act else _("Inglês")
     return render(
         kind,
         tone,
@@ -145,7 +146,9 @@ def preview(db: Session, user: User, *, tone: str, kind: str) -> tuple[str, str]
         remaining_seconds=65 * 60,
         pending_seconds=20 * 60,
         days_without=prefs.resume_after_days,
-        summary_text="Na semana passada você registrou 4h30 de 5h planejadas, em 4 de 5 dias. Pendência atual: 30 min.",
+        summary_text=_(
+            "Na semana passada você registrou 4h30 de 5h planejadas, em 4 de 5 dias. Pendência atual: 30 min."
+        ),
     )
 
 
@@ -270,8 +273,8 @@ def enqueue_test_push(db: Session, user: User) -> NotificationOutbox:
         dedupe_key=f"system:test:{user.id}:{uuid.uuid4().hex}",
         scheduled_for=utcnow(),
         payload={
-            "title": "Teste de notificação",
-            "body": "Se você está vendo isto, os lembretes vão chegar por aqui.",
+            "title": _("Teste de notificação"),
+            "body": _("Se você está vendo isto, os lembretes vão chegar por aqui."),
             "url": DEFAULT_URLS["system"],
         },
         channels=["push", "inapp"],
@@ -682,6 +685,7 @@ def _fmt_day(d: date) -> str:
 def weekly_summary_text(
     db: Session, user: User, prefs: NotificationPreferences, week_start: date, week_end: date
 ) -> str | None:
+    set_locale(user.locale)  # gerado por job: o idioma vem da conta, não da requisição
     acts = list(
         db.execute(
             select(Activity)
@@ -713,20 +717,30 @@ def weekly_summary_text(
         pending += a_pending
         if prefs.show_activity_name:
             lines.append(
-                f"{act.title}: {fmt_minutes(a_logged)} de {fmt_minutes(a_target)} "
-                f"({a_days} de {a_planned} dias)."
+                _(
+                    "{title}: {logged} de {target} ({days} de {planned} dias).",
+                    title=act.title,
+                    logged=fmt_minutes(a_logged),
+                    target=fmt_minutes(a_target),
+                    days=a_days,
+                    planned=a_planned,
+                )
             )
     if planned_days == 0 and logged == 0:
         return None  # semana sem meta nem registro (objetivo recém-criado): nada a resumir
-    head = (
-        f"Semana de {_fmt_day(week_start)} a {_fmt_day(week_end)}: "
-        f"{fmt_minutes(logged)} registrados de {fmt_minutes(target)} planejados, "
-        f"em {days_with_log} de {planned_days} dias."
+    head = _(
+        "Semana de {start} a {end}: {logged} registrados de {target} planejados, em {days} de {planned} dias.",
+        start=_fmt_day(week_start),
+        end=_fmt_day(week_end),
+        logged=fmt_minutes(logged),
+        target=fmt_minutes(target),
+        days=days_with_log,
+        planned=planned_days,
     )
     tail = (
-        f" Tempo a recuperar: {fmt_minutes(pending)}."
+        _(" Tempo a recuperar: {pending}.", pending=fmt_minutes(pending))
         if pending > 0
-        else " Nenhuma pendência — bom ritmo."
+        else _(" Nenhuma pendência — bom ritmo.")
     )
     return " ".join([head + tail, *lines]).strip()
 
@@ -809,7 +823,7 @@ def quiet_until(prefs: NotificationPreferences, tz: str, now: datetime) -> datet
     local = now.astimezone(zone)
     qs, qe = _parse_hhmm(prefs.quiet_start), _parse_hhmm(prefs.quiet_end)
     cur = local
-    for _ in range(12):
+    for _i in range(12):
         if prefs.quiet_weekends and cur.weekday() >= 5:
             cur = datetime.combine(cur.date() + timedelta(days=1), time.min, tzinfo=zone)
             continue
@@ -952,6 +966,7 @@ def render_row(
     summary: TodaySummary | None,
 ) -> tuple[str, str, str]:
     """(título, corpo, url) com os números atuais do saldo — nunca o texto de quando foi agendado."""
+    set_locale(user.locale)
     p = row.payload or {}
     ctx: dict = {
         "time_str": p.get("time_str", ""),
@@ -1113,7 +1128,7 @@ def _deliver(
                         title=title,
                         body=body,
                         url=url,
-                        cta_label=(row.payload or {}).get("cta_label") or "Abrir o Estudatta",
+                        cta_label=(row.payload or {}).get("cta_label") or _("Abrir o Estudatta"),
                         unsubscribe_url=unsubscribe_url(user.id),
                     )
                 else:
@@ -1223,8 +1238,8 @@ def process_outbox_row(db: Session, row: NotificationOutbox, now: datetime) -> s
 
     title, body, url = render_row(db, row, user, prefs, act, summary)
     results = _deliver(db, row, user, channels, title, body, url, now)
-    statuses = [s for _, s, _ in results]
-    errors = [e for _, s, e in results if s in ("failed", "skipped") and e]
+    statuses = [s for _c, s, _e in results]
+    errors = [e for _c, s, e in results if s in ("failed", "skipped") and e]
     if "sent" in statuses and not any(s in ("failed", "ambiguous") for s in statuses):
         return _finish(row, "sent", now=now)
     if "sent" in statuses or "ambiguous" in statuses:

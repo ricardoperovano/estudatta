@@ -3,6 +3,7 @@
  * O tipo `LanguageCode` vem da API; o `Record` obriga a ter nome para todos os códigos.
  */
 import type { components } from "@/api/schema";
+import { locale as uiLocale } from "@/i18n";
 
 export type LanguageCode = NonNullable<components["schemas"]["ActivityCreate"]["language"]>;
 
@@ -124,11 +125,39 @@ export const POPULAR_LANGUAGES: LanguageCode[] = [
 /** Demais idiomas em ordem alfabética; "Outro idioma" por último. */
 export const OTHER_LANGUAGES: LanguageCode[] = (Object.keys(LANGUAGE_NAMES) as LanguageCode[])
   .filter((c) => !POPULAR_LANGUAGES.includes(c) && c !== "und")
-  .sort((a, b) => LANGUAGE_NAMES[a].localeCompare(LANGUAGE_NAMES[b], "pt-BR"))
+  .sort((a, b) => (languageName(a) ?? a).localeCompare(languageName(b) ?? b, uiLocale === "en" ? "en" : "pt-BR"))
   .concat("und");
 
+// Em inglês os nomes vêm do próprio navegador (Intl.DisplayNames); o que o Intl não cobre
+// (línguas de sinais pelo código ISO 639-3, "outro idioma") fica aqui.
+const EN_OVERRIDES: Partial<Record<LanguageCode, string>> = {
+  bzs: "Libras (Brazilian Sign Language)",
+  ase: "American Sign Language",
+  zh: "Chinese (Mandarin)",
+  nah: "Nahuatl",
+  und: "Other language",
+};
+const enDisplay = (() => {
+  try {
+    return typeof Intl !== "undefined" && "DisplayNames" in Intl ? new Intl.DisplayNames(["en"], { type: "language" }) : null;
+  } catch {
+    return null;
+  }
+})();
+
 export function languageName(code: string | null | undefined): string | null {
-  return code && code in LANGUAGE_NAMES ? LANGUAGE_NAMES[code as LanguageCode] : null;
+  if (!code || !(code in LANGUAGE_NAMES)) return null;
+  const c = code as LanguageCode;
+  if (uiLocale === "en") {
+    if (EN_OVERRIDES[c]) return EN_OVERRIDES[c]!;
+    try {
+      const n = enDisplay?.of(c);
+      if (n && n !== c) return n;
+    } catch {
+      /* código sem nome no Intl: cai no português */
+    }
+  }
+  return LANGUAGE_NAMES[c];
 }
 
 /** Nome curto para títulos ("Libras (Língua Brasileira de Sinais)" vira "Libras"). */

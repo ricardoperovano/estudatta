@@ -20,6 +20,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.i18n import _, set_locale
 from app.core.timeutil import today_in, utcnow
 from app.domain.balance import streak
 from app.models.activity import Activity
@@ -63,7 +64,7 @@ def level_for(xp: int) -> dict:
     floor = 50 * level * (level + 1)
     ceil = 50 * (level + 1) * (level + 2)
     number = level + 1
-    title = LEVEL_TITLES[min(level, len(LEVEL_TITLES) - 1)]
+    title = _(LEVEL_TITLES[min(level, len(LEVEL_TITLES) - 1)])
     return {
         "number": number,
         "title": title,
@@ -282,6 +283,15 @@ def _add(code, title, desc, cat, icon, target, metric):
     METRICS[code] = metric
 
 
+def a_title(a) -> str:
+    """Título traduzido; "{n}" recebe o alvo da conquista."""
+    return _(a.title, n=a.target)
+
+
+def a_desc(a) -> str:
+    return _(a.description, n=a.target)
+
+
 _add(
     "first_session",
     "Primeira sessão",
@@ -330,8 +340,8 @@ _add(
 for n in (3, 7, 14, 30, 60, 100):
     _add(
         f"streak_{n}",
-        f"Sequência de {n} dias",
-        f"Cumpriu a meta em {n} dias planejados seguidos.",
+        "Sequência de {n} dias",
+        "Cumpriu a meta em {n} dias planejados seguidos.",
         "constancia",
         "Flame",
         n,
@@ -349,8 +359,8 @@ _add(
 for n in (1, 10, 50, 100, 250, 500):
     _add(
         f"hours_{n}",
-        f"{n} {'hora' if n == 1 else 'horas'} de estudo",
-        f"Somou {n} {'hora' if n == 1 else 'horas'} de estudo registrado.",
+        "1 hora de estudo" if n == 1 else "{n} horas de estudo",
+        "Somou 1 hora de estudo registrado." if n == 1 else "Somou {n} horas de estudo registrado.",
         "tempo",
         "Clock",
         n,
@@ -422,8 +432,8 @@ _add(
 for n in (100, 500, 1000, 5000):
     _add(
         f"questions_{n}",
-        f"{n} questões",
-        f"Resolveu {n} questões.",
+        "{n} questões",
+        "Resolveu {n} questões.",
         "questoes",
         "CheckSquare",
         n,
@@ -441,8 +451,8 @@ _add(
 for n in (1, 10, 50, 200):
     _add(
         f"revisions_{n}",
-        "Primeira revisão" if n == 1 else f"{n} revisões",
-        "Concluiu a primeira revisão." if n == 1 else f"Concluiu {n} revisões.",
+        "Primeira revisão" if n == 1 else "{n} revisões",
+        "Concluiu a primeira revisão." if n == 1 else "Concluiu {n} revisões.",
         "revisoes",
         "ArrowsClockwise",
         n,
@@ -457,7 +467,7 @@ for n in (25, 50, 75, 100):
             75: "Reta final do edital",
             100: "Edital completo",
         }[n],
-        f"Estudou {n}% dos tópicos de um objetivo com pelo menos 10 tópicos.",
+        "Estudou {n}% dos tópicos de um objetivo com pelo menos 10 tópicos.",
         "edital",
         "MapTrifold",
         n,
@@ -573,7 +583,7 @@ def _week_challenges(db: Session, user: User, st: Stats, week_start: date) -> li
     pool: list[Challenge] = [
         Challenge(
             "goal_days",
-            f"Cumpra a meta em {min(4, planned)} dias",
+            _("Cumpra a meta em {n} dias", n=min(4, planned)),
             min(4, planned),
             st.goal_days_this_week,
             "dias",
@@ -589,19 +599,21 @@ def _week_challenges(db: Session, user: User, st: Stats, week_start: date) -> li
             else 30
         )
         target = max(20, int(round(avg * 1.1 / 10.0)) * 10)
-        pool.append(Challenge("questions", f"Resolva {target} questões", target, qs, "questões"))
+        pool.append(
+            Challenge("questions", _("Resolva {n} questões", n=target), target, qs, "questões")
+        )
     if (
         st.revisions_done
         or db.execute(
             select(func.count()).select_from(Revision).where(Revision.user_id == user.id)
         ).scalar_one()
     ):
-        pool.append(Challenge("revisions", "Faça 3 revisões", 3, revs, "revisões"))
+        pool.append(Challenge("revisions", _("Faça 3 revisões"), 3, revs, "revisões"))
     if st.subjects >= 2:
         pool.append(
             Challenge(
                 "variety",
-                "Estude 3 matérias diferentes",
+                _("Estude 3 matérias diferentes"),
                 min(3, st.subjects),
                 subj_count,
                 "matérias",
@@ -614,9 +626,9 @@ def _week_challenges(db: Session, user: User, st: Stats, week_start: date) -> li
         pool.append(
             Challenge(
                 "time",
-                f"Estude {target_min // 60}h{target_min % 60:02d} na semana"
+                _("Estude {h}h{m} na semana", h=target_min // 60, m=f"{target_min % 60:02d}")
                 if target_min % 60
-                else f"Estude {target_min // 60}h na semana",
+                else _("Estude {h}h na semana", h=target_min // 60),
                 target_min,
                 secs // 60,
                 "min",
@@ -659,6 +671,7 @@ def _grant(db: Session, user: User, kind: str, key: str, points: int, title: str
 def evaluate(db: Session, user: User, st: Stats | None = None) -> list[str]:
     """Desbloqueia conquistas alcançadas e credita desafios cumpridos. Idempotente.
     Retorna os códigos desbloqueados agora."""
+    set_locale(user.locale)  # títulos gravados em XpEvent/notificações seguem o idioma da conta
     st = st or compute_stats(db, user)
     have = set(
         db.execute(select(UserAchievement.code).where(UserAchievement.user_id == user.id)).scalars()
@@ -669,13 +682,13 @@ def evaluate(db: Session, user: User, st: Stats | None = None) -> list[str]:
             continue
         if a.value(st) >= a.target:
             db.add(UserAchievement(user_id=user.id, code=a.code, unlocked_at=utcnow()))
-            _grant(db, user, "achievement", f"achievement:{a.code}", XP_ACHIEVEMENT, a.title)
+            _grant(db, user, "achievement", f"achievement:{a.code}", XP_ACHIEVEMENT, a_title(a))
             notify_inapp(
                 db,
                 user_id=user.id,
                 kind="achievement",
-                title=f"Conquista: {a.title}",
-                body=a.description,
+                title=_("Conquista: {title}", title=a_title(a)),
+                body=a_desc(a),
                 url="/app/conquistas",
                 data={"code": a.code},
             )
@@ -709,10 +722,10 @@ def profile(db: Session, user: User) -> dict:
         achievements.append(
             {
                 "code": a.code,
-                "title": a.title,
-                "description": a.description,
+                "title": a_title(a),
+                "description": a_desc(a),
                 "category": a.category,
-                "category_label": CATEGORY_LABEL[a.category],
+                "category_label": _(CATEGORY_LABEL[a.category]),
                 "icon": a.icon,
                 "target": a.target,
                 "progress": min(v, a.target),
@@ -754,7 +767,7 @@ def profile(db: Session, user: User) -> dict:
                     "title": c.title,
                     "target": c.target,
                     "progress": min(c.progress, c.target),
-                    "unit": c.unit,
+                    "unit": _(c.unit),
                     "done": c.done,
                     "xp": XP_CHALLENGE,
                 }
@@ -775,7 +788,7 @@ def profile(db: Session, user: User) -> dict:
             "total_pages": st.pages,
         },
         "recent_bonus": [
-            {"title": e.title, "points": e.points, "kind": e.kind, "created_at": e.created_at}
+            {"title": _(e.title), "points": e.points, "kind": e.kind, "created_at": e.created_at}
             for e in recent_bonus
         ],
     }

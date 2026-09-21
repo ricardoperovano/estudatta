@@ -17,6 +17,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.errors import ValidationFailed
+from app.core.i18n import _, current_locale
 from app.core.timeutil import today_in
 from app.domain.balance import DayBalance, day_span, streak
 from app.models.activity import Activity
@@ -85,21 +86,23 @@ def _join_pt(items: list[str]) -> str:
         return ""
     if len(items) == 1:
         return items[0]
-    return ", ".join(items[:-1]) + " e " + items[-1]
+    return ", ".join(items[:-1]) + _(" e ") + items[-1]
 
 
 def _day_label(d: date, period: str) -> str:
     if period == "week":
-        return WEEKDAY_NAMES[d.weekday()]
-    return f"dia {d.day}"
+        return _(WEEKDAY_NAMES[d.weekday()])
+    return _("dia {d}", d=d.day)
 
 
 def _day_in(d: date, period: str, start: date, end: date) -> str:
     if start <= d <= end:
         if period == "week":
+            if current_locale() == "en":
+                return "on " + _(WEEKDAY_NAMES[d.weekday()])
             return f"{WEEKDAY_IN[d.weekday()]} {WEEKDAY_NAMES[d.weekday()]}"
-        return f"no dia {d.day}"
-    return f"no dia {d.day}/{d.month}"
+        return _("no dia {d}", d=d.day)
+    return _("no dia {d}/{m}", d=d.day, m=d.month)
 
 
 def reading_text(
@@ -124,17 +127,27 @@ def reading_text(
         dests = sorted(set(gaps[src]))
         if row is None:
             sentences.append(
-                f"O tempo pendente do dia {src.day}/{src.month} foi recuperado "
-                f"{_join_pt([_day_in(x, period, start, end) for x in dests])}."
+                _(
+                    "O tempo pendente do dia {d}/{m} foi recuperado {where}.",
+                    d=src.day,
+                    m=src.month,
+                    where=_join_pt([_day_in(x, period, start, end) for x in dests]),
+                )
             )
             continue
         mentioned.add(src)
         label = _day_label(src, period).capitalize()
-        state = "ficou sem registro" if row["logged"] == 0 else "ficou abaixo da meta"
+        state = _("ficou sem registro") if row["logged"] == 0 else _("ficou abaixo da meta")
         full = recovered_by_src.get(src, 0) >= row["deficit"]
-        what = "o tempo foi recuperado" if full else "parte do tempo foi recuperada"
+        what = _("o tempo foi recuperado") if full else _("parte do tempo foi recuperada")
         sentences.append(
-            f"{label} {state} e {what} {_join_pt([_day_in(x, period, start, end) for x in dests])}."
+            _(
+                "{label} {state} e {what} {where}.",
+                label=label,
+                state=state,
+                what=what,
+                where=_join_pt([_day_in(x, period, start, end) for x in dests]),
+            )
         )
     open_days = [
         r
@@ -148,25 +161,39 @@ def reading_text(
     no_log = [r for r in open_days if r["logged"] == 0]
     partial = [r for r in open_days if r["logged"] > 0]
     tail = (
-        " a meta desses dias não é transferida para os próximos."
+        _(" a meta desses dias não é transferida para os próximos.")
         if policy_none
-        else " esse tempo segue como pendência."
+        else _(" esse tempo segue como pendência.")
     )
     if no_log:
         labels = [_day_label(r["local_date"], period) for r in no_log]
-        verb = "ficou" if len(labels) == 1 else "ficaram"
-        sentences.append(f"{_join_pt(labels).capitalize()} {verb} sem registro;{tail}")
+        verb = _("ficou") if len(labels) == 1 else _("ficaram")
+        sentences.append(
+            _(
+                "{days} {verb} sem registro;{tail}",
+                days=_join_pt(labels).capitalize(),
+                verb=verb,
+                tail=tail,
+            )
+        )
     if partial:
         labels = [_day_label(r["local_date"], period) for r in partial]
-        verb = "ficou" if len(labels) == 1 else "ficaram"
-        sentences.append(f"{_join_pt(labels).capitalize()} {verb} abaixo da meta;{tail}")
+        verb = _("ficou") if len(labels) == 1 else _("ficaram")
+        sentences.append(
+            _(
+                "{days} {verb} abaixo da meta;{tail}",
+                days=_join_pt(labels).capitalize(),
+                verb=verb,
+                tail=tail,
+            )
+        )
     if not sentences:
         planned_so_far = [r for r in per_day if r["target"] > 0 and r["local_date"] <= today]
         if planned_so_far:
-            sentences.append("Todos os dias com meta até aqui tiveram registro.")
+            sentences.append(_("Todos os dias com meta até aqui tiveram registro."))
         else:
-            sentences.append("Nenhum dia com meta neste período.")
-    return " ".join(sentences) + " " + CLOSING
+            sentences.append(_("Nenhum dia com meta neste período."))
+    return " ".join(sentences) + " " + _(CLOSING)
 
 
 def _by_subject(
@@ -189,7 +216,7 @@ def _by_subject(
         .group_by(StudySession.subject_id)
     )
     rows = [(sid, int(s or 0)) for sid, s in db.execute(q).all() if int(s or 0) > 0]
-    ids = [sid for sid, _ in rows if sid is not None]
+    ids = [sid for sid, _secs in rows if sid is not None]
     titles = (
         {s.id: s.title for s in db.execute(select(Subject).where(Subject.id.in_(ids))).scalars()}
         if ids
@@ -198,7 +225,7 @@ def _by_subject(
     out = [
         {
             "subject_id": sid,
-            "title": titles.get(sid, "Sem matéria") if sid else "Sem matéria",
+            "title": titles.get(sid, _("Sem matéria")) if sid else _("Sem matéria"),
             "logged": secs,
         }
         for sid, secs in rows
@@ -441,7 +468,7 @@ def export_csv(
         raise ValidationFailed("A data final precisa ser igual ou depois da inicial.")
     if (end - start).days > MAX_EXPORT_DAYS:
         raise ValidationFailed(
-            f"Período longo demais (máximo {MAX_EXPORT_DAYS} dias).", code="range_too_long"
+            _("Período longo demais (máximo {n} dias).", n=MAX_EXPORT_DAYS), code="range_too_long"
         )
     acts = _activities(db, user, activity_id)
     act_ids = [a.id for a in acts]
@@ -482,7 +509,7 @@ def export_csv(
             )
         )
         pairs = db.execute(q).all()
-        titles = _titles(db, [s for _, s in pairs])
+        titles = _titles(db, [s for _a, s in pairs])
         for alloc, s in pairs:
             pages = f"{s.page_from or ''}-{s.page_to or ''}" if (s.page_from or s.page_to) else ""
             w.writerow(
@@ -551,7 +578,7 @@ def content_report(db: Session, user: User, act: Activity) -> dict:
         for s in subjects
     ]
     if tasks_by_subject.get(None):
-        by_subject.append(row(None, "Sem matéria", None, [], tasks_by_subject[None]))
+        by_subject.append(row(None, _("Sem matéria"), None, [], tasks_by_subject[None]))
     total = len(topics)
     done = sum(1 for t in topics if t.status == "done")
     return {
@@ -566,6 +593,7 @@ def content_report(db: Session, user: User, act: Activity) -> dict:
         "tasks_skipped": sum(1 for t in tasks if t.status == "skipped"),
         "tasks_planned": sum(1 for t in tasks if t.status == "planned"),
         "by_subject": by_subject,
-        "note": "Progresso de conteúdo e tempo registrado são medidas diferentes: "
-        "concluir um tópico não lança minutos, e estudar não conclui tópicos.",
+        "note": _(
+            "Progresso de conteúdo e tempo registrado são medidas diferentes: concluir um tópico não lança minutos, e estudar não conclui tópicos."
+        ),
     }

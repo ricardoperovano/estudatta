@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import settings
 from app.core.errors import NotFound, PlanLimit, ValidationFailed
+from app.core.i18n import _
 from app.core.timeutil import utcnow
 from app.integrations.storage import get_storage
 from app.models.content import Material, MaterialTopic, Topic
@@ -108,7 +109,9 @@ def _check_quota(db: Session, user: User, extra_bytes: int) -> None:
             .where(Material.user_id == user.id, Material.archived_at.is_(None))
         ).scalar_one()
         if n >= int(max_items):
-            raise PlanLimit(f"Seu plano permite até {max_items} materiais.", code="materials_limit")
+            raise PlanLimit(
+                _("Seu plano permite até {n} materiais.", n=max_items), code="materials_limit"
+            )
     quota_mb = ent.limit("materials_storage_mb")
     if quota_mb is not None and extra_bytes > 0:
         used = db.execute(
@@ -118,7 +121,7 @@ def _check_quota(db: Session, user: User, extra_bytes: int) -> None:
         ).scalar_one()
         if int(used) + extra_bytes > int(quota_mb) * 1024 * 1024:
             raise PlanLimit(
-                f"Cota de armazenamento ({quota_mb} MB) atingida.", code="storage_quota"
+                _("Cota de armazenamento ({n} MB) atingida.", n=quota_mb), code="storage_quota"
             )
 
 
@@ -185,7 +188,11 @@ def create_pdf(
         raise ValidationFailed("Arquivo vazio.", code="empty_file")
     if size > settings.MAX_UPLOAD_MB * 1024 * 1024:
         raise ValidationFailed(
-            f"O arquivo tem {size / 1024 / 1024:.0f} MB; o limite é {settings.MAX_UPLOAD_MB} MB. Nada do seu plano foi alterado.",
+            _(
+                "O arquivo tem {size} MB; o limite é {limit} MB. Nada do seu plano foi alterado.",
+                size=f"{size / 1024 / 1024:.0f}",
+                limit=settings.MAX_UPLOAD_MB,
+            ),
             code="file_too_large",
         )
     if not sniff_pdf(data):
@@ -205,7 +212,7 @@ def create_pdf(
         pages = None
     if pages is not None and pages > settings.MAX_PDF_PAGES:
         raise ValidationFailed(
-            f"O PDF tem {pages} páginas; o limite é {settings.MAX_PDF_PAGES}.",
+            _("O PDF tem {n} páginas; o limite é {limit}.", n=pages, limit=settings.MAX_PDF_PAGES),
             code="too_many_pages",
         )
     key = f"users/{user.id}/materials/{uuid.uuid4()}.pdf"

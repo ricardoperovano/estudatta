@@ -29,6 +29,7 @@ from app.core.errors import (
     ServiceUnavailable,
     ValidationFailed,
 )
+from app.core.i18n import _, current_locale
 from app.core.timeutil import today_in, utcnow
 from app.integrations import ai as ai_client
 from app.integrations.ai import AiError, AiResult
@@ -216,7 +217,11 @@ def _check_available(db: Session, user: User, action: str, input_chars: int) -> 
     _ensure_enabled()
     if input_chars > settings.AI_MAX_INPUT_CHARS:
         raise ValidationFailed(
-            f"O texto tem {input_chars} caracteres; o limite para IA é {settings.AI_MAX_INPUT_CHARS}.",
+            _(
+                "O texto tem {n} caracteres; o limite para IA é {limit}.",
+                n=input_chars,
+                limit=settings.AI_MAX_INPUT_CHARS,
+            ),
             code="ai_input_too_long",
         )
     limit = plan_limit(db, user)
@@ -234,7 +239,7 @@ def _check_available(db: Session, user: User, action: str, input_chars: int) -> 
                 db, user, action, "quota", input_chars=input_chars, error_code="ai_monthly_quota"
             )
             raise RateLimited(
-                f"Você usou as {monthly} ações de IA deste mês. A cota renova no dia 1º.",
+                _("Você usou as {n} ações de IA deste mês. A cota renova no dia 1º.", n=monthly),
                 code="ai_monthly_quota",
                 details={"monthly_limit": monthly, "used": used_month},
             )
@@ -242,7 +247,7 @@ def _check_available(db: Session, user: User, action: str, input_chars: int) -> 
     if used >= limit:
         _record(db, user, action, "quota", input_chars=input_chars, error_code="ai_quota")
         raise RateLimited(
-            f"Você usou as {limit} ações de IA de hoje. Amanhã a cota renova.",
+            _("Você usou as {n} ações de IA de hoje. Amanhã a cota renova.", n=limit),
             code="ai_quota",
             details={"plan_limit": limit, "used": used},
         )
@@ -399,7 +404,7 @@ def suggest_plan(
     end = end or (start + timedelta(days=horizon_days - 1))
     if end < start or (end - start).days >= MAX_PLAN_DAYS:
         raise ValidationFailed(
-            f"O período precisa ter entre 1 e {MAX_PLAN_DAYS} dias.", code="bad_period"
+            _("O período precisa ter entre 1 e {n} dias.", n=MAX_PLAN_DAYS), code="bad_period"
         )
     rows = _plan_topics(db, user, act, topic_ids)
     if not rows:
@@ -476,7 +481,7 @@ def suggest_plan(
             continue
         used[it.local_date] = used.get(it.local_date, 0) + secs
         seen.add((it.local_date, it.topic_id))
-        topic, _ = by_id[it.topic_id]
+        topic, _unused = by_id[it.topic_id]
         items.append(
             PlanItemOut(
                 local_date=it.local_date,
@@ -531,7 +536,8 @@ def weekly_summary(
         db,
         user,
         "weekly_summary",
-        system=f"{SYSTEM_BASE}\n{SUMMARY_INSTRUCTIONS}",
+        system=f"{SYSTEM_BASE}\n{SUMMARY_INSTRUCTIONS}"
+        + (" Escreva o texto em inglês (English)." if current_locale() == "en" else ""),
         prompt=prompt,
         schema=ModelSummaryOutput,
         max_tokens=400,

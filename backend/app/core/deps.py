@@ -12,7 +12,6 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.db import get_db
 from app.core.errors import Forbidden, RateLimited, Unauthorized
-from app.core.i18n import set_locale
 from app.core.ratelimit import limiter
 from app.core.security import constant_time_equals, hash_token
 from app.core.timeutil import utcnow
@@ -43,7 +42,6 @@ def get_optional_user(request: Request, db: Session = Depends(get_db)) -> User |
         return None
     sess, user = loaded
     request.state.auth_session = sess
-    set_locale(user.locale)
     # toca last_seen no máximo uma vez por hora
     if sess.last_seen_at < utcnow() - timedelta(hours=1):
         sess.last_seen_at = utcnow()

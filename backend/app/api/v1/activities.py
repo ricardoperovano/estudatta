@@ -11,6 +11,7 @@ from app.core.audit import audit
 from app.core.db import get_db
 from app.core.deps import get_current_user
 from app.core.errors import NotFound, ValidationFailed
+from app.core.i18n import _
 from app.models.activity import GoalRule
 from app.models.user import User
 from app.schemas.activities import (
@@ -233,7 +234,7 @@ def delete_activity(
     )
     db.delete(act)
     db.commit()
-    return OkResponse(message="Objetivo excluído.")
+    return OkResponse(message=_("Objetivo excluído."))
 
 
 @router.post("/{activity_id}/goal-rules", response_model=GoalRuleOut, status_code=201)
@@ -538,4 +539,4 @@ def recovery_cancel(
     act = svc.get_activity(db, user, activity_id)
     recovery_service.cancel(db, act)
     db.commit()
-    return OkResponse(message="Plano de recuperação cancelado. A pendência continua visível.")
+    return OkResponse(message=_("Plano de recuperação cancelado. A pendência continua visível."))

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.audit import audit
 from app.core.db import get_db
 from app.core.deps import get_current_user
+from app.core.i18n import _
 from app.models.user import User
 from app.schemas.common import OkResponse
 from app.schemas.content import (
@@ -107,7 +108,7 @@ def delete_subject(
     )
     svc.delete_subject(db, user, s)
     db.commit()
-    return OkResponse(message="Matéria e seus tópicos excluídos. O tempo registrado permanece.")
+    return OkResponse(message=_("Matéria e seus tópicos excluídos. O tempo registrado permanece."))
 
 
 # --- Tópicos ---------------------------------------------------------------
@@ -175,4 +176,4 @@ def delete_topic(
     )
     svc.delete_topic(db, user, t)
     db.commit()
-    return OkResponse(message="Tópico excluído.")
+    return OkResponse(message=_("Tópico excluído."))

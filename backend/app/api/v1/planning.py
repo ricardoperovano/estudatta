@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.core.audit import audit
 from app.core.db import get_db
 from app.core.deps import get_current_user
+from app.core.i18n import _
 from app.models.planning import TaskSeries
 from app.models.user import User
 from app.schemas.common import OkResponse
@@ -150,7 +151,7 @@ def delete_series(
         db, actor_id=user.id, action="series.deactivate", target_type="series", target_id=str(s.id)
     )
     db.commit()
-    return OkResponse(message="Série desativada. As ocorrências já editadas continuam no plano.")
+    return OkResponse(message=_("Série desativada. As ocorrências já editadas continuam no plano."))
 
 
 @router.post(
@@ -200,7 +201,7 @@ def delete_task(
     t = svc.get_task(db, user, task_id)
     svc.delete_task(db, t)
     db.commit()
-    return OkResponse(message="Tarefa excluída.")
+    return OkResponse(message=_("Tarefa excluída."))
 
 
 @router.post("/tasks/{task_id}/complete", response_model=TaskOut)

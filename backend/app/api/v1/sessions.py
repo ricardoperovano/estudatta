@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.core.deps import get_current_user, get_device_id
+from app.core.i18n import _
 from app.core.timeutil import utcnow
 from app.models.user import User
 from app.schemas.common import OkResponse
@@ -53,7 +54,7 @@ def start(
     device_id: str | None = Depends(get_device_id),
 ) -> SessionOut:
     act = activity_service.get_activity(db, user, payload.activity_id)
-    sess, _ = svc.start_session(
+    sess, _unused = svc.start_session(
         db,
         user,
         act,
@@ -82,7 +83,7 @@ def manual(
     device_id: str | None = Depends(get_device_id),
 ) -> SessionOut:
     act = activity_service.get_activity(db, user, payload.activity_id)
-    sess, _ = svc.manual_session(
+    sess, _unused = svc.manual_session(
         db,
         user,
         act,
@@ -253,4 +254,4 @@ def delete(
     s = svc.get_session(db, user, session_id)
     svc.delete_session(db, user, s, reason=reason)
     db.commit()
-    return OkResponse(message="Sessão excluída. O saldo foi recalculado.")
+    return OkResponse(message=_("Sessão excluída. O saldo foi recalculado."))

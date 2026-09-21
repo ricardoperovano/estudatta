@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.core.db import get_db
 from app.core.deps import get_current_user
 from app.core.errors import ValidationFailed
+from app.core.i18n import _
 from app.models.content import Material
 from app.models.user import User
 from app.schemas.common import OkResponse
@@ -42,13 +43,20 @@ def read_upload(upload: UploadFile) -> bytes:
         size = None
     if size is not None and size > limit:
         raise ValidationFailed(
-            f"O arquivo tem {size / 1024 / 1024:.0f} MB; o limite é {settings.MAX_UPLOAD_MB} MB. Nada do seu plano foi alterado.",
+            _(
+                "O arquivo tem {size} MB; o limite é {limit} MB. Nada do seu plano foi alterado.",
+                size=f"{size / 1024 / 1024:.0f}",
+                limit=settings.MAX_UPLOAD_MB,
+            ),
             code="file_too_large",
         )
     data = f.read(limit + 1)
     if len(data) > limit:
         raise ValidationFailed(
-            f"O arquivo passa de {settings.MAX_UPLOAD_MB} MB. Nada do seu plano foi alterado.",
+            _(
+                "O arquivo passa de {limit} MB. Nada do seu plano foi alterado.",
+                limit=settings.MAX_UPLOAD_MB,
+            ),
             code="file_too_large",
         )
     return data
@@ -60,7 +68,7 @@ def _parse_optional_uuid(value: str | None, field: str) -> UUID | None:
     try:
         return UUID(str(value))
     except ValueError as exc:
-        raise ValidationFailed(f"Campo {field} inválido.", code="bad_uuid") from exc
+        raise ValidationFailed(_("Campo {field} inválido.", field=field), code="bad_uuid") from exc
 
 
 def _links_out(m: Material) -> list[MaterialTopicOut]:
@@ -247,7 +255,7 @@ def delete_material(
     )
     svc.delete_material(db, m)
     db.commit()
-    return OkResponse(message="Material removido.")
+    return OkResponse(message=_("Material removido."))
 
 
 @router.post("/{material_id}/topics", response_model=MaterialDetailOut, status_code=201)

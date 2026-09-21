@@ -10,6 +10,7 @@ from email.utils import parseaddr
 import httpx
 
 from app.core.config import settings
+from app.core.i18n import _, current_locale
 from app.core.logging import get_logger
 
 log = get_logger("email")
@@ -166,21 +167,20 @@ def _layout(
     tata: bool = True,
 ) -> str:
     tata_html = (
-        f'<img src="{_asset("/marca/tata-email.png")}" width="88" height="97" alt="Tatá, o mascote do Estudatta" '
+        f'<img src="{_asset("/marca/tata-email.png")}" width="88" height="97" alt="{_("Tatá, o mascote do Estudatta")}" '
         'style="display:block;border:0;margin:0 0 12px">'
         if tata
         else ""
     )
     unsub = (
-        f' <a href="{unsubscribe_url}" style="color:#75798c;text-decoration:underline">Não quero receber estes lembretes</a>.'
+        f' <a href="{unsubscribe_url}" style="color:#75798c;text-decoration:underline">{_("Não quero receber estes lembretes")}</a>.'
         if unsubscribe_url
         else ""
     )
-    note = (
-        footer_note
-        or "Você recebeu este e-mail porque tem uma conta no Estudatta. Se não foi você, ignore esta mensagem."
+    note = footer_note or _(
+        "Você recebeu este e-mail porque tem uma conta no Estudatta. Se não foi você, ignore esta mensagem."
     )
-    return f"""<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>{title}</title></head>
+    return f"""<!doctype html><html lang="{"en" if current_locale() == "en" else "pt-BR"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>{title}</title></head>
 <body style="margin:0;padding:0;background:#f3f5fe">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f3f5fe"><tr><td align="center" style="padding:28px 14px">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px">
@@ -200,45 +200,64 @@ def _layout(
 
 
 def send_verification_email(to: str, link: str) -> bool:
-    text = f"Oi! Confirme seu e-mail no Estudatta acessando: {link}\n\nO link vale por 24 horas."
-    html = _layout(
-        "Confirme seu e-mail",
-        '<p style="margin:0 0 10px">Que bom ter você por aqui! Para deixar sua conta pronta, confirme seu e-mail.</p>'
-        '<p style="margin:0">O link vale por 24 horas.</p>',
-        cta=("Confirmar e-mail", link),
+    text = _(
+        "Oi! Confirme seu e-mail no Estudatta acessando: {link}\n\nO link vale por 24 horas.",
+        link=link,
     )
-    return send_email(to, "Confirme seu e-mail · Estudatta", text, html)
+    html = _layout(
+        _("Confirme seu e-mail"),
+        '<p style="margin:0 0 10px">'
+        + _("Que bom ter você por aqui! Para deixar sua conta pronta, confirme seu e-mail.")
+        + '</p><p style="margin:0">'
+        + _("O link vale por 24 horas.")
+        + "</p>",
+        cta=(_("Confirmar e-mail"), link),
+    )
+    return send_email(to, _("Confirme seu e-mail · Estudatta"), text, html)
 
 
 def send_password_reset_email(to: str, link: str) -> bool:
-    text = f"Para redefinir sua senha no Estudatta, acesse: {link}\n\nO link vale por 1 hora. Se você não pediu, ignore."
+    text = _(
+        "Para redefinir sua senha no Estudatta, acesse: {link}\n\nO link vale por 1 hora. Se você não pediu, ignore.",
+        link=link,
+    )
     html = _layout(
-        "Redefinir senha",
-        '<p style="margin:0 0 10px">Recebemos um pedido para redefinir sua senha.</p>'
-        '<p style="margin:0">O link vale por 1 hora. Se não foi você, é só ignorar: sua senha continua a mesma.</p>',
-        cta=("Criar nova senha", link),
+        _("Redefinir senha"),
+        '<p style="margin:0 0 10px">'
+        + _("Recebemos um pedido para redefinir sua senha.")
+        + '</p><p style="margin:0">'
+        + _("O link vale por 1 hora. Se não foi você, é só ignorar: sua senha continua a mesma.")
+        + "</p>",
+        cta=(_("Criar nova senha"), link),
         tata=False,
     )
-    return send_email(to, "Redefinir senha · Estudatta", text, html)
+    return send_email(to, _("Redefinir senha · Estudatta"), text, html)
 
 
 def send_weekly_summary_email(to: str, summary_text: str) -> bool:
     html = _layout(
-        "Resumo da semana",
+        _("Resumo da semana"),
         f'<p style="margin:0">{summary_text}</p>',
-        cta=("Ver relatório completo", f"{settings.APP_URL.rstrip('/')}/app/relatorio"),
+        cta=(_("Ver relatório completo"), f"{settings.APP_URL.rstrip('/')}/app/relatorio"),
     )
-    return send_email(to, "Resumo da semana · Estudatta", summary_text, html)
+    return send_email(to, _("Resumo da semana · Estudatta"), summary_text, html)
 
 
 def send_nudge_email(to: str, *, title: str, body: str, url: str, unsubscribe_url: str) -> bool:
     """Lembrete de retorno (sem objetivo / dias sem estudar), com descadastro de um clique."""
-    text = f"{body}\n\nAbrir o Estudatta: {url}\n\nNão quer mais estes lembretes? {unsubscribe_url}"
+    text = _(
+        "{body}\n\nAbrir o Estudatta: {url}\n\nNão quer mais estes lembretes? {unsubscribe_url}",
+        body=body,
+        url=url,
+        unsubscribe_url=unsubscribe_url,
+    )
     html = _layout(
         title,
         f'<p style="margin:0">{body}</p>',
-        cta=("Abrir o Estudatta", url),
-        footer_note="Você recebe este lembrete porque ativou os lembretes de retorno no Estudatta.",
+        cta=(_("Abrir o Estudatta"), url),
+        footer_note=_(
+            "Você recebe este lembrete porque ativou os lembretes de retorno no Estudatta."
+        ),
         unsubscribe_url=unsubscribe_url,
     )
     return send_email(
@@ -261,12 +280,18 @@ def send_campaign_email(
     html_body = "".join(
         f'<p style="margin:0 0 12px">{p.replace(chr(10), "<br>")}</p>' for p in paras
     )
-    text = f"{body}\n\n{cta_label}: {url}\n\nNão quer mais receber? {unsubscribe_url}"
+    text = _(
+        "{body}\n\n{cta_label}: {url}\n\nNão quer mais receber? {unsubscribe_url}",
+        body=body,
+        cta_label=cta_label,
+        url=url,
+        unsubscribe_url=unsubscribe_url,
+    )
     html = _layout(
         title,
         html_body,
         cta=(cta_label, url),
-        footer_note="Você recebe este e-mail porque tem uma conta no Estudatta.",
+        footer_note=_("Você recebe este e-mail porque tem uma conta no Estudatta."),
         unsubscribe_url=unsubscribe_url,
     )
     return send_email(

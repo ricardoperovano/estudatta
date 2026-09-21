@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.errors import ApiError, Conflict, Unauthorized, ValidationFailed
-from app.core.i18n import normalize_locale
+from app.core.i18n import _, normalize_locale, use_locale
 from app.core.security import (
     generate_token,
     hash_password,
@@ -78,14 +78,17 @@ def create_user(
             user_id=user.id, max_per_day=settings.NOTIFICATIONS_MAX_PROACTIVE_PER_DAY
         )
     )
-    notify_inapp(
-        db,
-        user_id=user.id,
-        kind="welcome",
-        title="Bem-vindo ao Estudatta",
-        body="Defina um objetivo, escolha os dias e a meta diária. O plano mostra o que fazer hoje e como retomar se atrasar.",
-        url="/app",
-    )
+    with use_locale(user.locale):
+        notify_inapp(
+            db,
+            user_id=user.id,
+            kind="welcome",
+            title=_("Bem-vindo ao Estudatta"),
+            body=_(
+                "Defina um objetivo, escolha os dias e a meta diária. O plano mostra o que fazer hoje e como retomar se atrasar."
+            ),
+            url="/app",
+        )
     db.flush()
     return user
 

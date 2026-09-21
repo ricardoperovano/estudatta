@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.core.db import get_db
 from app.core.deps import client_ip, get_current_user, rate_limit
 from app.core.errors import NotFound, ServiceUnavailable, Unauthorized
+from app.core.i18n import _
 from app.integrations.mercadopago import BillingProvider, ProviderError, get_provider
 from app.models.user import User
 from app.schemas.auth import EntitlementsOut
@@ -152,7 +153,7 @@ def sync(
     except ProviderError as exc:
         raise ServiceUnavailable(exc.message, code="provider_unavailable") from exc
     db.commit()
-    return _state(db, user, message="Assinatura atualizada com o provedor de pagamento.")
+    return _state(db, user, message=_("Assinatura atualizada com o provedor de pagamento."))
 
 
 @router.post("/webhooks/mercadopago", response_model=WebhookAck)
@@ -236,7 +237,7 @@ def coupon_check(
     """Valida um cupom para este usuário sem consumir (a tela de planos mostra o efeito)."""
     from app.services import growth
 
-    _, info = growth.check_coupon(db, user, payload.code, plan_code=payload.plan_code)
+    _unused, info = growth.check_coupon(db, user, payload.code, plan_code=payload.plan_code)
     return CouponInfoOut(**info)
 
 
@@ -254,7 +255,7 @@ def coupon_redeem(
     """Cupom de dias grátis: libera o plano na hora, sem pagamento (acesso promocional)."""
     from app.services import growth
 
-    coupon, _ = growth.check_coupon(db, user, payload.code)
+    coupon, _unused = growth.check_coupon(db, user, payload.code)
     if coupon.kind != "trial":
         raise NotFound("Este cupom é de desconto: use-o ao assinar.", code="coupon_kind")
     current = billing_service.current_subscription(db, user.id)
@@ -271,4 +272,4 @@ def coupon_redeem(
         ip=client_ip(request),
     )
     db.commit()
-    return _state(db, user, message=f"Pronto: {coupon.value} dias do plano liberados.")
+    return _state(db, user, message=_("Pronto: {n} dias do plano liberados.", n=coupon.value))

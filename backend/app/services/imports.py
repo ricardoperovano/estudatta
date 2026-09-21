@@ -24,6 +24,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.errors import Conflict, NotFound, ValidationFailed
+from app.core.i18n import _
 from app.core.timeutil import utcnow
 from app.integrations.storage import get_storage
 from app.models.activity import Activity
@@ -356,8 +357,11 @@ def extract_pdf_pages(data: bytes) -> tuple[list[tuple[int, str]], int]:
         ) from exc
     if total > settings.MAX_PDF_PAGES:
         raise ImportFailure(
-            f"O PDF tem {total} páginas; o limite é {settings.MAX_PDF_PAGES}. "
-            "Envie só as páginas do sumário ou divida o arquivo.",
+            _(
+                "O PDF tem {n} páginas; o limite é {limit}. Envie só as páginas do sumário ou divida o arquivo.",
+                n=total,
+                limit=settings.MAX_PDF_PAGES,
+            ),
             code="too_many_pages",
         )
     started = time.monotonic()
@@ -365,8 +369,12 @@ def extract_pdf_pages(data: bytes) -> tuple[list[tuple[int, str]], int]:
     for i, page in enumerate(reader.pages, start=1):
         if time.monotonic() - started > settings.PDF_EXTRACTION_TIMEOUT_SECONDS:
             raise ImportFailure(
-                f"A extração passou de {settings.PDF_EXTRACTION_TIMEOUT_SECONDS} s na página {i} de {total}. "
-                "Envie um PDF menor ou só as páginas do sumário.",
+                _(
+                    "A extração passou de {s} s na página {i} de {total}. Envie um PDF menor ou só as páginas do sumário.",
+                    s=settings.PDF_EXTRACTION_TIMEOUT_SECONDS,
+                    i=i,
+                    total=total,
+                ),
                 code="pdf_timeout",
             )
         try:
@@ -380,7 +388,7 @@ def extract_pdf_pages(data: bytes) -> tuple[list[tuple[int, str]], int]:
 def has_text_layer(pages: list[tuple[int, str]]) -> bool:
     if not pages:
         return False
-    empty = sum(1 for _, t in pages if len(t.strip()) < MIN_CHARS_TEXT_LAYER)
+    empty = sum(1 for _p, t in pages if len(t.strip()) < MIN_CHARS_TEXT_LAYER)
     return (empty / len(pages)) < NO_TEXT_LAYER_RATIO
 
 
@@ -449,11 +457,14 @@ def _process_pdf(job: ImportJob) -> dict:
         ocr_pages, why = _try_ocr(data)
         if ocr_pages is None:
             raise ImportFailure(
-                f"O PDF não tem camada de texto (parece digitalizado como imagem). {why}",
+                _(
+                    "O PDF não tem camada de texto (parece digitalizado como imagem). {why}",
+                    why=why,
+                ),
                 code="no_text_layer",
             )
         pages = ocr_pages
-    job.raw_text = "\f".join(t for _, t in pages)[:MAX_RAW_TEXT_CHARS]
+    job.raw_text = "\f".join(t for _p, t in pages)[:MAX_RAW_TEXT_CHARS]
     proposal = build_proposal(pdf_lines(pages), source="pdf", strict=True)
     proposal["stats"]["pages_total"] = total
     proposal["stats"]["ocr"] = not job.has_text_layer
@@ -480,8 +491,11 @@ def list_imports(db: Session, user: User, activity_id: uuid.UUID | None = None) 
 def _check_text_size(content: str) -> None:
     if len(content) > MAX_TEXT_CHARS:
         raise ValidationFailed(
-            f"O texto tem {len(content)} caracteres; o limite é {MAX_TEXT_CHARS}. "
-            "Divida em partes menores.",
+            _(
+                "O texto tem {n} caracteres; o limite é {limit}. Divida em partes menores.",
+                n=len(content),
+                limit=MAX_TEXT_CHARS,
+            ),
             code="text_too_long",
         )
 
@@ -547,7 +561,10 @@ def create_from_file(
     if source == "csv" or lower.endswith((".csv", ".txt")) or source == "text":
         if len(data) > MAX_TEXT_CHARS * 4:
             raise ValidationFailed(
-                f"O arquivo é grande demais para importação como texto (limite {MAX_TEXT_CHARS} caracteres).",
+                _(
+                    "O arquivo é grande demais para importação como texto (limite {limit} caracteres).",
+                    limit=MAX_TEXT_CHARS,
+                ),
                 code="text_too_long",
             )
         job = create_from_content(
@@ -572,8 +589,11 @@ def _create_pdf(
     size = len(data)
     if size > settings.MAX_UPLOAD_MB * 1024 * 1024:
         raise ValidationFailed(
-            f"O arquivo tem {size / 1024 / 1024:.0f} MB; o limite é {settings.MAX_UPLOAD_MB} MB. "
-            "Nada do seu plano foi alterado.",
+            _(
+                "O arquivo tem {size} MB; o limite é {limit} MB. Nada do seu plano foi alterado.",
+                size=f"{size / 1024 / 1024:.0f}",
+                limit=settings.MAX_UPLOAD_MB,
+            ),
             code="file_too_large",
         )
     material: Material | None = None

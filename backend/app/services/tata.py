@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.errors import PlanLimit, RateLimited, ServiceUnavailable, ValidationFailed
+from app.core.i18n import _, current_locale
 from app.core.timeutil import today_in, utcnow
 from app.integrations import elevenlabs
 from app.integrations.storage import get_storage
@@ -128,14 +129,17 @@ def chat(db: Session, user: User, message: str, history: list[dict]) -> tuple[st
         f"{'Pessoa' if h['role'] == 'user' else 'Tatá'}: {h['text'].strip()[:600]}" for h in hist
     )
     prompt = f"<dados>\n{build_context(db, user)}\n</dados>\n\n"
+    system = SYSTEM
+    if current_locale() == "en":
+        system += "\nIMPORTANT: the person uses the app in English. Write the reply in natural English (keep the same warmth and rules)."
     if convo:
         prompt += f"Conversa até aqui:\n{convo}\n\n"
     prompt += f"Pessoa: {msg}\nTatá:"
-    parsed, _ = ai_service._call(  # noqa: SLF001 - mesma cota e registro das outras ações
+    parsed, _unused = ai_service._call(  # noqa: SLF001 - mesma cota e registro das outras ações
         db,
         user,
         "tata_chat",
-        system=SYSTEM,
+        system=system,
         prompt=prompt,
         schema=TataReply,
         max_tokens=300,
@@ -213,7 +217,10 @@ def speak(db: Session, user: User, text: str) -> bytes:
     used = voice_used(db, user.id)
     if used >= limit:
         raise RateLimited(
-            f"Você usou as {limit} falas com voz natural deste mês. A voz do aparelho continua funcionando.",
+            _(
+                "Você usou as {n} falas com voz natural deste mês. A voz do aparelho continua funcionando.",
+                n=limit,
+            ),
             code="voice_quota",
             details={"limit": limit, "used": used},
         )

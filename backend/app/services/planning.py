@@ -21,6 +21,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import Conflict, NotFound, ValidationFailed
+from app.core.i18n import _
 from app.core.timeutil import today_in, utcnow
 from app.domain.balance import DayBalance, day_span
 from app.domain.planner import DayCapacity, TimedTaskToPlace, auto_place_tasks_timed
@@ -44,7 +45,7 @@ def check_range(start: date, end: date) -> None:
         raise ValidationFailed("A data final precisa ser igual ou depois da inicial.")
     if (end - start).days > MAX_RANGE_DAYS:
         raise ValidationFailed(
-            f"Período longo demais (máximo {MAX_RANGE_DAYS} dias).", code="range_too_long"
+            _("Período longo demais (máximo {n} dias).", n=MAX_RANGE_DAYS), code="range_too_long"
         )
 
 

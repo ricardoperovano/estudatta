@@ -6,6 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.core.i18n import _
 from app.schemas.common import ORMModel
 
 MAX_SUBJECTS = 200
@@ -54,7 +55,9 @@ class ProposalIn(BaseModel):
     def _limits(self):
         n = sum(len(s.topics) + sum(len(t.children) for t in s.topics) for s in self.subjects)
         if n > MAX_TOPICS:
-            raise ValueError(f"A proposta tem {n} tópicos; o limite é {MAX_TOPICS}.")
+            raise ValueError(
+                _("A proposta tem {n} tópicos; o limite é {limit}.", n=n, limit=MAX_TOPICS)
+            )
         return self
 
     def as_dict(self) -> dict:

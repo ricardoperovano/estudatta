@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.core.db import get_db
 from app.core.deps import client_ip, get_current_user, get_optional_user, rate_limit
 from app.core.errors import ApiError, NotFound, Unauthorized
+from app.core.i18n import _
 from app.models.user import AuthSession, User
 from app.schemas.auth import (
     AuthSessionOut,
@@ -139,7 +140,7 @@ def logout(
         auth_service.revoke_session(db, sess)
         db.commit()
     clear_session_cookie(response)
-    return OkResponse(message="Sessão encerrada.")
+    return OkResponse(message=_("Sessão encerrada."))
 
 
 @router.get("/session", response_model=AuthStateOut)
@@ -159,7 +160,7 @@ def current_session(
 def verify_email(payload: VerifyEmailRequest, db: Session = Depends(get_db)) -> OkResponse:
     auth_service.verify_email(db, payload.token)
     db.commit()
-    return OkResponse(message="E-mail confirmado.")
+    return OkResponse(message=_("E-mail confirmado."))
 
 
 @router.post(
@@ -173,7 +174,7 @@ def resend_verification(
     if user.email_verified_at is None:
         auth_service.send_verification(db, user)
         db.commit()
-    return OkResponse(message="Se necessário, enviamos um novo e-mail de confirmação.")
+    return OkResponse(message=_("Se necessário, enviamos um novo e-mail de confirmação."))
 
 
 @router.post(
@@ -184,7 +185,7 @@ def resend_verification(
 def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db)) -> OkResponse:
     auth_service.request_password_reset(db, payload.email)
     db.commit()
-    return OkResponse(message="Se o e-mail existir, enviaremos um link para redefinir a senha.")
+    return OkResponse(message=_("Se o e-mail existir, enviaremos um link para redefinir a senha."))
 
 
 @router.post(
@@ -198,7 +199,7 @@ def reset_password(
     auth_service.reset_password(db, payload.token, payload.password)
     db.commit()
     clear_session_cookie(response)
-    return OkResponse(message="Senha redefinida. Entre com a nova senha.")
+    return OkResponse(message=_("Senha redefinida. Entre com a nova senha."))
 
 
 @router.post("/change-password", response_model=OkResponse)
@@ -214,7 +215,7 @@ def change_password(
     )
     audit(db, actor_id=user.id, action="auth.change_password")
     db.commit()
-    return OkResponse(message="Senha alterada. Outras sessões foram encerradas.")
+    return OkResponse(message=_("Senha alterada. Outras sessões foram encerradas."))
 
 
 @router.get("/sessions", response_model=list[AuthSessionOut])
@@ -246,7 +247,7 @@ def revoke(
         raise NotFound("Sessão não encontrada.")
     auth_service.revoke_session(db, row)
     db.commit()
-    return OkResponse(message="Sessão encerrada.")
+    return OkResponse(message=_("Sessão encerrada."))
 
 
 @router.post("/sessions/revoke-others", response_model=OkResponse)
@@ -255,4 +256,4 @@ def revoke_others(
 ) -> OkResponse:
     n = auth_service.revoke_all_sessions(db, user.id, except_id=request.state.auth_session.id)
     db.commit()
-    return OkResponse(message=f"{n} sessão(ões) encerrada(s).")
+    return OkResponse(message=_("{n} sessão(ões) encerrada(s).", n=n))
