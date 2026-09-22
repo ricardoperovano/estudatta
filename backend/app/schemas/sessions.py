@@ -10,7 +10,15 @@ from app.schemas.common import ORMModel
 
 # mesma lista de app.services.sessions.STUDY_TYPES
 StudyTypeLit = Literal[
-    "teoria", "questoes", "revisao", "leitura", "aula", "simulado", "pratica", "outro"
+    "teoria",
+    "questoes",
+    "revisao",
+    "leitura",
+    "aula",
+    "simulado",
+    "pratica",
+    "devocional",
+    "outro",
 ]
 
 

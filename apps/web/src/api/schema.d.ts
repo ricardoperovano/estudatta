@@ -5917,7 +5917,7 @@ export interface components {
             /** Pages Read */
             pages_read?: number | null;
             /** Study Type */
-            study_type?: ("teoria" | "questoes" | "revisao" | "leitura" | "aula" | "simulado" | "pratica" | "outro") | null;
+            study_type?: ("teoria" | "questoes" | "revisao" | "leitura" | "aula" | "simulado" | "pratica" | "devocional" | "outro") | null;
             /** Questions Total */
             questions_total?: number | null;
             /** Questions Correct */
@@ -5962,7 +5962,7 @@ export interface components {
             /** Pages Read */
             pages_read?: number | null;
             /** Study Type */
-            study_type?: ("teoria" | "questoes" | "revisao" | "leitura" | "aula" | "simulado" | "pratica" | "outro") | null;
+            study_type?: ("teoria" | "questoes" | "revisao" | "leitura" | "aula" | "simulado" | "pratica" | "devocional" | "outro") | null;
             /** Questions Total */
             questions_total?: number | null;
             /** Questions Correct */
@@ -6109,7 +6109,7 @@ export interface components {
             /** Started At */
             started_at?: string | null;
             /** Study Type */
-            study_type?: ("teoria" | "questoes" | "revisao" | "leitura" | "aula" | "simulado" | "pratica" | "outro") | null;
+            study_type?: ("teoria" | "questoes" | "revisao" | "leitura" | "aula" | "simulado" | "pratica" | "devocional" | "outro") | null;
         };
         /** SessionTransition */
         SessionTransition: {
@@ -6141,7 +6141,7 @@ export interface components {
             /** Pages Read */
             pages_read?: number | null;
             /** Study Type */
-            study_type?: ("teoria" | "questoes" | "revisao" | "leitura" | "aula" | "simulado" | "pratica" | "outro") | null;
+            study_type?: ("teoria" | "questoes" | "revisao" | "leitura" | "aula" | "simulado" | "pratica" | "devocional" | "outro") | null;
             /** Questions Total */
             questions_total?: number | null;
             /** Questions Correct */

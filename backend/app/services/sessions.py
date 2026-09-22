@@ -318,7 +318,17 @@ def reallocate_days(db: Session, sess: StudySession) -> dict[date, int]:
     return alloc
 
 
-STUDY_TYPES = ("teoria", "questoes", "revisao", "leitura", "aula", "simulado", "pratica", "outro")
+STUDY_TYPES = (
+    "teoria",
+    "questoes",
+    "revisao",
+    "leitura",
+    "aula",
+    "simulado",
+    "pratica",
+    "devocional",
+    "outro",
+)
 MAX_QUESTIONS = 5000
 
 

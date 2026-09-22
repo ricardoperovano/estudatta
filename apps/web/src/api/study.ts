@@ -33,6 +33,7 @@ export const STUDY_TYPES = [
   { value: "aula", label: tx("Aula") },
   { value: "simulado", label: tx("Simulado") },
   { value: "pratica", label: tx("Prática") },
+  { value: "devocional", label: tx("Devocional") },
   { value: "outro", label: tx("Outro") },
 ] as const;
 export type StudyType = (typeof STUDY_TYPES)[number]["value"];

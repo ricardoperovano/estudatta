@@ -415,3 +415,33 @@ def test_study_type_literals_match_service_list():
     from app.services.sessions import STUDY_TYPES
 
     assert set(typing.get_args(StudyTypeLit)) == set(STUDY_TYPES) == set(TYPE_LABEL)
+
+
+def test_devotional_is_a_valid_study_type(user_client):
+    """Devocional entra no relatório por tipo e não agenda revisões (não é conteúdo a revisar)."""
+    act = make_activity(user_client)
+    subj = subject(user_client, act["id"], "Salmos")
+    r = user_client.post(
+        f"{API}/sessions/manual",
+        json={
+            "activity_id": act["id"],
+            "duration_seconds": 900,
+            "local_date": "2026-09-22",
+            "study_type": "devocional",
+            "subject_id": subj["id"],
+        },
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["study_type"] == "devocional"
+    assert user_client.get(f"{API}/revisions").json() == []
+
+    r = user_client.post(
+        f"{API}/sessions/manual",
+        json={
+            "activity_id": act["id"],
+            "duration_seconds": 600,
+            "local_date": "2026-09-22",
+            "study_type": "devocao",
+        },
+    )
+    assert r.status_code == 422, r.text

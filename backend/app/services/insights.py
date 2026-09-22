@@ -25,6 +25,7 @@ TYPE_LABEL = {
     "aula": "Aula",
     "simulado": "Simulado",
     "pratica": "Prática",
+    "devocional": "Devocional",
     "outro": "Outro",
 }
 WINDOW_DAYS = 14

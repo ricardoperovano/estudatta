@@ -288,6 +288,7 @@ MESSAGES: dict[str, str] = {
     "Aula": "Class",
     "Simulado": "Mock exam",
     "Prática": "Practice",
+    "Devocional": "Devotional",
     "Outro": "Other",
     "Nenhuma matéria estudada nos últimos 14 dias: comece pela primeira do ciclo.": "No subject studied in the last 14 days: start with the first one in the cycle.",
     "Recebeu {actual}% do seu tempo nos últimos 14 dias; pelo peso e dificuldade, o equilíbrio seria {expected}%.": "Got {actual}% of your time in the last 14 days; by weight and difficulty, the balance would be {expected}%.",

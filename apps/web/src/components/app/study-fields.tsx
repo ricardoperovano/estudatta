@@ -136,7 +136,8 @@ export function StudyFields({ value, onChange, compact, idPrefix = "study", clas
           <div
             role="radiogroup"
             aria-labelledby={`${idPrefix}-type-label`}
-            className="grid grid-cols-4 gap-1.5"
+            // 9 tipos: três colunas fecham as linhas certinho e cabe "Devocional" sem cortar
+            className="grid grid-cols-3 gap-1.5"
           >
             {STUDY_TYPES.map((t) => {
               const active = t.value === value.study_type;

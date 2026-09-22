@@ -6,14 +6,14 @@ Recursos adicionados em 2026-09-18, inspirados no estudei.com.br. Decisões e o 
 
 | Campo | Regra |
 |---|---|
-| `study_type` | teoria, questoes, revisao, leitura, aula, simulado, pratica, outro. Padrão: teoria. |
+| `study_type` | teoria, questoes, revisao, leitura, aula, simulado, pratica, devocional, outro. Padrão: teoria. |
 | `questions_total`, `questions_correct` | Opcionais; acertos ≤ questões ≤ 5000. `clear_questions` apaga na edição. |
 
 Os campos valem no cronômetro (início e fim), no registro manual, na edição e na sincronização offline. A lista de tipos fica em `app/services/sessions.py` (`STUDY_TYPES`); um teste garante que o esquema da API e os rótulos usam a mesma lista.
 
 ## Revisões espaçadas
 
-- Uma sessão de teoria, aula, leitura ou prática com matéria agenda a 1ª revisão (padrão +1 dia). Se já há revisão pendente para o mesmo conteúdo, nada é duplicado.
+- Uma sessão de teoria, aula, leitura ou prática com matéria agenda a 1ª revisão (padrão +1 dia). Devocional não agenda revisão: é prática diária, não conteúdo a revisar (`LEARNING_TYPES` em `services/revisions.py`). Se já há revisão pendente para o mesmo conteúdo, nada é duplicado.
 - Uma sessão do tipo Revisão na mesma matéria ou tópico conclui a pendente e agenda a etapa seguinte (+7, depois +30).
 - À mão: concluir, pular (encerra a cadeia daquele conteúdo) ou reagendar.
 - Preferências: ligar ou desligar e escolher de 1 a 6 intervalos entre 1 e 365 dias.
