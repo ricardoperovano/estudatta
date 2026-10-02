@@ -21,3 +21,10 @@ Vite 7 + React 19 + TypeScript + Tailwind 3.4 + Radix (shadcn-like) + React Rout
 ## Qualidade
 - `npm run typecheck && npm run lint` limpos antes de terminar. Testes de comportamento com Vitest + Testing Library quando úteis (`src/**/*.test.tsx`).
 - Estados obrigatórios: carregando (`Spinner`), vazio (`EmptyState`), erro (`Banner kind="error"` com ação), offline (`Banner kind="offline"`), sincronizando/conflito quando aplicável.
+
+## Cronômetro: adoção e cronômetro fantasma
+
+O cronômetro vive no aparelho (IndexedDB, `app/timer/store.ts`) e o servidor guarda a sessão. Duas regras evitam que os dois saiam de sincronia:
+
+- **Adotar** (`app/timer/adopt.ts`): a tela da sessão só retoma sozinha uma sessão aberta do mesmo aparelho e que não tenha sido encerrada nesta visita (`endedHere`). Ao encerrar ou descartar, `forgetActive()` tira a sessão do cache de `/sessions/active` na hora — sem isso o efeito de adoção via o cache antigo e recriava o cronômetro, deixando "Em sessão" preso na tela Hoje.
+- **Fantasma** (`app/timer/ghost.ts`): a tela Hoje apaga o cronômetro cuja sessão o servidor já não tem (encerrada aqui antes da correção, ou em outro aparelho). Só descarta com resposta do servidor posterior ao início do cronômetro e nunca mexe em sessão feita offline (`session_id` nulo ou `synced: false`).

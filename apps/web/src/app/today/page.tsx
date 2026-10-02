@@ -16,7 +16,7 @@ import {
   Translate,
   type Icon,
 } from "@phosphor-icons/react";
-import { useToday, useToggleTask } from "@/api/queries";
+import { useActiveSession, useToday, useToggleTask } from "@/api/queries";
 import { useUser } from "@/api/session";
 import { Banner, Button, Card, Checkbox, EmptyState, GoalBar, Legend, Spinner, Tag } from "@/components/ui";
 import { fmtDayLong, fmtDayShort, fmtMinutes, fmtMinutesShort, fmtTime } from "@/lib/format";
@@ -27,6 +27,7 @@ import { RevisionsToday } from "@/components/app/revisions-today";
 import { StudyInsightsCard } from "@/components/app/study-insights-card";
 import { fmtBookmark } from "@/components/app/session-progress";
 import { useTimerStore, elapsedSeconds } from "@/app/timer/store";
+import { isGhostTimer } from "@/app/timer/ghost";
 import { cn } from "@/lib/utils";
 import { TataSvg } from "@/components/mascot/TataSvg";
 import { useTataPrefs } from "@/components/mascot/use-tata";
@@ -48,6 +49,7 @@ export default function TodayPage() {
   const [params, setParams] = useSearchParams();
   const [manualFor, setManualFor] = React.useState<TodayCard | null>(null);
   const timer = useTimerStore((s) => s.timer);
+  const active = useActiveSession();
   const nav = useNavigate();
 
   // tour de boas-vindas: começa quando o plano de hoje carregou e há objetivo na tela
@@ -64,6 +66,20 @@ export default function TodayPage() {
   React.useEffect(() => {
     if (user) useTimerStore.getState().load(user.id);
   }, [user]);
+
+  // cronômetro que sobrou de uma sessão já encerrada (aqui ou em outro aparelho): some sozinho,
+  // sem precisar entrar na sessão e encerrar de novo
+  React.useEffect(() => {
+    if (!user) return;
+    const ghost = isGhostTimer({
+      timer,
+      serverActive: active.data ?? null,
+      serverAnswered: active.isSuccess,
+      answeredAt: active.dataUpdatedAt,
+      online,
+    });
+    if (ghost) void useTimerStore.getState().clear(user.id);
+  }, [user, timer, active.data, active.isSuccess, active.dataUpdatedAt, online]);
 
   if (today.isPending) {
     return (

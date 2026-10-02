@@ -17,6 +17,7 @@ import {
 import { useActiveSession, useActivities, useInvalidateAll, useToday, keys } from "@/api/queries";
 import { useUser } from "@/api/session";
 import { api, unwrap, errorMessage, isNetworkError, ApiError } from "@/api/client";
+import { shouldAdopt } from "./adopt";
 import { elapsedSeconds, useTimerStore } from "./store";
 import type { LocalTimer } from "@/offline/db";
 import { enqueueOp } from "@/offline/sync";
@@ -114,6 +115,17 @@ export default function TimerPage() {
   // em outro aparelho, oferece transferência explícita (nunca inicia outra em silêncio)
   const serverActive = active.data ?? null;
   const fromOtherDevice = !!serverActive && !!serverActive.device_id && serverActive.device_id !== deviceOf();
+  // sessões encerradas/descartadas nesta visita: o cache de /sessions/active pode demorar a
+  // atualizar (ou um refetch antigo pode chegar depois) e não podem ser readotadas
+  const endedHere = React.useRef<Set<string>>(new Set());
+  const forgetActive = React.useCallback(
+    async (sessionId?: string | null) => {
+      if (sessionId) endedHere.current.add(sessionId);
+      await qc.cancelQueries({ queryKey: keys.activeSession });
+      qc.setQueryData(keys.activeSession, null);
+    },
+    [qc],
+  );
   const adopt = React.useCallback(async () => {
     if (!serverActive || !user) return;
     const act = activities.data?.find((a) => a.id === serverActive.activity_id);
@@ -139,9 +151,16 @@ export default function TimerPage() {
     });
   }, [serverActive, user, activities.data, setTimer]);
   React.useEffect(() => {
-    if (!hydrated || !user || timer || !serverActive || fromOtherDevice) return;
-    void adopt();
-  }, [hydrated, user, timer, serverActive, fromOtherDevice, adopt]);
+    const ok = shouldAdopt({
+      hydrated,
+      hasUser: !!user,
+      hasLocalTimer: !!timer,
+      serverActive,
+      deviceId: deviceOf(),
+      endedHere: endedHere.current,
+    });
+    if (ok) void adopt();
+  }, [hydrated, user, timer, serverActive, adopt]);
 
   const cards = today.data?.data.cards ?? [];
   const defaultActivityId =
@@ -303,6 +322,7 @@ export default function TimerPage() {
             body: { at, note: note || null, ...extra },
           }),
         );
+        await forgetActive(s.id);
         await clearTimer(user.id);
         invalidate();
         if (s.needs_review) {
@@ -324,6 +344,7 @@ export default function TimerPage() {
           ...extra,
           intervals: timer.intervals.map((i) => ({ ...i, ended_at: i.ended_at ?? at })),
         });
+        await forgetActive(timer.session_id);
         await clearTimer(user.id);
         toast.offline(
           tx("Sessão encerrada neste aparelho"),
@@ -365,6 +386,7 @@ export default function TimerPage() {
     } catch {
       /* se falhar offline, o servidor manterá a sessão para revisão */
     } finally {
+      await forgetActive(timer.session_id);
       await clearTimer(user.id);
       invalidate();
       setBusy(false);
