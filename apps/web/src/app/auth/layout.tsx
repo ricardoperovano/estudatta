@@ -4,6 +4,7 @@ import { ArrowsClockwise, Sparkle, SunHorizon } from "@phosphor-icons/react";
 import { Symbol } from "@/components/app/brand";
 import { TataSvg, type TataMood } from "@/components/mascot/TataSvg";
 import { siteLink } from "@/design/brand";
+import { SupportEmailLink } from "@/components/app/support-contact";
 
 /**
  * Tela de entrada (entrar, cadastro, recuperar e redefinir senha): o Tatá recebe a pessoa com
@@ -91,6 +92,9 @@ export function AuthLayout({
           {footer ? <div className="px-1 pt-1 text-center text-[13px] text-neutral-500">{footer}</div> : null}
           <p className="mt-auto px-1 pt-4 text-center text-[12px] text-neutral-500">
             {t("Sem promessa de aprovação ou fluência: o Estudatta organiza o estudo que você já faz.")}
+          </p>
+          <p className="px-1 pt-2 text-center text-[12px] text-neutral-500">
+            {t("Precisa de ajuda?")} <SupportEmailLink />
           </p>
         </main>
       </div>

@@ -5,7 +5,7 @@
 import { t } from "@/i18n";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Link } from "react-router";
-import { CreditCard, Gear, ShieldCheck, SignOut, Sparkle, UserCircle } from "@phosphor-icons/react";
+import { CreditCard, Gear, Question, ShieldCheck, SignOut, Sparkle, UserCircle } from "@phosphor-icons/react";
 import { useUser } from "@/api/session";
 import { avatarUrl } from "@/api/settings";
 import { useOnline } from "@/lib/online";
@@ -98,6 +98,11 @@ export function ProfileMenu({
             <DropdownMenu.Item asChild className={item}>
               <Link to="/app/conquistas">
                 <Sparkle size={18} aria-hidden /> {t("Conquistas")}
+              </Link>
+            </DropdownMenu.Item>
+            <DropdownMenu.Item asChild className={item}>
+              <Link to="/app/preferencias#ajuda">
+                <Question size={18} aria-hidden /> {t("Ajuda e contato")}
               </Link>
             </DropdownMenu.Item>
             {user.role === "admin" ? (

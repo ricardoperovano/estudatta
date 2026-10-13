@@ -57,7 +57,7 @@ function GlyphBubble({ children, large }: { children: React.ReactNode; large?: b
 
 export interface EmptyStateProps {
   title: string;
-  description?: string;
+  description?: React.ReactNode;
   action?: React.ReactNode;
   className?: string;
   /** símbolo próprio (substitui a trilha) */

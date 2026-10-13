@@ -1,6 +1,7 @@
 import { t } from "@/i18n";
 import { isRouteErrorResponse, Link, useRouteError } from "react-router";
 import { Button, EmptyState } from "@/components/ui";
+import { SupportEmailLink } from "@/components/app/support-contact";
 
 export function ErrorPage() {
   const err = useRouteError();
@@ -12,7 +13,11 @@ export function ErrorPage() {
         description={
           is404
             ? t("O endereço pode ter mudado.")
-            : t("Tente recarregar. Se continuar, avise a gente pelo contato.")
+            : (
+                <>
+                  {t("Tente recarregar. Se continuar, escreva para")} <SupportEmailLink />.
+                </>
+              )
         }
         action={
           <Button asChild variant="primary">

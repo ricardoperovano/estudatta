@@ -28,6 +28,7 @@ import {
   Tag,
   toast,
 } from "@/components/ui";
+import { SupportContactCard } from "@/components/app/support-contact";
 import { TataSvg } from "@/components/mascot/TataSvg";
 import { setTataMuted, useTataPrefs } from "@/components/mascot/use-tata";
 import { setVoiceMode, speak, useVoiceMode } from "@/components/mascot/voice";
@@ -610,7 +611,7 @@ function HelpSection({ online }: { online: boolean }) {
       onError: (e) => toast("error", tx("Não foi possível reativar os tours"), errorMessage(e)),
     });
   return (
-    <SettingsSection title={tx("Ajuda")}>
+    <SettingsSection title={tx("Ajuda")} id="ajuda">
       <Card className="gap-2 p-[14px] text-[14px]" data-tour="preferencias-tours">
         <span>{tx("Rever os tours")}</span>
         <span className="text-[12px] text-neutral-400">
@@ -628,6 +629,7 @@ function HelpSection({ online }: { online: boolean }) {
           {tx("Mostrar os tours de novo")}
         </Button>
       </Card>
+      <SupportContactCard />
     </SettingsSection>
   );
 }
