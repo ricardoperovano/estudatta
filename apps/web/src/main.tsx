@@ -7,6 +7,7 @@ import { registerServiceWorker } from "./pwa/register";
 import { applyTheme, readTheme } from "./lib/theme";
 import { Toaster } from "./components/ui/toast";
 import "./index.css";
+import { ajustarBolhaDeAtendimento } from "@/lib/chat-widget";
 
 applyTheme(readTheme());
 
@@ -31,3 +32,4 @@ const app = (
 ReactDOM.createRoot(root).render(app);
 
 registerServiceWorker();
+ajustarBolhaDeAtendimento();
