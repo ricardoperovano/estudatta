@@ -3,6 +3,7 @@ import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { esconderBolhaDeAtendimento } from "@/lib/chat-widget";
 
 export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
@@ -28,6 +29,9 @@ export function DialogContent({
   children,
   ...props
 }: ContentProps) {
+  // a bolha de atendimento fica no mesmo canto dos botões da folha ("Registrar", "Descartar"):
+  // some enquanto o diálogo está aberto e volta ao fechar
+  React.useEffect(esconderBolhaDeAtendimento, []);
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[color-mix(in_srgb,var(--color-neutral-900)_60%,transparent)] data-[state=open]:animate-fade-in" />
