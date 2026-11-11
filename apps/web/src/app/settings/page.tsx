@@ -280,7 +280,7 @@ function StudyCompanionSection({ online }: { online: boolean }) {
           </SettingsRow>
           <SettingsRow
             label={tx("Voz do Tatá")}
-            hint={tx("Voz natural até a cota do seu plano; depois, a voz do aparelho.")}
+            hint={tx("Voz natural até a cota do seu plano; depois, o Tatá fala só no balão.")}
             htmlFor="pref-tata-voz"
           >
             <Switch
@@ -298,7 +298,7 @@ function StudyCompanionSection({ online }: { online: boolean }) {
                       v0: st.voice_used_month,
                       v1: st.voice_limit_month,
                     })
-                  : tx("Seu plano usa a voz do aparelho.")
+                  : tx("Seu plano não inclui a voz do Tatá.")
                 : status.isError
                   ? tx("Não deu para consultar a cota de voz agora.")
                   : " "}
@@ -307,7 +307,10 @@ function StudyCompanionSection({ online }: { online: boolean }) {
               variant="ghost"
               size="sm"
               disabled={!enabled}
-              onClick={() => speak(tx("Oi! Eu sou o Tatá."))}
+              onClick={async () => {
+                if (!(await speak(tx("Oi! Eu sou o Tatá."))))
+                  toast("info", tx("A voz natural não está disponível agora."), tx("O Tatá continua falando no balão."));
+              }}
             >
               {tx("Testar voz")}
             </Button>

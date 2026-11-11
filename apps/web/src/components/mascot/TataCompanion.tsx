@@ -333,5 +333,5 @@ function voiceTitle(mode: "on" | "off", muted: boolean, natural: boolean | undef
   if (muted) return tx("Mostre as falas para ligar a voz");
   if (mode !== "on") return tx("Ligar a voz do Tatá");
   if (natural === undefined) return tx("Voz do Tatá ligada");
-  return natural ? tx("Voz do Tatá ligada · voz natural") : tx("Voz do Tatá ligada · voz do aparelho");
+  return natural ? tx("Voz do Tatá ligada · voz natural") : tx("Voz do Tatá ligada · sem voz natural agora");
 }

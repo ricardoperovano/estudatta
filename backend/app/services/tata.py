@@ -218,7 +218,7 @@ def speak(db: Session, user: User, text: str) -> bytes:
     if used >= limit:
         raise RateLimited(
             _(
-                "Você usou as {n} falas com voz natural deste mês. A voz do aparelho continua funcionando.",
+                "Você usou as {n} falas com voz natural deste mês. O Tatá continua falando no balão.",
                 n=limit,
             ),
             code="voice_quota",

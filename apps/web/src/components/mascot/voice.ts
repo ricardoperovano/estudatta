@@ -1,11 +1,12 @@
 /**
- * Voz do Tatá. `speak(text)` tenta a voz natural (POST /tata/voice → MP3, guardado em memória
- * por texto nesta visita) e, se não vier (sem plano, sem cota, sem chave, erro de rede), usa o
- * sintetizador do aparelho em pt-BR, em silêncio. Nunca lança. A preferência ("off" | "on") fica
- * neste aparelho em localStorage; no iOS o primeiro áudio precisa de um toque, e é o toque no
- * interruptor que libera. A voz respeita o mascote desligado e as falas ocultas (`useTataVoice`).
+ * Voz do Tatá. `speak(text)` toca a voz natural (POST /tata/voice → MP3, guardado em memória por
+ * texto nesta visita). Se ela não vier (sem cota, serviço fora, erro de rede), o Tatá fica em
+ * silêncio e a fala segue só no balão: a voz sintetizada do aparelho soava robótica e, misturada
+ * às frases em cache na voz natural, parecia haver duas vozes. Nunca lança. A preferência
+ * ("off" | "on") fica neste aparelho em localStorage; no iOS o primeiro áudio precisa de um toque,
+ * e é o toque no interruptor que libera. A voz respeita o mascote desligado e as falas ocultas
+ * (`useTataVoice`).
  */
-import { locale as uiLocale } from "@/i18n";
 import * as React from "react";
 import { fetchTataVoice, VOICE_FALLBACK_CODES } from "@/api/tata";
 import { ApiError } from "@/api/client";
@@ -68,31 +69,7 @@ export function useTataSpeaking(): boolean {
   return React.useSyncExternalStore(subscribeSpeaking, isSpeaking, () => false);
 }
 
-// --- escolha da voz do aparelho (puro, testável) ---------------------------------------------
-
-export interface VoiceLike {
-  lang: string;
-  name?: string;
-  default?: boolean;
-}
-
-/**
- * Voz no idioma da interface: a variante exata primeiro (pt-BR / en-US, a padrão do sistema se
- * houver), depois qualquer voz do mesmo idioma; senão a padrão (null).
- */
-export function pickVoice<T extends VoiceLike>(
-  voices: readonly T[],
-  lang: string = uiLocale === "en" ? "en-US" : "pt-BR",
-): T | null {
-  const norm = (l: string) => (l || "").toLowerCase().replace("_", "-");
-  const exact = norm(lang);
-  const base = exact.split("-")[0];
-  const same = voices.filter((v) => norm(v.lang) === exact || norm(v.lang).startsWith(exact));
-  if (same.length) return same.find((v) => v.default) ?? same[0];
-  const any = voices.filter((v) => norm(v.lang).startsWith(base));
-  if (any.length) return any.find((v) => v.default) ?? any[0];
-  return null;
-}
+// --- texto --------------------------------------------------------------------------------
 
 /** Normaliza e corta o texto para caber na voz (o servidor aceita até 600 caracteres). */
 export function normalizeSpeech(text: string): string {
@@ -142,61 +119,6 @@ function noteNaturalFailure(e: unknown) {
   naturalBlockedUntil = Date.now() + TRANSIENT_BLOCK_MS;
 }
 
-/** Vozes do aparelho (podem chegar depois do primeiro pedido). */
-function getVoices(): SpeechSynthesisVoice[] {
-  try {
-    return window.speechSynthesis?.getVoices?.() ?? [];
-  } catch {
-    return [];
-  }
-}
-
-function speakWithDevice(text: string, mySeq: number): void {
-  const synth = typeof window !== "undefined" ? window.speechSynthesis : undefined;
-  if (!synth || typeof SpeechSynthesisUtterance === "undefined") return;
-  const say = () => {
-    if (mySeq !== seq) return;
-    try {
-      const u = new SpeechSynthesisUtterance(text);
-      u.rate = 1.0;
-      u.pitch = 1.05;
-      const v = pickVoice(getVoices());
-      // com a voz escolhida o idioma vem dela; definir os dois faz o Chrome no Linux
-      // (speech-dispatcher) falar duas vezes em alguns sistemas
-      if (v) u.voice = v;
-      else u.lang = uiLocale === "en" ? "en-US" : "pt-BR";
-      u.onstart = () => mySeq === seq && setSpeaking(true);
-      u.onend = () => mySeq === seq && setSpeaking(false);
-      u.onerror = () => mySeq === seq && setSpeaking(false);
-      // cancelar e falar no mesmo instante também sobrepõe vozes no Linux: cancela só se há
-      // algo tocando e espera o motor esvaziar antes de falar
-      const start = () => mySeq === seq && synth.speak(u);
-      if (synth.speaking || synth.pending) {
-        synth.cancel();
-        window.setTimeout(start, 120);
-      } else {
-        start();
-      }
-    } catch {
-      setSpeaking(false);
-    }
-  };
-  if (getVoices().length || !("onvoiceschanged" in synth)) {
-    say();
-    return;
-  }
-  // as vozes ainda não carregaram: espera o evento (com teto) e fala com a que houver
-  let done = false;
-  const go = () => {
-    if (done) return;
-    done = true;
-    synth.removeEventListener?.("voiceschanged", go);
-    say();
-  };
-  synth.addEventListener?.("voiceschanged", go);
-  window.setTimeout(go, 400);
-}
-
 async function playBlob(blob: Blob, mySeq: number): Promise<boolean> {
   const el = getAudio();
   releaseUrl();
@@ -217,7 +139,6 @@ async function playBlob(blob: Blob, mySeq: number): Promise<boolean> {
   }
 }
 
-/** Fala o texto: voz natural quando dá, senão a do aparelho. Interrompe o que estava falando. */
 // Só a aba visível fala; ao começar, avisa as outras abas para silenciarem (duas abas do app
 // abertas falavam ao mesmo tempo).
 const TAB_ID = Math.random().toString(36).slice(2);
@@ -231,32 +152,33 @@ if (typeof document !== "undefined") {
   });
 }
 
-export async function speak(text: string): Promise<void> {
+/**
+ * Fala o texto com a voz natural. Devolve se tocou; sem voz natural disponível, fica em silêncio
+ * (a fala continua no balão) e devolve false.
+ */
+export async function speak(text: string): Promise<boolean> {
   const t = normalizeSpeech(text);
-  if (!t || typeof window === "undefined") return;
-  if (document.visibilityState === "hidden") return;
+  if (!t || typeof window === "undefined") return false;
+  if (document.visibilityState === "hidden") return false;
   const mySeq = ++seq;
   stopPlayback();
   channel?.postMessage({ type: "speaking", tab: TAB_ID });
   try {
-    if (canUseNatural()) {
-      let blob = cache.get(t) ?? null;
-      if (!blob) {
-        try {
-          blob = await fetchTataVoice(t);
-          cache.set(t, blob);
-        } catch (e) {
-          noteNaturalFailure(e);
-          blob = null;
-        }
+    if (!canUseNatural()) return false;
+    let blob = cache.get(t) ?? null;
+    if (!blob) {
+      try {
+        blob = await fetchTataVoice(t);
+        cache.set(t, blob);
+      } catch (e) {
+        noteNaturalFailure(e);
+        return false;
       }
-      if (mySeq !== seq) return;
-      if (blob && (await playBlob(blob, mySeq))) return;
-      if (mySeq !== seq) return;
     }
-    speakWithDevice(t, mySeq);
+    if (mySeq !== seq) return false;
+    return await playBlob(blob, mySeq);
   } catch {
-    /* nunca lança: a voz é um extra */
+    return false; // nunca lança: a voz é um extra
   }
 }
 

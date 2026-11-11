@@ -22,7 +22,7 @@ from app.models.billing import Plan, PromoGrant, Subscription
 #   materials_storage_mb   espaço para PDFs (None = ilimitado)
 #   ai_daily_actions       ações de IA por dia (0 = sem IA)
 #   ai_monthly_actions     ações de IA por mês civil (None = só o limite diário)
-#   tata_voice_monthly     falas do Tatá com voz natural (ElevenLabs) por mês; depois, voz do aparelho
+#   tata_voice_monthly     falas do Tatá com voz natural (ElevenLabs) por mês; depois, só o balão
 #   reports                "basic" = semana · "full" = semana, mês e trimestre
 #   reminders              "basic" = lembrete no horário planejado · "full" = todos + resumo por e-mail
 #   auto_planning          distribuição automática de tarefas na semana

@@ -2834,5 +2834,10 @@
   "E-mail copiado": "Email copied",
   "Falar com a gente": "Talk to us",
   "Dúvida, problema ou sugestão: escreva e a gente responde por e-mail.": "A question, a problem or a suggestion: write to us and we'll reply by email.",
-  "Tente recarregar. Se continuar, escreva para": "Try reloading. If it keeps happening, write to"
+  "Tente recarregar. Se continuar, escreva para": "Try reloading. If it keeps happening, write to",
+  "Voz natural até a cota do seu plano; depois, o Tatá fala só no balão.": "Natural voice up to your plan’s quota; after that, Tatá talks only in the speech bubble.",
+  "Seu plano não inclui a voz do Tatá.": "Your plan doesn’t include Tatá’s voice.",
+  "A voz natural não está disponível agora.": "The natural voice isn’t available right now.",
+  "O Tatá continua falando no balão.": "Tatá keeps talking in the speech bubble.",
+  "Voz do Tatá ligada · sem voz natural agora": "Tatá’s voice on · no natural voice right now"
 }

@@ -297,7 +297,7 @@ MESSAGES: dict[str, str] = {
     "Você usou as {n} ações de IA deste mês. A cota renova no dia 1º.": "You’ve used this month’s {n} AI actions. The quota renews on the 1st.",
     "Você usou as {n} ações de IA de hoje. Amanhã a cota renova.": "You’ve used today’s {n} AI actions. The quota renews tomorrow.",
     "O período precisa ter entre 1 e {n} dias.": "The period must be between 1 and {n} days.",
-    "Você usou as {n} falas com voz natural deste mês. A voz do aparelho continua funcionando.": "You’ve used this month’s {n} natural-voice lines. The device’s voice keeps working.",
+    "Você usou as {n} falas com voz natural deste mês. O Tatá continua falando no balão.": "You’ve used this month’s {n} natural-voice lines. Tatá keeps talking in the speech bubble.",
     # --- Importação / materiais ------------------------------------------------------------------
     "A extração passou de {s} s na página {i} de {total}. Envie um PDF menor ou só as páginas do sumário.": "Extraction exceeded {s} s on page {i} of {total}. Upload a smaller PDF or just the table of contents pages.",
     "A proposta tem {n} tópicos; o limite é {limit}.": "The proposal has {n} topics; the limit is {limit}.",

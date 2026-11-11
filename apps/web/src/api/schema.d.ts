@@ -1886,7 +1886,7 @@ export interface paths {
         put?: never;
         /**
          * Tata Voice
-         * @description MP3 da fala. 402/429/503 com código: o app cai para a voz do aparelho.
+         * @description MP3 da fala. 402/429/503 com código: o app fica em silêncio e a fala segue só no balão.
          */
         post: operations["tata_voice_api_v1_tata_voice_post"];
         delete?: never;

@@ -4,6 +4,7 @@ filas, eventos de cobrança, reconciliação e acesso promocional."""
 from __future__ import annotations
 
 import uuid
+from datetime import timedelta
 
 from sqlalchemy import select
 
@@ -49,7 +50,12 @@ def test_overview_users_and_detail_without_content(client):
         act = make_activity(uc, title="Segredo do estudo")
         uc.post(
             "/api/v1/sessions/manual",
-            json={"activity_id": act["id"], "duration_seconds": 1800, "local_date": "2026-09-15"},
+            json={
+                "activity_id": act["id"],
+                "duration_seconds": 1800,
+                # relativa a hoje: com data fixa, a sessão saía da janela de 30 dias com o tempo
+                "local_date": (utcnow().date() - timedelta(days=3)).isoformat(),
+            },
         )
     with SessionLocal() as db:
         db.add(

@@ -67,7 +67,7 @@ def tata_chat(
 def tata_voice(
     payload: VoiceIn, db: Session = Depends(get_db), user: User = Depends(get_current_user)
 ) -> Response:
-    """MP3 da fala. 402/429/503 com código: o app cai para a voz do aparelho."""
+    """MP3 da fala. 402/429/503 com código: o app fica em silêncio e a fala segue só no balão."""
     audio = svc.speak(db, user, payload.text)
     return Response(
         content=audio, media_type="audio/mpeg", headers={"Cache-Control": "private, max-age=86400"}
