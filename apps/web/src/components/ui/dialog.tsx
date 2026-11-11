@@ -18,6 +18,17 @@ interface ContentProps extends React.ComponentPropsWithoutRef<typeof DialogPrimi
   width?: string;
 }
 
+/**
+ * A bolha de atendimento fica no mesmo canto dos botões da folha ("Registrar", "Descartar"):
+ * some enquanto o diálogo está aberto e volta ao fechar. Mora dentro do Content do Radix, que só
+ * é montado com o diálogo aberto — o `DialogContent` em si fica montado mesmo fechado, e um efeito
+ * nele escondia a bolha em toda tela que apenas declara um diálogo.
+ */
+function EsconderBolhaDeAtendimento() {
+  React.useEffect(esconderBolhaDeAtendimento, []);
+  return null;
+}
+
 /** Diálogo/folha: superfície, raio 14, elevação lg, backdrop neutro-900 a 55–70%. */
 export function DialogContent({
   mode = "dialog",
@@ -29,9 +40,6 @@ export function DialogContent({
   children,
   ...props
 }: ContentProps) {
-  // a bolha de atendimento fica no mesmo canto dos botões da folha ("Registrar", "Descartar"):
-  // some enquanto o diálogo está aberto e volta ao fechar
-  React.useEffect(esconderBolhaDeAtendimento, []);
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[color-mix(in_srgb,var(--color-neutral-900)_60%,transparent)] data-[state=open]:animate-fade-in" />
@@ -46,6 +54,7 @@ export function DialogContent({
         style={width ? { width } : undefined}
         {...props}
       >
+        <EsconderBolhaDeAtendimento />
         {mode === "sheet" ? (
           <div aria-hidden className="mx-auto h-1 w-9 rounded-full bg-neutral-700 tablet:hidden" />
         ) : null}
