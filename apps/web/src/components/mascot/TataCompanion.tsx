@@ -208,10 +208,18 @@ export function TataCompanion({
   if (active) mood = active.mood;
   const text = muted ? null : (active?.text ?? (dozing ? null : baseText));
 
-  // fala nova → voz (fora do tour e com a conversa fechada, para não falar por cima)
+  // fala nova → voz (fora do tour e com a conversa fechada, para não falar por cima).
+  // Só a mudança do texto dispara: fechar a conversa não faz o balão repetir a própria fala
+  // por cima da resposta que o Tatá ainda está falando no chat.
   const say = voice.say;
+  const jaFalado = React.useRef<string | null>(null);
   React.useEffect(() => {
-    if (!text || tourActive || chatOpen) return;
+    if (!text || tourActive || chatOpen) {
+      jaFalado.current = text ?? null;
+      return;
+    }
+    if (text === jaFalado.current) return;
+    jaFalado.current = text;
     say(text);
   }, [text, tourActive, chatOpen, say]);
 
