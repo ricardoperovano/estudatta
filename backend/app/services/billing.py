@@ -45,6 +45,37 @@ log = get_logger("billing")
 
 INTERVALS: dict[str, tuple[int, str]] = {"month": (1, "months"), "year": (12, "months")}
 INTERVAL_LABEL = {"month": "mensal", "year": "anual"}
+
+
+def subscription_description(plan_name: str, interval: str | None) -> str:
+    """Texto que aparece no checkout e nas faturas: "Estudatta — plano Essencial (mensal)"."""
+    label = INTERVAL_LABEL.get(interval or "", "")
+    return f"{settings.APP_NAME} — plano {plan_name}" + (f" ({label})" if label else "")
+
+
+def describe_asaas_subscription(provider: Any, sub: Subscription) -> bool:
+    """Descreve no Asaas a assinatura criada pelo checkout (as faturas herdam a descrição).
+
+    Melhor esforço: a descrição é cosmética, então falhar aqui só registra no log e nunca
+    impede o processamento da cobrança.
+    """
+    describe = getattr(provider, "describe_subscription", None)
+    if not describe or not sub.provider_ref or sub.plan is None:
+        return False
+    try:
+        describe(
+            sub.provider_ref,
+            description=subscription_description(
+                sub.plan.name, (sub.metadata_ or {}).get("interval")
+            ),
+            external_reference=sub.external_reference,
+        )
+        return True
+    except ProviderError as exc:
+        log.warning("billing.asaas_describe_failed", subscription_id=str(sub.id), error=exc.message)
+        return False
+
+
 # estado no provedor → estado local
 STATUS_MAP = {
     "authorized": "active",
@@ -233,7 +264,7 @@ def start_checkout(
     frequency, frequency_type = INTERVALS[interval]
     try:
         remote = provider.create_preapproval(
-            reason=f"{settings.APP_NAME} — plano {plan.name} ({INTERVAL_LABEL[interval]})",
+            reason=subscription_description(plan.name, interval),
             external_reference=ref,
             payer_email=user.email,
             amount=amount_cents / 100,
@@ -898,6 +929,7 @@ def handle_asaas_webhook(
             return WebhookOutcome(event, "ignored")
         if sub_id and not sub.provider_ref:
             sub.provider_ref = sub_id
+            describe_asaas_subscription(provider, sub)
         sync_subscription(db, sub, provider, now=now)
         event.subscription_id = sub.id
         event.status = "processed"

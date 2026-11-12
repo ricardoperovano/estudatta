@@ -7,6 +7,7 @@ ensure-plans                            garante o catálogo inicial de planos
 apply-catalog [--overwrite]             aplica o catálogo sugerido (preços e limites) a um banco existente
 vapid                                   gera par de chaves VAPID e imprime as variáveis para .env
 asaas-webhook list|create URL EMAIL|delete ID   webhook do Asaas (usa ASAAS_API_KEY e ASAAS_WEBHOOK_TOKEN)
+asaas-describe [--dry-run]                      descreve no Asaas as assinaturas já criadas (faturas sem descrição)
 """
 
 from __future__ import annotations
@@ -196,6 +197,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("url", nargs="?", help="create: URL pública da API; delete: id do webhook")
     p.add_argument("email", nargs="?", help="create: e-mail para avisos do Asaas")
     p.set_defaults(func=cmd_asaas_webhook)
+    p = sub.add_parser(
+        "asaas-describe", help="descreve no Asaas as assinaturas já criadas (faturas sem descrição)"
+    )
+    p.add_argument("--dry-run", action="store_true", help="só lista, sem alterar nada no Asaas")
+    p.set_defaults(func=cmd_asaas_describe)
     p = sub.add_parser("vapid", help="gera chaves VAPID para Web Push")
     p.set_defaults(func=cmd_vapid)
     return parser
@@ -255,6 +261,48 @@ def cmd_asaas_webhook(args: argparse.Namespace) -> int:
         print(exc.message, file=sys.stderr)
         return 1
     return 0
+
+
+def cmd_asaas_describe(args: argparse.Namespace) -> int:
+    """Dá descrição às assinaturas do Asaas que nasceram sem ela (as faturas herdam o texto).
+
+    Assinaturas novas já são descritas pelo webhook; isto cobre as anteriores à correção.
+    """
+    from sqlalchemy import select
+
+    from app.integrations.asaas import ASAAS_PROVIDER_NAME, build_asaas_client
+    from app.models.billing import Subscription
+    from app.services.billing import describe_asaas_subscription, subscription_description
+
+    if not settings.ASAAS_API_KEY:
+        print("ASAAS_API_KEY vazia no contêiner (veja o aviso sobre o $ no .env).", file=sys.stderr)
+        return 2
+    client = build_asaas_client()
+    with SessionLocal() as db:
+        subs = (
+            db.execute(
+                select(Subscription).where(
+                    Subscription.provider == ASAAS_PROVIDER_NAME,
+                    Subscription.provider_ref.is_not(None),
+                )
+            )
+            .scalars()
+            .all()
+        )
+        ok = 0
+        for sub in subs:
+            texto = subscription_description(sub.plan.name, (sub.metadata_ or {}).get("interval"))
+            if args.dry_run:
+                print(f"{sub.provider_ref} ({sub.status}) → {texto}")
+                continue
+            if describe_asaas_subscription(client, sub):
+                ok += 1
+                print(f"{sub.provider_ref} → {texto}")
+            else:
+                print(f"{sub.provider_ref} → falhou (ver log)", file=sys.stderr)
+    if not args.dry_run:
+        print(f"{ok} de {len(subs)} assinatura(s) descritas.")
+    return 0 if args.dry_run or ok == len(subs) else 1
 
 
 def main(argv: list[str] | None = None) -> int:

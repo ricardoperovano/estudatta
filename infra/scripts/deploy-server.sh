@@ -34,6 +34,12 @@ for i in $(seq 1 40); do
   if curl -fsS "http://127.0.0.1:${API_PORT}/api/v1/health/ready" >/dev/null 2>&1; then
     echo "API no ar em 127.0.0.1:${API_PORT}."
     curl -sS "http://127.0.0.1:${API_PORT}/api/v1/health/ready"; echo
+    # cobrança ligada no .env mas desligada no contêiner = chave perdida no caminho (ver load-env.sh)
+    if ! "${DC[@]}" exec -T api python -c "from app.core.config import settings as s; raise SystemExit(0 if s.BILLING_MODE == 'disabled' or s.billing_enabled else 1)"; then
+      echo "ERRO: BILLING_MODE=${BILLING_MODE:-?} mas a cobrança ficou DESLIGADA no contêiner — a chave do Asaas chegou vazia." >&2
+      echo "      No .env, escreva a chave entre aspas simples: ASAAS_API_KEY='\$aact_...'" >&2
+      exit 2
+    fi
     exit 0
   fi
   sleep 3

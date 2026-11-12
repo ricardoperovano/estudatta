@@ -228,6 +228,21 @@ class AsaasClient(BillingProvider):
         active = [s for s in items if not s.get("deleted") and s.get("status") == "ACTIVE"]
         return self._normalize((active or items)[0])
 
+    def describe_subscription(
+        self, subscription_id: str, *, description: str, external_reference: str | None
+    ) -> None:
+        """Dá descrição (e a referência do Estudatta) à assinatura criada pelo checkout.
+
+        O checkout descreve só o item; a assinatura que o Asaas cria a partir dele nasce sem
+        descrição e sem externalReference, e as faturas mensais herdam isso ("Sem descrição
+        informada para este produto/serviço"). `updatePendingPayments` estende a mudança às
+        cobranças já geradas e ainda não pagas.
+        """
+        body: dict[str, Any] = {"description": description[:500], "updatePendingPayments": True}
+        if external_reference:
+            body["externalReference"] = external_reference
+        self._request("PUT", f"/subscriptions/{subscription_id}", json=body)
+
     def cancel_preapproval(self, preapproval_id: str) -> ProviderSubscription:
         # remover só impede cobranças futuras; o período já pago continua valendo aqui
         self._request("DELETE", f"/subscriptions/{preapproval_id}")

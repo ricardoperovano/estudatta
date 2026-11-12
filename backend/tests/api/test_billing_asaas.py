@@ -15,7 +15,7 @@ from app.core.config import settings
 from app.core.db import SessionLocal
 from app.core.timeutil import utcnow
 from app.integrations.asaas import SANDBOX_BASE, AsaasClient, asaas_base_url
-from app.integrations.mercadopago import set_provider_override
+from app.integrations.mercadopago import ProviderError, set_provider_override
 from app.models.billing import BillingEvent, Subscription
 from app.services import billing as billing_service
 from tests.api.test_billing import set_price
@@ -32,6 +32,7 @@ class FakeAsaas:
         self.subs: dict[str, dict] = {}
         self.payments: dict[str, list[dict]] = {}
         self.calls: list[tuple[str, str]] = []
+        self.updates: list[tuple[str, dict]] = []
         self.fail = False
 
     def handler(self, request: httpx.Request) -> httpx.Response:
@@ -66,6 +67,16 @@ class FakeAsaas:
                 return httpx.Response(200, json={"deleted": True, "id": sid})
             if len(parts) == 4 and parts[3] == "payments":
                 return httpx.Response(200, json={"data": self.payments.get(sid, [])})
+            if request.method == "PUT":
+                body = json.loads(request.content)
+                self.updates.append((sid, body))
+                for k in ("description", "externalReference"):
+                    if k in body:
+                        self.subs[sid][k] = body[k]
+                if body.get("updatePendingPayments"):
+                    for pay in self.payments.get(sid, []):
+                        if pay.get("status") == "PENDING" and "description" in body:
+                            pay["description"] = body["description"]
             return httpx.Response(200, json=self.subs[sid])
         return httpx.Response(404, json={"errors": [{"description": f"rota {path}"}]})
 
@@ -75,6 +86,7 @@ class FakeAsaas:
         self.subs[sid] = {
             "id": sid,
             "status": "ACTIVE",
+            "description": None,
             "externalReference": ref,
             "customer": "cus_1",
             "nextDueDate": (next_due or date.today() + timedelta(days=30)).isoformat(),
@@ -307,3 +319,36 @@ def test_unrelated_events_are_ignored_and_provider_failure_retries(user_client, 
 def test_webhook_disabled_without_token(user_client, asaas, monkeypatch):
     monkeypatch.setattr(settings, "ASAAS_WEBHOOK_TOKEN", None)
     assert hook(user_client, "PAYMENT_CONFIRMED", payment={"id": "p"}).status_code == 503
+
+
+def test_webhook_gives_the_asaas_subscription_a_description_once(user_client, asaas):
+    # no Asaas, a assinatura criada pelo checkout nasce sem descrição e a fatura mostra
+    # "Sem descrição informada para este produto/serviço"
+    cid = checkout(user_client)
+    pay = asaas.pay_checkout(cid)
+    pendente = {**pay, "id": "pay_2", "status": "PENDING"}
+    asaas.payments["sub_1"].append(pendente)
+    r = hook(user_client, "PAYMENT_CREATED", payment=pendente, evt="evt_desc_1")
+    assert r.status_code == 200 and r.json()["status"] == "processed", r.text
+    assert asaas.subs["sub_1"]["description"] == "Estudatta — plano Completo (mensal)"
+    assert pendente["description"] == "Estudatta — plano Completo (mensal)"
+    with SessionLocal() as db:
+        ref = db.execute(select(Subscription)).scalar_one().external_reference
+    assert asaas.updates[0][1]["externalReference"] == ref
+    # o id já conhecido não é descrito de novo a cada evento
+    hook(user_client, "PAYMENT_CONFIRMED", payment=pay, evt="evt_desc_2")
+    assert len(asaas.updates) == 1
+
+
+def test_description_failure_does_not_block_the_webhook(user_client, asaas, monkeypatch):
+    cid = checkout(user_client)
+    pay = asaas.pay_checkout(cid)
+
+    def recusa(*_a, **_k):
+        raise ProviderError("Asaas respondeu 400: descrição recusada", status_code=400)
+
+    monkeypatch.setattr(AsaasClient, "describe_subscription", recusa)
+    r = hook(user_client, "PAYMENT_CONFIRMED", payment=pay, evt="evt_desc_3")
+    assert r.status_code == 200 and r.json()["status"] == "processed", r.text
+    state = user_client.get("/api/v1/billing/subscription").json()
+    assert state["subscription"]["status"] == "active"
