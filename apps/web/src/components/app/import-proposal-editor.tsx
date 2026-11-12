@@ -15,6 +15,7 @@ import {
   newEditorSubject,
   newEditorSubtopic,
   newEditorTopic,
+  countProposal,
   normalizeProposal,
   parsePages,
   toEditor,
@@ -30,7 +31,7 @@ import {
   type ImportOut,
 } from "@/api/imports";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
-import { Banner, Button, Card, Input, Tag, toast } from "@/components/ui";
+import { Banner, Button, Card, Input, Spinner, Tag, toast } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
 type Updater = (fn: (list: EditorSubject[]) => EditorSubject[]) => void;
@@ -99,6 +100,7 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
   const confirm = useConfirmImport();
   const cancel = useCancelImport();
   const suggest = useSuggestStructure();
+  const listRef = React.useRef<HTMLDivElement>(null);
 
   const apply = React.useCallback<Updater>((fn) => {
     setSubjects(fn);
@@ -173,6 +175,16 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
           setSubjects(next);
           setCollapsed(new Set());
           setDirty(true);
+          // a lista muda inteira de uma vez: sem aviso, parecia que nada tinha acontecido
+          const c = countProposal(normalizeProposal(out.proposal));
+          toast.success(
+            tx("Estrutura atualizada"),
+            tx("{{v0}} e {{v1}}. Revise e confirme para criar.", {
+              v0: plural(c.subjects, tx("matéria"), tx("matérias")),
+              v1: plural(c.topics, tx("tópico"), tx("tópicos")),
+            }),
+          );
+          listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
           setAiNote(
             out.truncated
               ? tx(
@@ -274,6 +286,18 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
         {aiNote ? <span className="text-[12px] text-neutral-400">{aiNote}</span> : null}
       </Card>
 
+      <div ref={listRef} className="scroll-mt-4" />
+      {suggest.isPending ? (
+        <Card className="flex-row items-center gap-3 p-[14px] text-[14px]" role="status" aria-live="polite">
+          <Spinner />
+          <span>
+            <strong className="font-medium">{tx("Organizando o conteúdo com IA…")}</strong>{" "}
+            <span className="text-neutral-400">
+              {tx("Pode levar alguns segundos. A lista abaixo será substituída pela sugestão.")}
+            </span>
+          </span>
+        </Card>
+      ) : null}
       {subjects.length === 0 ? (
         <Card className="p-[14px] text-[13px] text-neutral-400">
           {tx("A proposta está vazia. Adicione uma matéria para começar.")}

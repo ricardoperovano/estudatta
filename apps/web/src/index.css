@@ -22,6 +22,11 @@
        transbordo cortado no root, o layout fica sempre na largura do aparelho */
     overflow-x: hidden;
   }
+  /* Item de grade tem largura mínima "auto": um texto sem quebra (nome de arquivo, título longo)
+     alargava a grade inteira e empurrava o resto para fora da tela no celular. */
+  .grid > * {
+    min-width: 0;
+  }
   #root {
     width: 100%;
     max-width: 100vw;

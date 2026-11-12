@@ -166,7 +166,9 @@ export default function ImportsPage() {
   return (
     <div className="flex flex-col gap-[14px] desktop:gap-6">
       {header}
-      <div className="grid gap-[14px] desktop:grid-cols-[7fr_5fr] desktop:items-start desktop:gap-6">
+      {/* coluna com mínimo zero: sem isso um nome de arquivo comprido na lista (texto sem quebra)
+          alarga a grade inteira e empurra a aba PDF para fora da tela no celular */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-[14px] desktop:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] desktop:items-start desktop:gap-6">
         <div className="flex min-w-0 flex-col gap-[14px]">
           <Card className="p-[14px] desktop:p-4" data-tour="importar-objetivo">
             <Field

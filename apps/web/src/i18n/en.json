@@ -2858,5 +2858,9 @@
   "Tive um problema técnico": "I had a technical problem",
   "Só queria testar": "I just wanted to try it",
   "Outro motivo": "Another reason",
-  "Motivo:": "Reason:"
+  "Motivo:": "Reason:",
+  "Estrutura atualizada": "Structure updated",
+  "{{v0}} e {{v1}}. Revise e confirme para criar.": "{{v0}} and {{v1}}. Review and confirm to create.",
+  "Organizando o conteúdo com IA…": "Organizing the content with AI…",
+  "Pode levar alguns segundos. A lista abaixo será substituída pela sugestão.": "This may take a few seconds. The list below will be replaced by the suggestion."
 }
