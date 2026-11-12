@@ -11,6 +11,7 @@ os.environ.setdefault("DATABASE_URL", f"sqlite:///./var/test-{os.getpid()}.db")
 os.environ.setdefault("EMAIL_BACKEND", "memory")
 os.environ.setdefault("STORAGE_LOCAL_PATH", "var/test-storage")
 os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
+os.environ.setdefault("TRIAL_DAYS", "0")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-with-enough-length-1234")
 
 import pytest  # noqa: E402

@@ -100,3 +100,13 @@ class CheckoutOut(BaseModel):
 class WebhookAck(BaseModel):
     ok: bool = True
     status: str  # processed | duplicate | ignored
+
+
+CANCEL_REASONS = ("price", "not_using", "missing_feature", "technical", "just_testing", "other")
+
+
+class CancelIn(BaseModel):
+    """Motivo do cancelamento: opcional, nunca impede cancelar."""
+
+    reason: str | None = Field(default=None, max_length=32)
+    comment: str | None = Field(default=None, max_length=500)

@@ -6370,6 +6370,23 @@
         ],
         "summary": "Cancel",
         "operationId": "cancel_api_v1_billing_cancel_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CancelIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -6377,6 +6394,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SubscriptionStateOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -9492,6 +9519,28 @@
             "type": "boolean",
             "title": "Cancel At Period End"
           },
+          "cancel_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancel Reason"
+          },
+          "cancel_comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancel Comment"
+          },
           "created_at": {
             "anyOf": [
               {
@@ -10961,6 +11010,37 @@
         },
         "type": "object",
         "title": "CampaignUpdate"
+      },
+      "CancelIn": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          }
+        },
+        "type": "object",
+        "title": "CancelIn",
+        "description": "Motivo do cancelamento: opcional, nunca impede cancelar."
       },
       "ChallengeOut": {
         "properties": {

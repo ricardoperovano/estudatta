@@ -3076,6 +3076,10 @@ export interface components {
             current_period_end: string | null;
             /** Cancel At Period End */
             cancel_at_period_end: boolean;
+            /** Cancel Reason */
+            cancel_reason?: string | null;
+            /** Cancel Comment */
+            cancel_comment?: string | null;
             /** Created At */
             created_at: string | null;
         };
@@ -3595,6 +3599,16 @@ export interface components {
             segment?: string | null;
             /** Coupon Code */
             coupon_code?: string | null;
+        };
+        /**
+         * CancelIn
+         * @description Motivo do cancelamento: opcional, nunca impede cancelar.
+         */
+        CancelIn: {
+            /** Reason */
+            reason?: string | null;
+            /** Comment */
+            comment?: string | null;
         };
         /** ChallengeOut */
         ChallengeOut: {
@@ -11516,7 +11530,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CancelIn"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -11525,6 +11543,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SubscriptionStateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

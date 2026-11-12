@@ -56,7 +56,10 @@ function useApplyState() {
 export function useCancelSubscription() {
   const apply = useApplyState();
   return useMutation({
-    mutationFn: async () => unwrap(await api.POST("/api/v1/billing/cancel")) as SubscriptionState,
+    mutationFn: async (input: { reason?: string | null; comment?: string | null } | void) =>
+      unwrap(
+        await api.POST("/api/v1/billing/cancel", { body: input ? { reason: input.reason, comment: input.comment } : undefined }),
+      ) as SubscriptionState,
     onSuccess: apply,
   });
 }

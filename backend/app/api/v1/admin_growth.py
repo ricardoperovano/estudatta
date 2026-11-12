@@ -59,6 +59,8 @@ class AdminSubscriptionOut(BaseModel):
     current_period_start: datetime | None
     current_period_end: datetime | None
     cancel_at_period_end: bool
+    cancel_reason: str | None = None
+    cancel_comment: str | None = None
     created_at: datetime | None
 
 

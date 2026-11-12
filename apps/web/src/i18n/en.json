@@ -2841,5 +2841,22 @@
   "O Tatá continua falando no balão.": "Tatá keeps talking in the speech bubble.",
   "Voz do Tatá ligada · sem voz natural agora": "Tatá’s voice on · no natural voice right now",
   "Conversar com o suporte": "Chat with support",
-  "Dúvida, problema ou sugestão: fale pelo chat ou escreva por e-mail.": "A question, a problem or a suggestion: use the chat or write by email."
+  "Dúvida, problema ou sugestão: fale pelo chat ou escreva por e-mail.": "A question, a problem or a suggestion: use the chat or write by email.",
+  "Teste grátis": "Free trial",
+  "Último dia do seu teste do {{v0}}.": "Last day of your {{v0}} trial.",
+  "Faltam {{v0}} dias do seu teste do {{v1}}.": "{{v0}} days left in your {{v1}} trial.",
+  "Depois a conta volta ao gratuito, sem perder nada do que você registrou.": "After that your account goes back to free, without losing anything you logged.",
+  "Anual · 20% menos": "Yearly · 20% off",
+  "Se quiser, conte o motivo. É opcional e ajuda a melhorar o app.": "If you like, tell us why. It’s optional and helps improve the app.",
+  "Motivo do cancelamento": "Reason for cancelling",
+  "Quer contar mais? (opcional)": "Want to say more? (optional)",
+  "Comentário sobre o cancelamento": "Comment about the cancellation",
+  "Você está testando o {{v0}}{{v1}}. Nada é cobrado, e não pedimos cartão.": "You’re trying {{v0}}{{v1}}. Nothing is charged, and we don’t ask for a card.",
+  "Está caro para mim": "It’s too expensive for me",
+  "Não estou usando": "I’m not using it",
+  "Falta um recurso que eu preciso": "It’s missing a feature I need",
+  "Tive um problema técnico": "I had a technical problem",
+  "Só queria testar": "I just wanted to try it",
+  "Outro motivo": "Another reason",
+  "Motivo:": "Reason:"
 }

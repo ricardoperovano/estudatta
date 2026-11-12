@@ -143,6 +143,8 @@ def list_subscriptions(
                 "current_period_start": sub.current_period_start,
                 "current_period_end": sub.current_period_end,
                 "cancel_at_period_end": sub.cancel_at_period_end,
+                "cancel_reason": (sub.metadata_ or {}).get("cancel_reason"),
+                "cancel_comment": (sub.metadata_ or {}).get("cancel_comment"),
                 "created_at": sub.created_at,
             }
         )

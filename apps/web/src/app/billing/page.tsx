@@ -18,7 +18,20 @@ import {
   type SubscriptionState,
 } from "@/api/billing";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
-import { Banner, Button, Card, EmptyState, Input, Seg, Spinner, Tag, toast } from "@/components/ui";
+import {
+  Banner,
+  Button,
+  Card,
+  EmptyState,
+  Input,
+  RadioGroup,
+  RadioItem,
+  Seg,
+  Spinner,
+  Tag,
+  Textarea,
+  toast,
+} from "@/components/ui";
 import { fmtBRL, parseDate } from "@/lib/format";
 import { useCheckCoupon, useRedeemCoupon, type CouponInfo } from "@/api/billing";
 import { useOnline } from "@/lib/online";
@@ -39,7 +52,8 @@ export default function BillingPage() {
   const checkout = useCheckout();
   const verify = useVerifySubscription();
   const [params, setParams] = useSearchParams();
-  const [interval, setInterval] = React.useState<BillingInterval>("month");
+  // anual primeiro: é o ciclo com desconto, e o preço mensal continua a um toque
+  const [interval, setInterval] = React.useState<BillingInterval>("year");
   const [redirectingTo, setRedirectingTo] = React.useState<string | null>(null);
   // cupom: digitado aqui ou vindo de um link (?cupom=CODIGO, como nos e-mails de campanha)
   const [couponInput, setCouponInput] = React.useState(() => (params.get("cupom") || "").toUpperCase());
@@ -277,7 +291,7 @@ export default function BillingPage() {
           onChange={setInterval}
           options={[
             { value: "month", label: t("Mensal") },
-            { value: "year", label: t("Anual") },
+            { value: "year", label: t("Anual · 20% menos") },
           ]}
         />
       </div>
@@ -505,8 +519,10 @@ function SubscriptionCard({
   const canVerify = !!s && state.billing_mode !== "disabled";
   const pastHistory = state.history.filter((h) => h.id !== s?.id);
 
+  const [reason, setReason] = React.useState("");
+  const [comment, setComment] = React.useState("");
   const onCancel = () =>
-    cancel.mutate(undefined, {
+    cancel.mutate({ reason: reason || null, comment: comment.trim() || null }, {
       onSuccess: (next) => {
         setConfirmOpen(false);
         toast("success", t("Renovação cancelada"), next.message ?? undefined);
@@ -539,7 +555,14 @@ function SubscriptionCard({
       <div className="flex flex-col gap-1 text-[14px] text-neutral-300">
         {!s ? (
           <span>
-            {ent.source === "promo" || ent.source === "admin"
+            {ent.source === "trial"
+              ? t("Você está testando o {{v0}}{{v1}}. Nada é cobrado, e não pedimos cartão.", {
+                  v0: ent.plan_name,
+                  v1: ent.current_period_end
+                    ? " " + t("até {{v0}}", { v0: fmtDateLong(ent.current_period_end) })
+                    : "",
+                })
+              : ent.source === "promo" || ent.source === "admin"
               ? t("Acesso de cortesia{{v0}}. Nada é cobrado.", {
                   v0: ent.current_period_end
                     ? " " + t("até {{v0}}", { v0: fmtDateLong(ent.current_period_end) })
@@ -661,10 +684,41 @@ function SubscriptionCard({
         cancelLabel={t("Voltar")}
         loading={cancel.isPending}
         onConfirm={onCancel}
-      />
+      >
+        {s?.status !== "pending" ? (
+          <div className="flex flex-col gap-2">
+            <span className="text-[13px] text-neutral-400">
+              {t("Se quiser, conte o motivo. É opcional e ajuda a melhorar o app.")}
+            </span>
+            <RadioGroup value={reason} onValueChange={setReason} aria-label={t("Motivo do cancelamento")}>
+              {CANCEL_REASONS.map((r) => (
+                <RadioItem key={r.value} value={r.value} label={r.label()} />
+              ))}
+            </RadioGroup>
+            <Textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              maxLength={500}
+              rows={2}
+              placeholder={t("Quer contar mais? (opcional)")}
+              aria-label={t("Comentário sobre o cancelamento")}
+            />
+          </div>
+        ) : null}
+      </ConfirmDialog>
     </Card>
   );
 }
+
+/** Motivos de cancelamento (os mesmos códigos aceitos pela API). */
+const CANCEL_REASONS: { value: string; label: () => string }[] = [
+  { value: "price", label: () => t("Está caro para mim") },
+  { value: "not_using", label: () => t("Não estou usando") },
+  { value: "missing_feature", label: () => t("Falta um recurso que eu preciso") },
+  { value: "technical", label: () => t("Tive um problema técnico") },
+  { value: "just_testing", label: () => t("Só queria testar") },
+  { value: "other", label: () => t("Outro motivo") },
+];
 
 function statusVariant(
   s: Subscription | null,
@@ -677,6 +731,7 @@ function statusVariant(
 }
 
 function sourceLabel(source: string): string {
+  if (source === "trial") return t("Teste grátis");
   if (source === "promo" || source === "admin") return t("Cortesia");
   if (source === "subscription") return t("Assinatura");
   return t("Gratuito");

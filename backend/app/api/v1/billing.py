@@ -17,6 +17,8 @@ from app.integrations.mercadopago import BillingProvider, ProviderError, get_pro
 from app.models.user import User
 from app.schemas.auth import EntitlementsOut
 from app.schemas.billing import (
+    CANCEL_REASONS,
+    CancelIn,
     CheckoutIn,
     CheckoutOut,
     CouponCheckIn,
@@ -114,11 +116,23 @@ def checkout(
 @router.post("/cancel", response_model=SubscriptionStateOut)
 def cancel(
     request: Request,
+    payload: CancelIn | None = Body(default=None),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
     provider: BillingProvider | None = Depends(optional_provider),
 ) -> SubscriptionStateOut:
     sub, message = billing_service.cancel_subscription(db, user, provider)
+    # motivo é opcional e só informativo: valor fora da lista vira "other", nunca erro
+    reason = (payload.reason if payload else None) or None
+    if reason and reason not in CANCEL_REASONS:
+        reason = "other"
+    comment = ((payload.comment if payload else None) or "").strip()[:500] or None
+    if reason or comment:
+        sub.metadata_ = {
+            **(sub.metadata_ or {}),
+            "cancel_reason": reason,
+            "cancel_comment": comment,
+        }
     audit(
         db,
         actor_id=user.id,
@@ -128,6 +142,8 @@ def cancel(
         metadata={
             "status": sub.status,
             "cancel_pending": bool(sub.metadata_.get("cancel_pending")),
+            "reason": reason,
+            "comment": comment,
         },
         ip=client_ip(request),
     )

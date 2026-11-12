@@ -284,7 +284,15 @@ function SubscriptionRow({ s }: { s: AdminSubscriptionRow }) {
           ? `${fmtDay(s.current_period_start)} → ${fmtDay(s.current_period_end)}`
           : "—"}
       </td>
-      <td className="tnum whitespace-nowrap py-2 pr-3">{renewal}</td>
+      <td className="py-2 pr-3">
+        <span className="tnum whitespace-nowrap">{renewal}</span>
+        {s.cancel_reason || s.cancel_comment ? (
+          <span className="block max-w-[26ch] text-[12px] text-neutral-400">
+            {t("Motivo:")} {s.cancel_reason ? cancelReasonLabel(s.cancel_reason) : ""}
+            {s.cancel_comment ? ` — “${s.cancel_comment}”` : ""}
+          </span>
+        ) : null}
+      </td>
       <td className="py-2">
         <div className="flex flex-col items-end gap-1.5 whitespace-nowrap">
           <Button variant="secondary" size="sm" onClick={() => setPromoOpen(true)}>
@@ -319,4 +327,16 @@ function SubscriptionRow({ s }: { s: AdminSubscriptionRow }) {
       </td>
     </tr>
   );
+}
+
+function cancelReasonLabel(code: string): string {
+  const labels: Record<string, string> = {
+    price: t("Está caro para mim"),
+    not_using: t("Não estou usando"),
+    missing_feature: t("Falta um recurso que eu preciso"),
+    technical: t("Tive um problema técnico"),
+    just_testing: t("Só queria testar"),
+    other: t("Outro motivo"),
+  };
+  return labels[code] ?? code;
 }

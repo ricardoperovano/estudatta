@@ -130,7 +130,7 @@ class Entitlements:
     plan_code: str
     plan_name: str
     limits: dict
-    source: str  # free | subscription | promo | admin
+    source: str  # free | subscription | trial | promo | admin
     subscription_status: str | None = None
     current_period_end: str | None = None
     cancel_at_period_end: bool = False
@@ -268,7 +268,8 @@ def get_entitlements(db: Session, user_id: uuid.UUID) -> Entitlements:
                 plan_code=plan.code,
                 plan_name=_(plan.name),
                 limits=plan.limits,
-                source="promo",
+                # o teste grátis do cadastro é um acesso promocional com motivo próprio
+                source="trial" if grant.reason == "trial" else "promo",
                 current_period_end=grant.ends_at.isoformat() if grant.ends_at else None,
             )
     return base

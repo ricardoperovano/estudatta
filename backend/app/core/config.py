@@ -109,6 +109,10 @@ class Settings(BaseSettings):
     AI_DAILY_ACTIONS_PRO: int = 20
     AI_GLOBAL_DAILY_BUDGET_ACTIONS: int = 2000
     # Voz do Tatá (ElevenLabs). Sem chave, o app usa o sintetizador do próprio aparelho.
+    # Teste grátis no cadastro: dias de acesso ao plano TRIAL_PLAN_CODE, sem cartão (0 desliga).
+    # Ao fim, a conta volta ao gratuito sem perder nada (mesmo caminho do acesso promocional).
+    TRIAL_DAYS: int = 14
+    TRIAL_PLAN_CODE: str = "essencial"
     ELEVENLABS_API_KEY: str | None = None
     ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"  # troque pela voz escolhida no painel
     ELEVENLABS_MODEL: str = "eleven_multilingual_v2"

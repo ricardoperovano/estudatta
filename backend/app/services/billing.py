@@ -1054,8 +1054,69 @@ def reconcile_subscriptions(
         user = db.get(User, uid)
         if user is not None and apply_entitlement_changes(db, user, now=now):
             summary["downgraded_users"] += 1
+    summary["trial_notices"] = notify_trials(db, now=now)
     db.flush()
     return summary
+
+
+TRIAL_WARN_BEFORE = timedelta(days=3)
+
+
+def notify_trials(db: Session, *, now: datetime | None = None) -> int:
+    """Avisa uma vez que o teste grátis está acabando (3 dias antes) e uma vez que acabou.
+
+    Quem já assinou não recebe aviso. A existência da notificação é a marca de "já avisado",
+    então reexecutar não duplica.
+    """
+    from app.models.notification import Notification
+
+    now = now or utcnow()
+    sent = 0
+    grants = db.execute(
+        select(PromoGrant).where(
+            PromoGrant.reason == "trial",
+            PromoGrant.revoked_at.is_(None),
+            PromoGrant.ends_at.is_not(None),
+            PromoGrant.ends_at > now - DOWNGRADE_LOOKBACK,
+            PromoGrant.ends_at <= now + TRIAL_WARN_BEFORE,
+        )
+    ).scalars()
+    for grant in grants:
+        user = db.get(User, grant.user_id)
+        if user is None or get_entitlements(db, user.id).source == "subscription":
+            continue
+        kind = "trial_ended" if grant.ends_at <= now else "trial_ending"
+        already = db.execute(
+            select(Notification.id).where(
+                Notification.user_id == user.id, Notification.kind == kind
+            )
+        ).first()
+        if already:
+            continue
+        plan = db.get(Plan, grant.plan_id)
+        nome = _(plan.name) if plan else ""
+        with_locale = current_locale()
+        set_locale(user.locale)
+        try:
+            if kind == "trial_ending":
+                dias = max(
+                    1, (grant.ends_at - now).days + (1 if (grant.ends_at - now).seconds else 0)
+                )
+                title = _("Seu teste do {plano} termina em {n} dia(s)", plano=nome, n=dias)
+                body = _(
+                    "Depois disso a conta volta ao plano gratuito, sem perder nada do que você registrou. Para continuar com tudo, assine quando quiser."
+                )
+            else:
+                title = _("Seu teste do {plano} terminou", plano=nome)
+                body = _(
+                    "Sua conta voltou ao plano gratuito e tudo o que você registrou continua aqui. Para ter de volta os recursos do teste, é só assinar."
+                )
+            notify_inapp(db, user_id=user.id, kind=kind, title=title, body=body, url="/app/planos")
+            db.flush()  # a notificação é a marca de "já avisado": precisa estar visível à próxima consulta
+        finally:
+            set_locale(with_locale)
+        sent += 1
+    return sent
 
 
 # --- Rebaixamento sem perda ---------------------------------------------------------------

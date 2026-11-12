@@ -6,6 +6,10 @@ planos, conquistas/desafios, relatório em palavras e rótulos usados pelo app. 
 """
 
 MESSAGES: dict[str, str] = {
+    "Seu teste do {plano} termina em {n} dia(s)": "Your {plano} trial ends in {n} day(s)",
+    "Depois disso a conta volta ao plano gratuito, sem perder nada do que você registrou. Para continuar com tudo, assine quando quiser.": "After that your account goes back to the free plan, without losing anything you logged. To keep everything, subscribe whenever you like.",
+    "Seu teste do {plano} terminou": "Your {plano} trial has ended",
+    "Sua conta voltou ao plano gratuito e tudo o que você registrou continua aqui. Para ter de volta os recursos do teste, é só assinar.": "Your account is back on the free plan and everything you logged is still here. To get the trial features back, just subscribe.",
     # --- Tela Hoje / próximo passo ------------------------------------------------------
     " Depois disso, a pendência zera.": " After that, the owed time is cleared.",
     " Depois disso, ficam {v} a recuperar.": " After that, {v} is left to make up.",

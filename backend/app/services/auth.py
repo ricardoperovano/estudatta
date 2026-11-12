@@ -43,6 +43,38 @@ def validate_password(password: str) -> None:
         raise ValidationFailed("Senha longa demais.", code="weak_password")
 
 
+TRIAL_REASON = "trial"
+
+
+def start_trial(db: Session, user: User) -> None:
+    """Teste grátis no cadastro: `TRIAL_DAYS` dias do plano `TRIAL_PLAN_CODE`, sem cartão.
+
+    Usa o acesso promocional que já existe (PromoGrant), então o fim do teste segue o mesmo
+    caminho: a conta volta ao gratuito e nada é apagado. Sem o plano no catálogo, não concede.
+    """
+    from app.models.billing import Plan, PromoGrant
+
+    if settings.TRIAL_DAYS <= 0:
+        return
+    plan = db.execute(
+        select(Plan).where(Plan.code == settings.TRIAL_PLAN_CODE)
+    ).scalar_one_or_none()
+    if plan is None or not plan.active or plan.code == "free":
+        return
+    now = utcnow()
+    db.add(
+        PromoGrant(
+            user_id=user.id,
+            plan_id=plan.id,
+            granted_by=None,
+            reason=TRIAL_REASON,
+            starts_at=now,
+            ends_at=now + timedelta(days=settings.TRIAL_DAYS),
+            created_at=now,
+        )
+    )
+
+
 def create_user(
     db: Session,
     *,
@@ -73,6 +105,7 @@ def create_user(
     db.add(user)
     db.flush()
     db.add(UserPreferences(user_id=user.id))
+    start_trial(db, user)
     db.add(
         NotificationPreferences(
             user_id=user.id, max_per_day=settings.NOTIFICATIONS_MAX_PROACTIVE_PER_DAY
