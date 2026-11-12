@@ -5,7 +5,9 @@
 import { t } from "@/i18n";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Link } from "react-router";
-import { CreditCard, Gear, Question, ShieldCheck, SignOut, Sparkle, UserCircle } from "@phosphor-icons/react";
+import { CreditCard, Gear, Headset, Question, ShieldCheck, SignOut, Sparkle, UserCircle } from "@phosphor-icons/react";
+import { abrirAtendimento } from "@/lib/chat-widget";
+import { supportMailto } from "@/components/app/support-contact";
 import { useUser } from "@/api/session";
 import { avatarUrl } from "@/api/settings";
 import { useOnline } from "@/lib/online";
@@ -104,6 +106,15 @@ export function ProfileMenu({
               <Link to="/app/preferencias#ajuda">
                 <Question size={18} aria-hidden /> {t("Ajuda e contato")}
               </Link>
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              className={item}
+              onSelect={() => {
+                // sem o chat na página (offline, bloqueador), o e-mail continua sendo o caminho
+                if (!abrirAtendimento()) window.location.href = supportMailto();
+              }}
+            >
+              <Headset size={18} aria-hidden /> {t("Conversar com o suporte")}
             </DropdownMenu.Item>
             {user.role === "admin" ? (
               <>

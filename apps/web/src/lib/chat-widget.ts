@@ -1,13 +1,14 @@
 /**
- * Bolha de atendimento (Monitchat) sem atrapalhar a interface do app.
+ * Atendimento (Monitchat) sem atrapalhar a interface do app.
  *
- * O widget se posiciona em `bottom: 16px` dentro do próprio shadow DOM, com z-index máximo:
- * de fora da sombra, nenhum CSS da página alcança a bolha. Como o shadow root é aberto, o app
- * injeta lá dentro uma regra que lê duas variáveis CSS — e variáveis atravessam a sombra, então
- * o app controla a bolha definindo-as no `<html>`:
+ * O widget desenha a bolha dentro do próprio shadow DOM, com z-index máximo: de fora da sombra,
+ * nenhum CSS da página a alcança. Como o shadow root é aberto, o app injeta uma regra lá dentro:
  *
- *   --chat-bottom-offset  quanto subir (a barra de navegação declara a própria altura)
- *   --chat-display        `none` enquanto uma folha ou diálogo está aberto na frente
+ * - no celular a bolha flutuante não aparece: a tela é pequena e ela caía em cima da barra de
+ *   navegação, de botões de folhas e do cartão do tour. O chat continua a um toque, pelo botão
+ *   "Conversar com o suporte" (Preferências › Ajuda e menu do perfil), que chama `abrirAtendimento`;
+ * - em telas maiores a bolha fica no canto e some enquanto uma folha ou diálogo está aberto
+ *   (`--chat-display`, variável que atravessa a sombra).
  *
  * Sem o widget na página (offline, bloqueador, script fora do ar), tudo isto é inócuo.
  */
@@ -17,9 +18,23 @@ const MARCA = "data-estudatta-offset";
 const CSS = `
 .mcw-root { display: var(--chat-display, block) !important; }
 @media (max-width: 767px) {
-  .mcw-root { bottom: calc(16px + var(--chat-bottom-offset, 0px)) !important; }
+  .mcw-bubble { display: none !important; }
 }
 `;
+
+interface MonitchatApi {
+  open?: () => void;
+}
+
+/** Abre o chat de atendimento. Devolve false se o widget não está na página. */
+export function abrirAtendimento(): boolean {
+  const api = (window as unknown as { MonitchatWidget?: MonitchatApi }).MonitchatWidget;
+  if (!api?.open || !document.getElementById(ID)) return false;
+  // um diálogo aberto esconde o widget inteiro; o chat pedido explicitamente tem prioridade
+  document.documentElement.style.removeProperty("--chat-display");
+  api.open();
+  return true;
+}
 
 function injeta(host: Element): boolean {
   const raiz = (host as HTMLElement).shadowRoot;

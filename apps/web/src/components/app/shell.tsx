@@ -47,7 +47,9 @@ export function AppShell() {
       <Sidebar />
       <div
         className={
-          "flex min-w-0 flex-1 flex-col tablet:pb-0" +
+          // o espaço no fim da string importa: sem ele as duas classes se fundem numa só
+          // inválida e a página perde o respiro da barra inferior (o último botão fica atrás dela)
+          "flex min-w-0 flex-1 flex-col tablet:pb-0 " +
           (fullScreen
             ? "pb-[env(safe-area-inset-bottom,0px)]"
             : "pb-[calc(var(--layout-bottom-nav-height)+env(safe-area-inset-bottom,0px))]")

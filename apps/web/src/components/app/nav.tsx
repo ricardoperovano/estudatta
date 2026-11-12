@@ -47,21 +47,6 @@ const mobile: Item[] = [study[0], study[1], study[2], track[0]];
 export function BottomNav() {
   const { pathname } = useLocation();
   const escondida = pathname.startsWith("/app/sessao");
-  // enquanto a barra está na tela, a bolha de atendimento sobe para não cobrir o último item
-  React.useEffect(() => {
-    const raiz = document.documentElement;
-    if (escondida) {
-      raiz.style.removeProperty("--chat-bottom-offset");
-      return;
-    }
-    raiz.style.setProperty(
-      "--chat-bottom-offset",
-      "calc(var(--layout-bottom-nav-height) + env(safe-area-inset-bottom, 0px))",
-    );
-    return () => {
-      raiz.style.removeProperty("--chat-bottom-offset");
-    };
-  }, [escondida]);
   // cronômetro em tela cheia (tela 04): sem navegação inferior; "Minimizar" volta para Hoje
   if (escondida) return null;
   return (

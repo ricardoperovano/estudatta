@@ -4,10 +4,11 @@
  * pessoa ainda consegue ler e copiar o endereço.
  */
 import * as React from "react";
-import { Check, Copy, EnvelopeSimple } from "@phosphor-icons/react";
+import { Check, Copy, EnvelopeSimple, Headset } from "@phosphor-icons/react";
 import { Button, Card, toast } from "@/components/ui";
 import { brand } from "@/design/brand";
 import { t } from "@/i18n";
+import { abrirAtendimento } from "@/lib/chat-widget";
 
 /** `mailto:` com assunto preenchido, para a mensagem já chegar identificada. */
 export function supportMailto(subject?: string): string {
@@ -50,7 +51,7 @@ export function SupportContactCard() {
     <Card className="gap-2 p-[14px] text-[14px]" data-tour="preferencias-contato">
       <span>{t("Falar com a gente")}</span>
       <span className="text-[12px] text-neutral-400">
-        {t("Dúvida, problema ou sugestão: escreva e a gente responde por e-mail.")}
+        {t("Dúvida, problema ou sugestão: fale pelo chat ou escreva por e-mail.")}
       </span>
       <a
         href={supportMailto()}
@@ -58,7 +59,18 @@ export function SupportContactCard() {
       >
         <EnvelopeSimple size={16} aria-hidden /> {brand.supportEmail}
       </a>
-      <CopySupportEmailButton />
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant="primary"
+          size="md"
+          onClick={() => {
+            if (!abrirAtendimento()) window.location.href = supportMailto();
+          }}
+        >
+          <Headset size={16} aria-hidden /> {t("Conversar com o suporte")}
+        </Button>
+        <CopySupportEmailButton />
+      </div>
     </Card>
   );
 }
