@@ -40,6 +40,7 @@ import { usePageTour } from "@/components/tour/use-tours";
 import { hojeTour } from "@/tours/hoje";
 import type { TodayCard, AgendaItem } from "@/api/types";
 import { TrialBanner } from "@/components/app/trial-banner";
+import { StarterChallengeCard } from "@/components/app/starter-challenge";
 
 /** Tela Hoje: um próximo passo executável por objetivo, "Começar sessão" em destaque e "Registrar tempo". */
 export default function TodayPage() {
@@ -134,6 +135,7 @@ export default function TodayPage() {
   return (
     <div className="relative isolate flex flex-col gap-4 desktop:gap-6">
       <TrialBanner />
+      <StarterChallengeCard />
       <TodayHero
         cards={cards}
         inSession={!!activeTimer}

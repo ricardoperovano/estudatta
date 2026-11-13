@@ -21,6 +21,7 @@ from app.services import gamification as gami
 from app.services import insights as insights_service
 from app.services import mock_exams as mock_service
 from app.services import revisions as revision_service
+from app.services import starter_challenge
 
 router = APIRouter(tags=["study"])
 
@@ -383,6 +384,39 @@ class GamificationOut(BaseModel):
 
 class SeenIn(BaseModel):
     codes: list[str] | None = None
+
+
+class StarterChallengeOut(BaseModel):
+    state: str  # none | offer | active | done
+    target: int
+    progress: int
+    window_days: int
+    ends_on: date | None
+    xp: int
+
+
+class StarterChallengeIn(BaseModel):
+    accept: bool
+
+
+@router.get("/starter-challenge", response_model=StarterChallengeOut)
+def starter_challenge_state(
+    db: Session = Depends(get_db), user: User = Depends(get_current_user)
+) -> StarterChallengeOut:
+    data = starter_challenge.state(db, user)
+    db.commit()
+    return StarterChallengeOut(**data)
+
+
+@router.post("/starter-challenge", response_model=StarterChallengeOut)
+def starter_challenge_answer(
+    payload: StarterChallengeIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> StarterChallengeOut:
+    data = starter_challenge.answer(db, user, payload.accept)
+    db.commit()
+    return StarterChallengeOut(**data)
 
 
 @router.get("/gamification", response_model=GamificationOut)

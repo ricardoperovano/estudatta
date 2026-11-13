@@ -6238,6 +6238,66 @@
         }
       }
     },
+    "/api/v1/starter-challenge": {
+      "get": {
+        "tags": [
+          "study"
+        ],
+        "summary": "Starter Challenge State",
+        "operationId": "starter_challenge_state_api_v1_starter_challenge_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StarterChallengeOut"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "study"
+        ],
+        "summary": "Starter Challenge Answer",
+        "operationId": "starter_challenge_answer_api_v1_starter_challenge_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StarterChallengeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StarterChallengeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/gamification": {
       "get": {
         "tags": [
@@ -19342,6 +19402,65 @@
           "minutes"
         ],
         "title": "SnoozeIn"
+      },
+      "StarterChallengeIn": {
+        "properties": {
+          "accept": {
+            "type": "boolean",
+            "title": "Accept"
+          }
+        },
+        "type": "object",
+        "required": [
+          "accept"
+        ],
+        "title": "StarterChallengeIn"
+      },
+      "StarterChallengeOut": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "target": {
+            "type": "integer",
+            "title": "Target"
+          },
+          "progress": {
+            "type": "integer",
+            "title": "Progress"
+          },
+          "window_days": {
+            "type": "integer",
+            "title": "Window Days"
+          },
+          "ends_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends On"
+          },
+          "xp": {
+            "type": "integer",
+            "title": "Xp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state",
+          "target",
+          "progress",
+          "window_days",
+          "ends_on",
+          "xp"
+        ],
+        "title": "StarterChallengeOut"
       },
       "StatusChange": {
         "properties": {

@@ -115,6 +115,8 @@ class UserPreferences(Timestamps, Base):
     mascot_enabled: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )
+    # desafio de começo (convite na tela Hoje): ver app/services/starter_challenge.py
+    starter_challenge: Mapped[dict | None] = mapped_column(JSONType)
     # tours guiados já vistos (chaves das páginas); vale em todos os aparelhos
     tours_seen: Mapped[list] = mapped_column(
         JSONType, nullable=False, default=list, server_default="[]"

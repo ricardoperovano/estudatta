@@ -2033,6 +2033,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/starter-challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Starter Challenge State */
+        get: operations["starter_challenge_state_api_v1_starter_challenge_get"];
+        put?: never;
+        /** Starter Challenge Answer */
+        post: operations["starter_challenge_answer_api_v1_starter_challenge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/gamification": {
         parameters: {
             query?: never;
@@ -6201,6 +6219,26 @@ export interface components {
         SnoozeIn: {
             /** Minutes */
             minutes: number;
+        };
+        /** StarterChallengeIn */
+        StarterChallengeIn: {
+            /** Accept */
+            accept: boolean;
+        };
+        /** StarterChallengeOut */
+        StarterChallengeOut: {
+            /** State */
+            state: string;
+            /** Target */
+            target: number;
+            /** Progress */
+            progress: number;
+            /** Window Days */
+            window_days: number;
+            /** Ends On */
+            ends_on: string | null;
+            /** Xp */
+            xp: number;
         };
         /** StatusChange */
         StatusChange: {
@@ -11404,6 +11442,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InsightsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    starter_challenge_state_api_v1_starter_challenge_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StarterChallengeOut"];
+                };
+            };
+        };
+    };
+    starter_challenge_answer_api_v1_starter_challenge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StarterChallengeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StarterChallengeOut"];
                 };
             };
             /** @description Validation Error */

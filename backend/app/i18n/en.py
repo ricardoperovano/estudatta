@@ -6,6 +6,9 @@ planos, conquistas/desafios, relatório em palavras e rótulos usados pelo app. 
 """
 
 MESSAGES: dict[str, str] = {
+    "Desafio de começo: {n} dias de estudo": "Starter challenge: {n} days of study",
+    "Desafio concluído!": "Challenge complete!",
+    "Você estudou {n} dias. +{xp} XP — e o mais difícil, que é voltar, já virou hábito.": "You studied on {n} days. +{xp} XP — and the hardest part, coming back, is now a habit.",
     "Você deixou uma sessão aberta: é só voltar e encerrar.": "You left a session open: just come back and finish it.",
     "Seu teste do {plano} termina em {n} dia(s)": "Your {plano} trial ends in {n} day(s)",
     "Depois disso a conta volta ao plano gratuito, sem perder nada do que você registrou. Para continuar com tudo, assine quando quiser.": "After that your account goes back to the free plan, without losing anything you logged. To keep everything, subscribe whenever you like.",

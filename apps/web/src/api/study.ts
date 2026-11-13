@@ -186,3 +186,31 @@ export function useMarkAchievementsSeen() {
     onSuccess: () => qc.invalidateQueries({ queryKey: studyKeys.gamification }),
   });
 }
+
+// ---------------------------------------------------------------- desafio de começo
+export type StarterChallenge = components["schemas"]["StarterChallengeOut"];
+// sob a chave de gamificação: tudo que a invalida (encerrar sessão, registro manual) atualiza o desafio
+const starterKey = [...studyKeys.gamification, "starter"] as const;
+
+/** Convite/estado do desafio "3 dias em 7" (tela Hoje). */
+export function useStarterChallenge() {
+  const user = useUser();
+  return useQuery({
+    queryKey: starterKey,
+    enabled: !!user,
+    queryFn: async () => unwrap(await api.GET("/api/v1/starter-challenge")) as StarterChallenge,
+    staleTime: 60_000,
+  });
+}
+
+export function useAnswerStarterChallenge() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (accept: boolean) =>
+      unwrap(await api.POST("/api/v1/starter-challenge", { body: { accept } })) as StarterChallenge,
+    onSuccess: (data) => {
+      qc.setQueryData(starterKey, data);
+      qc.invalidateQueries({ queryKey: studyKeys.gamification });
+    },
+  });
+}

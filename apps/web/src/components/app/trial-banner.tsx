@@ -1,5 +1,5 @@
 /**
- * Aviso do teste grátis: aparece na tela Hoje enquanto a conta está no período de teste, com os
+ * Aviso do teste grátis: aparece na tela Hoje nos últimos 7 dias do período de teste, com os
  * dias que faltam e o caminho para assinar. Dispensável por dia (volta no dia seguinte, e sempre
  * nos 3 últimos dias). Fora do teste, não renderiza nada.
  */
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { t } from "@/i18n";
 
 const KEY = "estudatta.trial.dismissed";
+const SHOW_WITHIN_DAYS = 7;
 
 /** Dias inteiros que faltam (o dia em curso conta): 0 quando já passou. */
 export function trialDaysLeft(endsAt: string | null | undefined, now: number = Date.now()): number {
@@ -33,7 +34,8 @@ export function TrialBanner() {
   const [hidden, setHidden] = React.useState(dismissedToday);
   if (!ent || ent.source !== "trial") return null;
   const days = trialDaysLeft(ent.current_period_end);
-  if (days <= 0) return null;
+  // na primeira semana o aviso é só ruído em cima da tela Hoje; ele entra quando falta uma semana
+  if (days <= 0 || days > SHOW_WITHIN_DAYS) return null;
   const urgent = days <= 3;
   if (hidden && !urgent) return null;
   const dismiss = () => {

@@ -2866,5 +2866,16 @@
   "{{v0}} é muita coisa para um plano.": "{{v0}} is a lot for one plan.",
   "Isso costuma acontecer quando o arquivo é o edital inteiro. Toque em “Sugerir estrutura” para a IA resumir, ou cancele e envie só as páginas do conteúdo programático.": "This usually happens when the file is the whole exam notice. Tap “Suggest structure” to have the AI condense it, or cancel and upload only the syllabus pages.",
   "Isso costuma acontecer quando o arquivo é o edital inteiro. Cancele e envie só as páginas do conteúdo programático, ou remova aqui o que não é matéria.": "This usually happens when the file is the whole exam notice. Cancel and upload only the syllabus pages, or remove here what isn’t a subject.",
-  "Edital de concurso: envie só as páginas do conteúdo programático. O edital inteiro vira centenas de linhas (regras, datas, cargos) em vez das matérias.": "Exam notice: upload only the syllabus pages. The whole notice turns into hundreds of lines (rules, dates, positions) instead of the subjects."
+  "Edital de concurso: envie só as páginas do conteúdo programático. O edital inteiro vira centenas de linhas (regras, datas, cargos) em vez das matérias.": "Exam notice: upload only the syllabus pages. The whole notice turns into hundreds of lines (rules, dates, positions) instead of the subjects.",
+  "Desafio": "Challenge",
+  "Quer um desafio para começar?": "Want a challenge to get started?",
+  "Estude em {{v0}} dias nos próximos {{v1}}, no tempo que der. Vale {{v2}} XP.": "Study on {{v0}} days in the next {{v1}}, for as long as you can. Worth {{v2}} XP.",
+  "Desafio aceito": "Challenge accepted",
+  "O primeiro dia pode ser hoje.": "The first day can be today.",
+  "Aceitar": "Accept",
+  "Desafio concluído: {{v0}} dias de estudo.": "Challenge complete: {{v0}} days of study.",
+  "Desafio: {{v0}} de {{v1}} dias.": "Challenge: {{v0}} of {{v1}} days.",
+  "+{{v0}} XP. Voltar era a parte difícil.": "+{{v0}} XP. Coming back was the hard part.",
+  "Qualquer sessão de hoje já conta o primeiro dia.": "Any session today counts as the first day.",
+  "Faltam {{v0}}. Qualquer sessão no dia conta.": "{{v0}} to go. Any session on the day counts."
 }
