@@ -6,6 +6,7 @@ planos, conquistas/desafios, relatório em palavras e rótulos usados pelo app. 
 """
 
 MESSAGES: dict[str, str] = {
+    "Você deixou uma sessão aberta: é só voltar e encerrar.": "You left a session open: just come back and finish it.",
     "Seu teste do {plano} termina em {n} dia(s)": "Your {plano} trial ends in {n} day(s)",
     "Depois disso a conta volta ao plano gratuito, sem perder nada do que você registrou. Para continuar com tudo, assine quando quiser.": "After that your account goes back to the free plan, without losing anything you logged. To keep everything, subscribe whenever you like.",
     "Seu teste do {plano} terminou": "Your {plano} trial has ended",

@@ -42,6 +42,21 @@ def _no_vapid(monkeypatch):
     monkeypatch.setattr(settings, "VAPID_PRIVATE_KEY", None)
 
 
+@pytest.fixture(autouse=True)
+def _old_accounts(monkeypatch):
+    """Por padrão as contas destes testes são "antigas": sem o lembrete por e-mail, que só vale
+    para contas criadas a partir de EMAIL_REMINDER_SINCE (há testes próprios para ele)."""
+    from app.services import notifications as svc
+
+    monkeypatch.setattr(svc, "EMAIL_REMINDER_SINCE", datetime(2999, 1, 1, tzinfo=UTC))
+
+
+def _new_accounts(monkeypatch):
+    from app.services import notifications as svc
+
+    monkeypatch.setattr(svc, "EMAIL_REMINDER_SINCE", datetime(2000, 1, 1, tzinfo=UTC))
+
+
 def _enable_push(monkeypatch):
     monkeypatch.setattr(settings, "VAPID_PUBLIC_KEY", "chave-publica-de-teste")
     monkeypatch.setattr(settings, "VAPID_PRIVATE_KEY", "chave-privada-de-teste")
@@ -454,3 +469,58 @@ def test_one_user_failing_or_logging_does_not_affect_another(client):
     reminder = next(n for n in ana_list["items"] if n["kind"] == "planned_start")
     assert reminder["data"]["activity_id"] == ana_act["id"]
     assert [n["kind"] for n in bia_list["items"] if n["kind"] != "achievement"] == ["welcome"]
+
+
+# --- lembrete por e-mail para quem não tem notificação no aparelho ---------------------------
+
+
+@freeze_time(NOW)
+def test_new_account_without_push_gets_the_reminder_by_email_once_a_day(user_client, monkeypatch):
+    from app.integrations.email import MemoryBackend
+
+    _new_accounts(monkeypatch)
+    MemoryBackend.sent.clear()
+    _activity(user_client)
+    schedule_reminders()
+    with freeze_time(AT_PLANNED):
+        assert dispatch_outbox() == {"sent": 1, "claimed": 1}
+    assert ("email", "sent", None) in _deliveries()
+    assert len(MemoryBackend.sent) == 1
+    mail = MemoryBackend.sent[0]
+    assert mail.to == "ana@example.com" and "unsubscribe" in mail.text
+    # reexecutar no mesmo dia não manda outro e-mail
+    with freeze_time(AT_PLANNED):
+        dispatch_outbox()
+    assert len(MemoryBackend.sent) == 1
+
+
+@freeze_time(NOW)
+def test_no_email_reminder_when_the_device_has_push_or_user_unsubscribed(user_client, monkeypatch):
+    from app.integrations.email import MemoryBackend
+
+    _new_accounts(monkeypatch)
+    MemoryBackend.sent.clear()
+    _subscribe(user_client)
+    _activity(user_client)
+    schedule_reminders()
+    with freeze_time(AT_PLANNED):
+        dispatch_outbox()
+    assert MemoryBackend.sent == [] and ("email", "sent", None) not in _deliveries()
+
+
+@freeze_time(NOW)
+def test_no_email_reminder_after_unsubscribing(user_client, monkeypatch):
+    from app.integrations.email import MemoryBackend
+    from app.models.user import NotificationPreferences
+
+    _new_accounts(monkeypatch)
+    MemoryBackend.sent.clear()
+    with SessionLocal() as db:
+        prefs = db.execute(select(NotificationPreferences)).scalar_one()
+        prefs.reengagement_email = False
+        db.commit()
+    _activity(user_client)
+    schedule_reminders()
+    with freeze_time(AT_PLANNED):
+        dispatch_outbox()
+    assert MemoryBackend.sent == []

@@ -152,3 +152,19 @@ def test_step_windows():
     assert svc._step_for(7, svc.INACTIVE_STEPS) == 7
     assert svc._step_for(44, svc.INACTIVE_STEPS) == 30
     assert svc._step_for(45, svc.INACTIVE_STEPS) is None
+
+
+@freeze_time("2026-09-16 12:00:00")
+def test_first_nudge_comes_the_day_after_and_mentions_the_open_session(client):
+    signup(client, email="curioso@example.com")
+    act = make_activity(client, start_date="2026-09-15")
+    # cronômetro iniciado e nunca encerrado
+    r = client.post(f"{API}/sessions/start", json={"activity_id": act["id"]})
+    assert r.status_code in (200, 201), r.text
+    assert _run()["enqueued"] == 1  # 1 dia desde o início do objetivo, nenhuma sessão concluída
+    row = _rows("inactive")[0]
+    assert row.payload["days_without"] == 1 and row.payload["open_session"] is True
+    stats = _dispatch(row.next_run_at + timedelta(minutes=1))
+    row = _rows("inactive")[0]
+    assert stats.get("sent") == 1, (stats, row.status, row.skip_reason, row.last_error)
+    assert "sessão aberta" in MemoryBackend.sent[-1].text

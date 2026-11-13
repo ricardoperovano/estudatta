@@ -65,7 +65,13 @@ BALANCE_KINDS = PROACTIVE_KINDS | {"goal_completed"}
 # lembretes de retorno: todos os planos; e-mail com descadastro de um clique
 REENGAGE_KINDS = {"no_goal", "inactive"}
 NO_GOAL_STEPS = (1, 3, 7)  # dias desde o cadastro, sem nenhum objetivo
-INACTIVE_STEPS = (3, 7, 14, 30)  # dias desde a última sessão (ou do 1º objetivo)
+# dias desde a última sessão (ou do 1º objetivo). O dia 1 existe porque quase ninguém ativa a
+# notificação do aparelho no primeiro acesso: sem um contato cedo, quem fechou a aba não volta.
+# Depois da etapa de 30 dias (válida por 15) o Estudatta não escreve mais.
+INACTIVE_STEPS = (1, 3, 7, 14, 30)
+# Lembrete do horário planejado por e-mail para quem não tem notificação no aparelho. Vale para
+# contas criadas a partir desta data: as anteriores não combinaram receber esse e-mail.
+EMAIL_REMINDER_SINCE = datetime(2026, 11, 13, tzinfo=UTC)
 DEFAULT_URLS = {
     "no_goal": "/app/objetivos/novo",
     "inactive": "/app",
@@ -620,6 +626,12 @@ def _schedule_reengagement(
             StudySession.user_id == user.id, StudySession.status == "finished"
         )
     ).scalar_one()
+    # cronômetro iniciado e nunca encerrado: vale avisar, porque a pessoa pode nem lembrar
+    open_session = db.execute(
+        select(func.count())
+        .select_from(StudySession)
+        .where(StudySession.user_id == user.id, StudySession.status.in_(["active", "paused"]))
+    ).scalar_one()
     anchor = last or min((a.start_date for a in active), default=signup)
     days = (today - anchor).days
     step = _step_for(days, INACTIVE_STEPS)
@@ -643,7 +655,11 @@ def _schedule_reengagement(
         kind="inactive",
         dedupe_key=f"inactive:{user.id}:{anchor.isoformat()}:{step}",
         scheduled_for=when,
-        payload={"days_without": days, "activity_title": active[0].title},
+        payload={
+            "days_without": days,
+            "activity_title": active[0].title,
+            "open_session": bool(open_session),
+        },
         ttl=timedelta(hours=12),
         channels=["inapp", "push", "email"],
     )
@@ -931,12 +947,59 @@ def _relevance_skip_reason(row: NotificationOutbox, summary: TodaySummary | None
     return None
 
 
+STUDYING_MAX = timedelta(hours=6)
+
+
+def _studying_now(session, now: datetime) -> bool:
+    """A pessoa está estudando agora? Uma sessão aberta só conta se começou há pouco: um
+    cronômetro esquecido (aberto há dias) não pode calar os lembretes — era justamente quem
+    parou no meio que ficava sem nenhum aviso de retorno."""
+    if session is None:
+        return False
+    started = getattr(session, "started_at", None)
+    return started is None or now - started < STUDYING_MAX
+
+
+def _email_reminder_fallback(
+    db: Session, row: NotificationOutbox, user: User, prefs: NotificationPreferences, now: datetime
+) -> bool:
+    """O lembrete do horário planejado vai por e-mail quando a pessoa não tem notificação no
+    aparelho (no iPhone ela só existe com o app instalado). No máximo um por dia, só para contas
+    novas, e respeita o descadastro dos e-mails de retorno. Ativar a notificação desliga isto."""
+    if row.kind != "planned_start" or not prefs.reengagement_email:
+        return False
+    created = user.created_at
+    if created is None or created < EMAIL_REMINDER_SINCE:
+        return False
+    if active_push_subscriptions(db, user.id):
+        return False
+    sent_today = db.execute(
+        select(func.count())
+        .select_from(NotificationDelivery)
+        .join(NotificationOutbox, NotificationOutbox.id == NotificationDelivery.outbox_id)
+        .where(
+            NotificationOutbox.user_id == user.id,
+            NotificationOutbox.kind == "planned_start",
+            NotificationDelivery.channel == "email",
+            NotificationDelivery.status == "sent",
+            NotificationDelivery.attempted_at >= now - timedelta(hours=20),
+        )
+    ).scalar_one()
+    return not sent_today
+
+
 def _effective_channels(
-    row: NotificationOutbox, prefs: NotificationPreferences, *, suppress_push: bool
+    row: NotificationOutbox,
+    prefs: NotificationPreferences,
+    *,
+    suppress_push: bool,
+    email_fallback: bool = False,
 ) -> list[str]:
     requested = list(row.channels or [])
     if row.kind == "system":
         return requested
+    if email_fallback and "email" not in requested:
+        requested.append("email")
     allowed = []
     for ch in requested:
         if ch == "inapp" and prefs.channel_inapp:
@@ -951,6 +1014,8 @@ def _effective_channels(
         ):
             allowed.append(ch)
         elif ch == "email" and row.kind in REENGAGE_KINDS and prefs.reengagement_email:
+            allowed.append(ch)
+        elif ch == "email" and email_fallback:
             allowed.append(ch)
         elif ch == "email" and row.kind == "campaign" and prefs.reengagement_email:
             allowed.append(ch)
@@ -991,6 +1056,8 @@ def render_row(
         show_name=prefs.show_activity_name,
         **ctx,
     )
+    if row.kind == "inactive" and p.get("open_session"):
+        body = f"{body} " + _("Você deixou uma sessão aberta: é só voltar e encerrar.")
     url = p.get("url") or DEFAULT_URLS.get(row.kind, "/app")
     return title, body, url
 
@@ -1214,7 +1281,7 @@ def process_outbox_row(db: Session, row: NotificationOutbox, now: datetime) -> s
             ):
                 row.payload = {**row.payload, "target_seconds": summary.target}
 
-    if policy == "reminder" and session_service.active_session(db, user) is not None:
+    if policy == "reminder" and _studying_now(session_service.active_session(db, user), now):
         return _finish(row, "skipped", now=now, reason="session_active")
 
     suppress_push = False
@@ -1232,7 +1299,12 @@ def process_outbox_row(db: Session, row: NotificationOutbox, now: datetime) -> s
         if proactive_sent_today(db, user, now) >= cap:
             return _finish(row, "skipped", now=now, reason="daily_cap")
 
-    channels = _effective_channels(row, prefs, suppress_push=suppress_push)
+    channels = _effective_channels(
+        row,
+        prefs,
+        suppress_push=suppress_push,
+        email_fallback=_email_reminder_fallback(db, row, user, prefs, now),
+    )
     if not channels:
         return _finish(row, "skipped", now=now, reason="no_channels")
 
