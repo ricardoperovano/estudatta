@@ -1,0 +1,144 @@
+# Testes a cada push e pull request; deploy do backend no servidor quando o main muda.
+#
+# O app (apps/web) é publicado pela Vercel e o site pelo GitHub Pages: este workflow só faz o
+# deploy da API. Ele entra no servidor por SSH e roda infra/scripts/deploy-server.sh, que faz
+# backup do banco, aplica as migrações e reinicia os serviços.
+#
+# Segredos necessários (Settings → Secrets and variables → Actions):
+#   DEPLOY_HOST         endereço do servidor (IP ou nome)
+#   DEPLOY_USER         usuário SSH
+#   DEPLOY_SSH_KEY      chave privada de uma chave criada só para o deploy
+#   DEPLOY_KNOWN_HOSTS  saída de `ssh-keyscan -H <servidor>` (confere a identidade do servidor)
+#   DEPLOY_PORT         opcional; porta SSH se não for a 22
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: O que mudou
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: filter
+        env:
+          BEFORE: ${{ github.event.before }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          # disparo manual ou primeiro push do branch: considera tudo alterado
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            echo "backend=true" >> "$GITHUB_OUTPUT"; echo "web=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          base="${BASE:-$BEFORE}"
+          if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            echo "backend=true" >> "$GITHUB_OUTPUT"; echo "web=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          files="$(git diff --name-only "$base" HEAD)"
+          echo "$files"
+          if echo "$files" | grep -qE '^(backend/|infra/|\.github/workflows/)'; then
+            echo "backend=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "backend=false" >> "$GITHUB_OUTPUT"
+          fi
+          if echo "$files" | grep -qE '^(apps/web/|backend/openapi\.json|\.github/workflows/)'; then
+            echo "web=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "web=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  backend:
+    name: Backend (lint e testes)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Biblioteca do python-magic
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libmagic1
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv sync --frozen
+      - run: uv run ruff check app tests
+      - run: uv run pytest -q tests
+
+  web:
+    name: App (tipos, lint e testes)
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+  deploy:
+    name: Deploy do backend
+    needs: [changes, backend]
+    # só no main, só quando o backend mudou e os testes passaram; nunca em pull request
+    if: >-
+      github.ref == 'refs/heads/main' && github.event_name != 'pull_request' &&
+      needs.changes.outputs.backend == 'true' && needs.backend.result == 'success'
+    runs-on: ubuntu-latest
+    # um deploy por vez; um push novo espera o anterior terminar em vez de atropelar a migração
+    concurrency:
+      group: deploy-backend
+      cancel-in-progress: false
+    environment: production
+    steps:
+      - name: Chave e identidade do servidor
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          if [ -z "$DEPLOY_SSH_KEY" ] || [ -z "$DEPLOY_KNOWN_HOSTS" ]; then
+            echo "::error::Faltam os segredos DEPLOY_SSH_KEY e/ou DEPLOY_KNOWN_HOSTS."; exit 1
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Deploy
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${DEPLOY_PORT:-22}" \
+            -o StrictHostKeyChecking=yes -o BatchMode=yes -o ServerAliveInterval=30 \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            'cd /opt/estudatta && bash infra/scripts/deploy-server.sh'
+      - name: Confere a API no ar
+        run: |
+          for i in $(seq 1 10); do
+            if curl -fsS https://api.estudatta.com.br/api/v1/health/live; then echo; exit 0; fi
+            sleep 6
+          done
+          echo "::error::A API não respondeu depois do deploy."; exit 1
