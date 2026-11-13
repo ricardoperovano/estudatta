@@ -252,6 +252,23 @@ export function useSaveSetting() {
   });
 }
 
+// --- Saúde ----------------------------------------------------------------------------------
+
+export type AdminHealth = S["HealthOut"];
+export type HealthGroup = S["HealthGroupOut"];
+
+/** Verificações do ambiente, erros e atritos agrupados, e mensagens de contato. */
+export function useAdminHealth(days: number) {
+  return useQuery({
+    queryKey: [...adminKeys.all, "health", days] as const,
+    queryFn: async () =>
+      unwrap(await api.GET("/api/v1/admin/health", { params: { query: { days } } })) as AdminHealth,
+    placeholderData: keepPreviousData,
+    staleTime: 15_000,
+    refetchInterval: 60_000,
+  });
+}
+
 // --- Filas ----------------------------------------------------------------------------------
 
 export function useAdminQueues(f: PageFilter) {

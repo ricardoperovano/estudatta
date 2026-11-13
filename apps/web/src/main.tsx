@@ -8,6 +8,7 @@ import { applyTheme, readTheme } from "./lib/theme";
 import { Toaster } from "./components/ui/toast";
 import "./index.css";
 import { ajustarBolhaDeAtendimento } from "@/lib/chat-widget";
+import { installErrorReporting } from "@/lib/error-report";
 
 applyTheme(readTheme());
 
@@ -33,3 +34,4 @@ ReactDOM.createRoot(root).render(app);
 
 registerServiceWorker();
 ajustarBolhaDeAtendimento();
+installErrorReporting();

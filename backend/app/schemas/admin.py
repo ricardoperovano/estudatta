@@ -214,3 +214,53 @@ class AuditOut(BaseModel):
     ip: str | None
     request_id: str | None
     created_at: datetime
+
+
+class HealthCheckOut(BaseModel):
+    key: str
+    label: str
+    state: Literal["ok", "warn", "fail"]
+    note: str = ""
+
+
+class HealthTotalsOut(BaseModel):
+    errors_24h: int
+    errors_period: int
+    friction_24h: int
+    friction_period: int
+    users_affected_period: int
+
+
+class HealthGroupOut(BaseModel):
+    fingerprint: str
+    source: str  # server | client | worker
+    level: str  # error | warning
+    code: str
+    message: str
+    path: str | None
+    method: str | None
+    status: int | None
+    count: int
+    users: int
+    first_seen: datetime
+    last_seen: datetime
+    detail: str | None
+    context: dict | None
+
+
+class ContactMessageOut(BaseModel):
+    id: UUID
+    email: str
+    name: str | None
+    subject: str | None
+    message: str
+    created_at: datetime
+
+
+class HealthOut(BaseModel):
+    generated_at: datetime
+    days: int
+    checks: list[HealthCheckOut]
+    totals: HealthTotalsOut
+    groups: list[HealthGroupOut]
+    contact_messages: list[ContactMessageOut]

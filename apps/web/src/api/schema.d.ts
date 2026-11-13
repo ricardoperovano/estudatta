@@ -95,6 +95,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/client-errors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Client Error
+         * @description Recebe o relato de uma tela que quebrou. Não exige login (a tela de entrar também quebra)
+         *     nem CSRF (não altera nada da conta); o limite por IP contém abuso.
+         */
+        post: operations["client_error_api_v1_public_client_errors_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/config": {
         parameters: {
             query?: never;
@@ -2516,6 +2537,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Health Summary
+         * @description Saúde: verificações do ambiente, erros e atritos agrupados, e mensagens de contato.
+         */
+        get: operations["health_summary_api_v1_admin_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/queues": {
         parameters: {
             query?: never;
@@ -3701,6 +3742,27 @@ export interface components {
             /** Status */
             status: string;
         };
+        /**
+         * ClientErrorIn
+         * @description Erro acontecido no navegador de quem usa o app. Só texto técnico: nada do que a pessoa
+         *     digitou vai junto.
+         */
+        ClientErrorIn: {
+            /** Kind */
+            kind: string;
+            /** Message */
+            message: string;
+            /** Stack */
+            stack?: string | null;
+            /** Path */
+            path?: string | null;
+            /** App Version */
+            app_version?: string | null;
+            /** Online */
+            online?: boolean | null;
+            /** Viewport */
+            viewport?: string | null;
+        };
         /** ContactIn */
         ContactIn: {
             /** Name */
@@ -3714,6 +3776,27 @@ export interface components {
             subject?: string | null;
             /** Message */
             message: string;
+        };
+        /** ContactMessageOut */
+        ContactMessageOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Email */
+            email: string;
+            /** Name */
+            name: string | null;
+            /** Subject */
+            subject: string | null;
+            /** Message */
+            message: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /** ContentProgressOut */
         ContentProgressOut: {
@@ -4095,6 +4178,92 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HealthCheckOut */
+        HealthCheckOut: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "ok" | "warn" | "fail";
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** HealthGroupOut */
+        HealthGroupOut: {
+            /** Fingerprint */
+            fingerprint: string;
+            /** Source */
+            source: string;
+            /** Level */
+            level: string;
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Path */
+            path: string | null;
+            /** Method */
+            method: string | null;
+            /** Status */
+            status: number | null;
+            /** Count */
+            count: number;
+            /** Users */
+            users: number;
+            /**
+             * First Seen
+             * Format: date-time
+             */
+            first_seen: string;
+            /**
+             * Last Seen
+             * Format: date-time
+             */
+            last_seen: string;
+            /** Detail */
+            detail: string | null;
+            /** Context */
+            context: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** HealthOut */
+        HealthOut: {
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Days */
+            days: number;
+            /** Checks */
+            checks: components["schemas"]["HealthCheckOut"][];
+            totals: components["schemas"]["HealthTotalsOut"];
+            /** Groups */
+            groups: components["schemas"]["HealthGroupOut"][];
+            /** Contact Messages */
+            contact_messages: components["schemas"]["ContactMessageOut"][];
+        };
+        /** HealthTotalsOut */
+        HealthTotalsOut: {
+            /** Errors 24H */
+            errors_24h: number;
+            /** Errors Period */
+            errors_period: number;
+            /** Friction 24H */
+            friction_24h: number;
+            /** Friction Period */
+            friction_period: number;
+            /** Users Affected Period */
+            users_affected_period: number;
         };
         /** HistoryItem */
         HistoryItem: {
@@ -7282,6 +7451,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ContactIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    client_error_api_v1_public_client_errors_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientErrorIn"];
             };
         };
         responses: {
@@ -12341,6 +12543,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    health_summary_api_v1_admin_health_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthOut"];
                 };
             };
             /** @description Validation Error */

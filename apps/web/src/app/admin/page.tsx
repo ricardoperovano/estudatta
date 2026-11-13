@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ChartBar,
   ClockCounterClockwise,
+  Heartbeat,
   CreditCard,
   GearSix,
   Megaphone,
@@ -24,6 +25,7 @@ import {
 } from "@/components/app/admin-format";
 import { AdminCampaignEditorPage, AdminCampaignsPage } from "@/components/app/admin-campaigns";
 import { AdminCouponsPage } from "@/components/app/admin-coupons";
+import { AdminHealthPage } from "@/components/app/admin-health";
 import { AdminAuditPage, AdminBillingPage, AdminQueuesPage } from "@/components/app/admin-ops";
 import { AdminPlansPage } from "@/components/app/admin-plans";
 import { AdminSettingsPage } from "@/components/app/admin-settings";
@@ -37,6 +39,7 @@ import { cn } from "@/lib/utils";
 
 const SECTIONS = [
   { to: "/admin", end: true, label: t("Visão geral"), icon: ChartBar },
+  { to: "/admin/saude", end: false, label: t("Saúde"), icon: Heartbeat },
   { to: "/admin/usuarios", end: false, label: t("Usuários"), icon: Users },
   { to: "/admin/assinaturas", end: false, label: t("Assinaturas"), icon: Receipt },
   { to: "/admin/planos", end: false, label: t("Planos"), icon: TagIcon },
@@ -130,6 +133,7 @@ export default function AdminPage() {
             ) : null}
             <Routes>
               <Route index element={<OverviewPage />} />
+              <Route path="saude" element={<AdminHealthPage />} />
               <Route path="usuarios" element={<AdminUsersList />} />
               <Route path="usuarios/:id" element={<AdminUserDetailPage />} />
               <Route path="assinaturas" element={<AdminSubscriptionsPage />} />

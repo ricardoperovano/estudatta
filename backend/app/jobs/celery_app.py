@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from celery import Celery
 from celery.schedules import crontab
+from celery.signals import task_failure
 
 from app.core.config import settings
 
@@ -68,3 +69,19 @@ def run_now_if_eager(task, *args, **kwargs):
     if celery_app.conf.task_always_eager:
         return task.apply(args=args, kwargs=kwargs)
     return task.delay(*args, **kwargs)
+
+
+@task_failure.connect
+def _record_task_failure(sender=None, task_id=None, exception=None, einfo=None, **_kw):
+    """Tarefa em segundo plano que falhou aparece na página Saúde do admin."""
+    from app.services import health
+
+    health.record(
+        source="worker",
+        level="error",
+        code="task_failed",
+        message=f"{type(exception).__name__}: {exception}",
+        path=getattr(sender, "name", None),
+        request_id=task_id,
+        detail=str(einfo)[-6000:] if einfo else None,
+    )

@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, Index, Integer, String, UniqueConstraint
+from sqlalchemy import ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -99,5 +99,34 @@ class ContactMessage(UUIDPk, Base):
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
 
 
+class ErrorEvent(UUIDPk, Base):
+    """Erro ou atrito registrado para a página Saúde do painel admin.
+
+    `source`: server (exceção ou resposta de erro da API), client (erro no navegador do
+    usuário) ou worker (tarefa em segundo plano). `level`: error (algo quebrou) ou warning
+    (a pessoa bateu numa barreira: limite do plano, validação, serviço indisponível).
+    `fingerprint` agrupa ocorrências do mesmo problema. Guardado por 30 dias.
+    """
+
+    __tablename__ = "error_events"
+
+    source: Mapped[str] = mapped_column(String(8), nullable=False)
+    level: Mapped[str] = mapped_column(String(8), nullable=False)
+    code: Mapped[str] = mapped_column(String(64), nullable=False)
+    message: Mapped[str] = mapped_column(String(500), nullable=False)
+    path: Mapped[str | None] = mapped_column(String(300))
+    method: Mapped[str | None] = mapped_column(String(8))
+    status: Mapped[int | None] = mapped_column(Integer)
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), index=True
+    )
+    request_id: Mapped[str | None] = mapped_column(String(64))
+    fingerprint: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    detail: Mapped[str | None] = mapped_column(Text)
+    context: Mapped[dict | None] = mapped_column(JSONType)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
+
+
 Index("ix_audit_logs_created", AuditLog.created_at)
+Index("ix_error_events_created", ErrorEvent.created_at)
 Index("ix_ai_usage_user_created", AiUsage.user_id, AiUsage.created_at)

@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.core.deps import rate_limit
+from app.core.deps import get_optional_user, rate_limit
 from app.core.i18n import _
 from app.core.timeutil import utcnow
 from app.models.system import ContactMessage, WaitlistEntry
+from app.models.user import User
 from app.schemas.billing import (
     ContactIn,
     PlanPriceOut,
@@ -21,6 +23,7 @@ from app.schemas.billing import (
 )
 from app.schemas.common import OkResponse
 from app.services import billing as billing_service
+from app.services import health as health_service
 from app.services.auth import normalize_email
 
 router = APIRouter(prefix="/public", tags=["public"])
@@ -85,6 +88,57 @@ def contact(payload: ContactIn, db: Session = Depends(get_db)) -> OkResponse:
     )
     db.commit()
     return OkResponse(message=_("Mensagem recebida. Respondemos pelo e-mail informado."))
+
+
+CLIENT_ERROR_KINDS = ("js_error", "unhandled_rejection", "render_error", "chunk_error")
+
+
+class ClientErrorIn(BaseModel):
+    """Erro acontecido no navegador de quem usa o app. Só texto técnico: nada do que a pessoa
+    digitou vai junto."""
+
+    kind: str = Field(max_length=32)
+    message: str = Field(max_length=500)
+    stack: str | None = Field(default=None, max_length=6000)
+    path: str | None = Field(default=None, max_length=300)
+    app_version: str | None = Field(default=None, max_length=40)
+    online: bool | None = None
+    viewport: str | None = Field(default=None, max_length=24)
+
+
+@router.post(
+    "/client-errors",
+    response_model=OkResponse,
+    dependencies=[Depends(rate_limit("client_errors", 30, 600))],
+)
+def client_error(
+    payload: ClientErrorIn, request: Request, user: User | None = Depends(get_optional_user)
+) -> OkResponse:
+    """Recebe o relato de uma tela que quebrou. Não exige login (a tela de entrar também quebra)
+    nem CSRF (não altera nada da conta); o limite por IP contém abuso."""
+    kind = payload.kind if payload.kind in CLIENT_ERROR_KINDS else "js_error"
+    ua = (request.headers.get("user-agent") or "")[:200]
+    health_service.record(
+        source="client",
+        level="error",
+        code=kind,
+        message=payload.message,
+        path=payload.path,
+        user_id=user.id if user else None,
+        request_id=getattr(request.state, "request_id", None),
+        detail=payload.stack,
+        context={
+            k: v
+            for k, v in {
+                "user_agent": ua,
+                "app_version": payload.app_version,
+                "online": payload.online,
+                "viewport": payload.viewport,
+            }.items()
+            if v not in (None, "")
+        },
+    )
+    return OkResponse(message="ok")
 
 
 _UNSUB_PAGE = """<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Estudatta</title></head>

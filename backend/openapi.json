@@ -153,6 +153,48 @@
         }
       }
     },
+    "/api/v1/public/client-errors": {
+      "post": {
+        "tags": [
+          "public"
+        ],
+        "summary": "Client Error",
+        "description": "Recebe o relato de uma tela que quebrou. Não exige login (a tela de entrar também quebra)\nnem CSRF (não altera nada da conta); o limite por IP contém abuso.",
+        "operationId": "client_error_api_v1_public_client_errors_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientErrorIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/config": {
       "get": {
         "tags": [
@@ -7437,6 +7479,52 @@
         }
       }
     },
+    "/api/v1/admin/health": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Health Summary",
+        "description": "Saúde: verificações do ambiente, erros e atritos agrupados, e mensagens de contato.",
+        "operationId": "health_summary_api_v1_admin_health_get",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 30,
+              "minimum": 1,
+              "default": 7,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/queues": {
       "get": {
         "tags": [
@@ -11292,6 +11380,86 @@
         ],
         "title": "CheckoutOut"
       },
+      "ClientErrorIn": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "maxLength": 32,
+            "title": "Kind"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Message"
+          },
+          "stack": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 6000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stack"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path"
+          },
+          "app_version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "App Version"
+          },
+          "online": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Online"
+          },
+          "viewport": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 24
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Viewport"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "message"
+        ],
+        "title": "ClientErrorIn",
+        "description": "Erro acontecido no navegador de quem usa o app. Só texto técnico: nada do que a pessoa\ndigitou vai junto."
+      },
       "ContactIn": {
         "properties": {
           "name": {
@@ -11336,6 +11504,60 @@
           "message"
         ],
         "title": "ContactIn"
+      },
+      "ContactMessageOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "name",
+          "subject",
+          "message",
+          "created_at"
+        ],
+        "title": "ContactMessageOut"
       },
       "ContentProgressOut": {
         "properties": {
@@ -12391,6 +12613,235 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HealthCheckOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "warn",
+              "fail"
+            ],
+            "title": "State"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "state"
+        ],
+        "title": "HealthCheckOut"
+      },
+      "HealthGroupOut": {
+        "properties": {
+          "fingerprint": {
+            "type": "string",
+            "title": "Fingerprint"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "level": {
+            "type": "string",
+            "title": "Level"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path"
+          },
+          "method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Method"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "users": {
+            "type": "integer",
+            "title": "Users"
+          },
+          "first_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "First Seen"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Seen"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fingerprint",
+          "source",
+          "level",
+          "code",
+          "message",
+          "path",
+          "method",
+          "status",
+          "count",
+          "users",
+          "first_seen",
+          "last_seen",
+          "detail",
+          "context"
+        ],
+        "title": "HealthGroupOut"
+      },
+      "HealthOut": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/HealthCheckOut"
+            },
+            "type": "array",
+            "title": "Checks"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/HealthTotalsOut"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/HealthGroupOut"
+            },
+            "type": "array",
+            "title": "Groups"
+          },
+          "contact_messages": {
+            "items": {
+              "$ref": "#/components/schemas/ContactMessageOut"
+            },
+            "type": "array",
+            "title": "Contact Messages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_at",
+          "days",
+          "checks",
+          "totals",
+          "groups",
+          "contact_messages"
+        ],
+        "title": "HealthOut"
+      },
+      "HealthTotalsOut": {
+        "properties": {
+          "errors_24h": {
+            "type": "integer",
+            "title": "Errors 24H"
+          },
+          "errors_period": {
+            "type": "integer",
+            "title": "Errors Period"
+          },
+          "friction_24h": {
+            "type": "integer",
+            "title": "Friction 24H"
+          },
+          "friction_period": {
+            "type": "integer",
+            "title": "Friction Period"
+          },
+          "users_affected_period": {
+            "type": "integer",
+            "title": "Users Affected Period"
+          }
+        },
+        "type": "object",
+        "required": [
+          "errors_24h",
+          "errors_period",
+          "friction_24h",
+          "friction_period",
+          "users_affected_period"
+        ],
+        "title": "HealthTotalsOut"
       },
       "HistoryItem": {
         "properties": {

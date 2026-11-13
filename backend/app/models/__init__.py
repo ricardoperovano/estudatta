@@ -30,6 +30,7 @@ from app.models.system import (
     AppSetting,
     AuditLog,
     ContactMessage,
+    ErrorEvent,
     SyncOperation,
     WaitlistEntry,
 )
@@ -77,6 +78,7 @@ __all__ = [
     "AiUsage",
     "AppSetting",
     "AuditLog",
+    "ErrorEvent",
     "ContactMessage",
     "SyncOperation",
     "WaitlistEntry",

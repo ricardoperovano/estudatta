@@ -84,7 +84,79 @@ def _payload(code: str, message: str, details: Any = None, request: Request | No
     return body
 
 
+async def _note(
+    request: Request,
+    *,
+    level: str,
+    code: str,
+    message: str,
+    status: int,
+    detail: str | None = None,
+) -> None:
+    """Registra o erro/atrito para a página Saúde do admin (fora do loop de eventos)."""
+    from starlette.concurrency import run_in_threadpool
+
+    from app.services import health
+
+    path = request.url.path
+    if path.endswith("/client-errors"):
+        return  # o próprio canal de relato não gera relato (evita laço)
+    sess = getattr(request.state, "auth_session", None)
+    await run_in_threadpool(
+        health.record,
+        source="server",
+        level=level,
+        code=code,
+        message=message,
+        path=path,
+        method=request.method,
+        status=status,
+        user_id=getattr(sess, "user_id", None),
+        request_id=getattr(request.state, "request_id", None),
+        detail=detail,
+    )
+
+
+def _is_friction(status: int) -> bool:
+    from app.services.health import FRICTION_STATUSES
+
+    return status in FRICTION_STATUSES or status >= 500
+
+
+async def unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Exceção que escapou: responde no formato padrão (antes saía texto puro) e registra com a
+    pilha, para aparecer no painel em vez de se perder no log do contêiner."""
+    import traceback
+
+    stack = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+    await _note(
+        request,
+        level="error",
+        code="internal_error",
+        message=f"{type(exc).__name__}: {exc}",
+        status=500,
+        detail=stack[-6000:],
+    )
+    return JSONResponse(
+        status_code=500,
+        content=_payload(
+            "internal_error",
+            translate("Algo deu errado do nosso lado. Tente de novo em instantes."),
+            None,
+            request,
+        ),
+    )
+
+
 async def api_error_handler(request: Request, exc: ApiError) -> JSONResponse:
+    if _is_friction(exc.status_code):
+        await _note(
+            request,
+            level="error" if exc.status_code >= 500 and exc.status_code != 503 else "warning",
+            code=exc.code,
+            message=exc.message,
+            status=exc.status_code,
+        )
     return JSONResponse(
         status_code=exc.status_code,
         content=_payload(exc.code, translate(exc.message), exc.details, request),
@@ -122,6 +194,16 @@ def _safe_errors(exc: RequestValidationError) -> list[dict]:
 
 
 async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    campos = ", ".join(
+        sorted({".".join(str(x) for x in e.get("loc", ())[1:]) for e in exc.errors()})
+    )
+    await _note(
+        request,
+        level="warning",
+        code="validation_failed",
+        message=f"Dados inválidos: {campos}"[:500],
+        status=422,
+    )
     return JSONResponse(
         status_code=422,
         content=_payload(

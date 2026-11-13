@@ -21,6 +21,7 @@ from app.schemas.admin import (
     AuditOut,
     BillingEventOut,
     DeliveryOut,
+    HealthOut,
     ImportJobAdminOut,
     OutboxOut,
     OverviewOut,
@@ -41,6 +42,7 @@ from app.schemas.billing import SubscriptionOut
 from app.schemas.common import OkResponse, Page
 from app.services import admin as svc
 from app.services import billing as billing_service
+from app.services import health as health_service
 from app.services.plans import get_entitlements
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(get_admin_user)])
@@ -350,6 +352,14 @@ def put_setting(
 
 
 # --- Filas ---------------------------------------------------------------------------------
+
+
+@router.get("/health", response_model=HealthOut)
+def health_summary(
+    days: int = Query(default=7, ge=1, le=30), db: Session = Depends(get_db)
+) -> HealthOut:
+    """Saúde: verificações do ambiente, erros e atritos agrupados, e mensagens de contato."""
+    return HealthOut(**health_service.summary(db, days=days))
 
 
 @router.get("/queues", response_model=QueuesOut)

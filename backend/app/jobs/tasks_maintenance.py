@@ -14,6 +14,7 @@ from app.models.activity import Activity
 from app.models.notification import NotificationOutbox
 from app.models.user import AuthSession, OneTimeToken
 from app.services import balance as balance_service
+from app.services import health as health_service
 
 log = get_logger("jobs.maintenance")
 
@@ -59,5 +60,6 @@ def cleanup() -> dict:
         ).scalars():
             db.delete(o)
             removed["outbox"] += 1
+        removed["error_events"] = health_service.purge(db, now=now)
         db.commit()
     return removed
