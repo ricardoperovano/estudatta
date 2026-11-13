@@ -549,6 +549,11 @@ function FormatHint({ source, maxMb }: { source: ImportSource; maxMb: number }) 
       <li>
         {t("A leitura acontece em segundo plano e pode levar alguns instantes. PDF só de imagem não é lido.")}
       </li>
+      <li>
+        {t(
+          "Edital de concurso: envie só as páginas do conteúdo programático. O edital inteiro vira centenas de linhas (regras, datas, cargos) em vez das matérias.",
+        )}
+      </li>
     </ul>
   );
 }

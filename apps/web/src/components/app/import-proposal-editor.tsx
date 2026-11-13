@@ -37,6 +37,9 @@ import { cn } from "@/lib/utils";
 type Updater = (fn: (list: EditorSubject[]) => EditorSubject[]) => void;
 type Dir = -1 | 1;
 
+/** Acima disto a proposta quase certamente veio de um edital inteiro, não do conteúdo programático. */
+const MANY_TOPICS = 150;
+
 const plural = (n: number, one: string, many: string) =>
   `${n.toLocaleString(intlLocale)} ${n === 1 ? one : many}`;
 
@@ -243,6 +246,22 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
           <span className="text-[12px] text-neutral-400">
             {tx("O conteúdo era longo: só a primeira parte virou proposta. Confira se falta algo.")}
           </span>
+        ) : null}
+        {counts.topics > MANY_TOPICS ? (
+          <p className="tint-soft rounded-md p-3 text-[13px] leading-[1.5]" role="note">
+            <strong className="font-medium">
+              {tx("{{v0}} é muita coisa para um plano.", {
+                v0: plural(counts.topics, tx("tópico"), tx("tópicos")),
+              })}
+            </strong>{" "}
+            {aiEnabled
+              ? tx(
+                  "Isso costuma acontecer quando o arquivo é o edital inteiro. Toque em “Sugerir estrutura” para a IA resumir, ou cancele e envie só as páginas do conteúdo programático.",
+                )
+              : tx(
+                  "Isso costuma acontecer quando o arquivo é o edital inteiro. Cancele e envie só as páginas do conteúdo programático, ou remova aqui o que não é matéria.",
+                )}
+          </p>
         ) : null}
         {skipped > 0 ? (
           <span className="tnum text-[12px] text-neutral-400">

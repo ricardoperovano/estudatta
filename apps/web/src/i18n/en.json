@@ -2862,5 +2862,9 @@
   "Estrutura atualizada": "Structure updated",
   "{{v0}} e {{v1}}. Revise e confirme para criar.": "{{v0}} and {{v1}}. Review and confirm to create.",
   "Organizando o conteúdo com IA…": "Organizing the content with AI…",
-  "Pode levar alguns segundos. A lista abaixo será substituída pela sugestão.": "This may take a few seconds. The list below will be replaced by the suggestion."
+  "Pode levar alguns segundos. A lista abaixo será substituída pela sugestão.": "This may take a few seconds. The list below will be replaced by the suggestion.",
+  "{{v0}} é muita coisa para um plano.": "{{v0}} is a lot for one plan.",
+  "Isso costuma acontecer quando o arquivo é o edital inteiro. Toque em “Sugerir estrutura” para a IA resumir, ou cancele e envie só as páginas do conteúdo programático.": "This usually happens when the file is the whole exam notice. Tap “Suggest structure” to have the AI condense it, or cancel and upload only the syllabus pages.",
+  "Isso costuma acontecer quando o arquivo é o edital inteiro. Cancele e envie só as páginas do conteúdo programático, ou remova aqui o que não é matéria.": "This usually happens when the file is the whole exam notice. Cancel and upload only the syllabus pages, or remove here what isn’t a subject.",
+  "Edital de concurso: envie só as páginas do conteúdo programático. O edital inteiro vira centenas de linhas (regras, datas, cargos) em vez das matérias.": "Exam notice: upload only the syllabus pages. The whole notice turns into hundreds of lines (rules, dates, positions) instead of the subjects."
 }
