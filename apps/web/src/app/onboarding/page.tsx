@@ -94,8 +94,12 @@ export default function OnboardingPage() {
       });
       try {
         await api.PATCH("/api/v1/me/preferences", { body: { tone } });
+        // sem horário (campo apagado), grava só os dias: o horário vazio fazia a API recusar o
+        // pedido inteiro e os dias escolhidos se perdiam em silêncio
         await api.PATCH("/api/v1/notifications/preferences", {
-          body: { reminder_time: reminder, reminder_days: days } as never,
+          body: (/^\d{2}:\d{2}$/.test(reminder)
+            ? { reminder_time: reminder, reminder_days: days }
+            : { reminder_days: days }) as never,
         });
       } catch {
         /* preferências podem ser ajustadas depois */

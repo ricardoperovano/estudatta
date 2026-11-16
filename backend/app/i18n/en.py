@@ -486,6 +486,7 @@ MESSAGES: dict[str, str] = {
     "Informe uma duração entre 1 minuto e 16 horas.": "Enter a duration between 1 minute and 16 hours.",
     "Não é possível registrar tempo em uma data futura.": "You can’t log time on a future date.",
     "Esse registro ultrapassaria 24 horas no mesmo dia.": "That log would exceed 24 hours on the same day.",
+    "Há um cronômetro aberto desde {quando}. Encerre ou descarte essa sessão antes de registrar este horário.": "There’s a timer still running since {quando}. Finish or discard that session before logging this time.",
     "Esse horário se sobrepõe a outra sessão registrada.": "That time overlaps another logged session.",
     "Esse horário se sobrepõe a outra sessão.": "That time overlaps another session.",
     "Já existe uma sessão em andamento em outro aparelho.": "There’s already a session in progress on another device.",

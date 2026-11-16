@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.errors import Conflict, NotFound, ValidationFailed
+from app.core.i18n import _
 from app.core.timeutil import local_datetime_to_utc, today_in, utcnow
 from app.domain.intervals import (
     TzPeriod,
@@ -564,6 +565,30 @@ def find_overlap(
     return None
 
 
+def _overlap_error(other: StudySession, tz: str, *, registered: bool) -> Conflict:
+    """Erro de sobreposição. Quando a outra sessão é um cronômetro ainda aberto, diz isso: um
+    cronômetro esquecido "ocupa" todo o tempo desde que começou, e a mensagem genérica deixava a
+    pessoa sem saber por que o registro manual era recusado."""
+    details = {"session_id": str(other.id), "activity_id": str(other.activity_id)}
+    if other.status in ("active", "paused") and other.started_at is not None:
+        since = other.started_at.astimezone(_zone(tz))
+        return Conflict(
+            _(
+                "Há um cronômetro aberto desde {quando}. Encerre ou descarte essa sessão antes de registrar este horário.",
+                quando=since.strftime("%d/%m às %H:%M"),
+            ),
+            code="open_session",
+            details=details,
+        )
+    return Conflict(
+        "Esse horário se sobrepõe a outra sessão registrada."
+        if registered
+        else "Esse horário se sobrepõe a outra sessão.",
+        code="overlap",
+        details=details,
+    )
+
+
 def manual_session(
     db: Session,
     user: User,
@@ -650,11 +675,7 @@ def manual_session(
             raise ValidationFailed("O horário informado termina no futuro.", code="future_time")
         other = find_overlap(db, user, start, end)
         if other is not None:
-            raise Conflict(
-                "Esse horário se sobrepõe a outra sessão registrada.",
-                code="overlap",
-                details={"session_id": str(other.id), "activity_id": str(other.activity_id)},
-            )
+            raise _overlap_error(other, act.timezone, registered=True)
         sess.entry_mode = "timed"
         sess.started_at = start
         sess.ended_at = end
@@ -753,11 +774,7 @@ def update_session(
             end = start + timedelta(seconds=dur)
             other = find_overlap(db, user, start, end, exclude_id=sess.id)
             if other is not None:
-                raise Conflict(
-                    "Esse horário se sobrepõe a outra sessão.",
-                    code="overlap",
-                    details={"session_id": str(other.id)},
-                )
+                raise _overlap_error(other, sess.timezone, registered=False)
             for i in list(sess.intervals):
                 db.delete(i)
             db.flush()
