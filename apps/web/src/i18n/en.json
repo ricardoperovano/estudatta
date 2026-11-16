@@ -2907,5 +2907,14 @@
   "Nenhuma mensagem recebida.": "No messages received.",
   "{{v0}} pessoa(s)": "{{v0}} person(s)",
   "última vez {{v0}}": "last seen {{v0}}",
-  "Detalhes técnicos": "Technical details"
+  "Detalhes técnicos": "Technical details",
+  "Cronômetro esquecido": "Forgotten timer",
+  "Cronômetro descartado": "Timer discarded",
+  "Nada foi contado no seu saldo.": "Nothing was counted in your balance.",
+  "Não foi possível descartar agora": "Couldn’t discard right now",
+  "O cronômetro de {{v0}} está aberto desde {{v1}}.": "The timer for {{v0}} has been running since {{v1}}.",
+  "Seu cronômetro está aberto desde {{v0}}.": "Your timer has been running since {{v0}}.",
+  "Se você esqueceu de encerrar, encerre e ajuste a duração para o que foi estudo de verdade — ou descarte.": "If you forgot to stop it, finish and adjust the duration to what was actually study — or discard it.",
+  "Descartar este cronômetro?": "Discard this timer?",
+  "A sessão aberta desde {{v0}} é apagada e nada entra no saldo. Se você estudou parte desse tempo, prefira encerrar e ajustar.": "The session open since {{v0}} is deleted and nothing goes into your balance. If you studied part of that time, finish and adjust instead."
 }

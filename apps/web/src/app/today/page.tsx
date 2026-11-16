@@ -28,6 +28,8 @@ import { StudyInsightsCard } from "@/components/app/study-insights-card";
 import { fmtBookmark } from "@/components/app/session-progress";
 import { useTimerStore, elapsedSeconds } from "@/app/timer/store";
 import { isGhostTimer } from "@/app/timer/ghost";
+import { isForgottenTimer } from "@/app/timer/forgotten";
+import { ForgottenTimerCard } from "@/components/today/forgotten-timer";
 import { cn } from "@/lib/utils";
 import { TataSvg } from "@/components/mascot/TataSvg";
 import { useTataPrefs } from "@/components/mascot/use-tata";
@@ -116,6 +118,9 @@ export default function TodayPage() {
     .filter((c) => c.activity.tracking_mode !== "checklist")
     .map((c) => ({ id: c.activity.id, title: c.activity.title }));
   const activeTimer = timer && (timer.status === "active" || timer.status === "paused") ? timer : null;
+  // sessão aberta segundo o servidor (pode ser de outro aparelho) ou, sem resposta, a deste aparelho
+  const openStartedAt = active.data?.started_at ?? activeTimer?.started_at ?? null;
+  const forgotten = isForgottenTimer(openStartedAt);
 
   const hour = new Date().getHours();
   const syncTag = !online ? (
@@ -134,6 +139,21 @@ export default function TodayPage() {
 
   return (
     <div className="relative isolate flex flex-col gap-4 desktop:gap-6">
+      {/* no topo: para quem volta ao app, é a coisa mais importante da tela */}
+      {forgotten && openStartedAt ? (
+        <ForgottenTimerCard
+          sessionId={active.data?.id ?? activeTimer?.session_id ?? null}
+          startedAt={openStartedAt}
+          activityTitle={
+            activeTimer?.activity_title ??
+            cards.find((c) => c.activity.id === active.data?.activity_id)?.activity.title
+          }
+          online={online}
+          onDiscarded={async () => {
+            if (user) await useTimerStore.getState().clear(user.id);
+          }}
+        />
+      ) : null}
       <TrialBanner />
       <StarterChallengeCard />
       <TodayHero
@@ -183,7 +203,7 @@ export default function TodayPage() {
         </Banner>
       ) : null}
 
-      {activeTimer ? (
+      {activeTimer && !forgotten ? (
         <Card className="tint-soft gap-2 rounded-[20px] p-4 shadow-accent-ring">
           <div className="flex items-center justify-between">
             <span className="kicker-accent flex items-center gap-1.5">

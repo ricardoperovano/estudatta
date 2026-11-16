@@ -402,6 +402,20 @@ export default function TimerPage() {
     await adopt();
   };
 
+  // Revisão da sessão longa. Fica fora dos ramos abaixo de propósito: encerrar limpa o cronômetro
+  // deste aparelho, a tela passa para "Começar sessão" e, se o diálogo morasse só no ramo "em
+  // sessão", ele nunca aparecia — a sessão ficava aguardando revisão para sempre, fora do saldo.
+  const reviewDialog = reviewOpen ? (
+    <ReviewDialog
+      session={reviewOpen}
+      onDone={() => {
+        setReviewOpen(null);
+        invalidate();
+        nav("/app");
+      }}
+    />
+  ) : null;
+
   if (!hydrated || activities.isPending) {
     return (
       <div className="flex justify-center py-20">
@@ -416,6 +430,7 @@ export default function TimerPage() {
     const chosen = activityId || list[0]?.id || "";
     return (
       <div className="mx-auto flex max-w-[440px] flex-col gap-4">
+        {reviewDialog}
         <h1 className="text-[25px]">{tx("Começar sessão")}</h1>
         {error ? <Banner kind="error">{error}</Banner> : null}
         {conflict || fromOtherDevice ? (
@@ -652,16 +667,7 @@ export default function TimerPage() {
         </DialogContent>
       </Dialog>
 
-      {reviewOpen ? (
-        <ReviewDialog
-          session={reviewOpen}
-          onDone={() => {
-            setReviewOpen(null);
-            invalidate();
-            nav("/app");
-          }}
-        />
-      ) : null}
+      {reviewDialog}
     </div>
   );
 }
