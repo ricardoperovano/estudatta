@@ -2932,5 +2932,8 @@
   "Digite o e-mail da conta para confirmar": "Type the account’s email to confirm",
   "Sua senha de administrador": "Your administrator password",
   "Motivo (opcional, fica na auditoria)": "Reason (optional, kept in the audit log)",
-  "Excluir para sempre": "Delete forever"
+  "Excluir para sempre": "Delete forever",
+  "Digite o e-mail da conta que será excluída": "Type the email of the account to be deleted",
+  "É o e-mail dela, não o seu: {{v0}}": "It’s that account’s email, not yours: {{v0}}",
+  "Não confere. O e-mail da conta que será excluída é {{v0}}.": "It doesn’t match. The email of the account to be deleted is {{v0}}."
 }

@@ -427,14 +427,32 @@ function DeleteAccount({
               {error}
             </p>
           ) : null}
-          <Field label={t("Digite o e-mail da conta para confirmar")} htmlFor="del-email">
+          <Field
+            label={t("Digite o e-mail da conta que será excluída")}
+            htmlFor="del-target"
+            hint={t("É o e-mail dela, não o seu: {{v0}}", { v0: user.email })}
+            error={
+              email.trim() && !matches
+                ? t("Não confere. O e-mail da conta que será excluída é {{v0}}.", { v0: user.email })
+                : undefined
+            }
+          >
+            {/* Campo de texto com nome neutro e marcas de "ignore": como campo de e-mail ao lado
+                de uma senha, o gerenciador de senhas preenchia aqui o e-mail de quem exclui. */}
             <Input
-              id="del-email"
-              type="email"
+              id="del-target"
+              name="conta-a-excluir"
+              type="text"
+              inputMode="email"
               autoComplete="off"
               autoCapitalize="none"
+              autoCorrect="off"
               spellCheck={false}
-              placeholder={user.email}
+              data-1p-ignore
+              data-lpignore="true"
+              data-bwignore
+              data-form-type="other"
+              invalid={!!email.trim() && !matches}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
