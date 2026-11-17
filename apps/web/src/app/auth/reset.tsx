@@ -7,6 +7,8 @@ import { z } from "zod";
 import { AuthLayout } from "./layout";
 import { Button, Field, Input, Banner } from "@/components/ui";
 import { api, unwrap, errorMessage } from "@/api/client";
+import { isConnectionFailure } from "@/api/client";
+import { noteConnectionFailure } from "@/lib/error-report";
 
 const schema = z.object({ password: z.string().min(8, t("Use pelo menos 8 caracteres.")) });
 type Form = z.infer<typeof schema>;
@@ -23,6 +25,7 @@ export default function ResetPage() {
       unwrap(await api.POST("/api/v1/auth/reset-password", { body: { token, password: v.password } }));
       nav("/entrar", { replace: true });
     } catch (e) {
+      if (isConnectionFailure(e)) noteConnectionFailure("POST /auth/reset-password", e);
       setError(errorMessage(e));
     }
   };

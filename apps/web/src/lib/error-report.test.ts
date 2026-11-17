@@ -22,3 +22,21 @@ describe("relato de erros", () => {
     expect(isChunkError("TypeError: Failed to fetch")).toBe(false);
   });
 });
+
+describe("falha de conexão", () => {
+  it("troca o texto cru do navegador por uma mensagem que a pessoa entende", async () => {
+    const { errorMessage, isConnectionFailure, CONNECTION_ERROR_MESSAGE } = await import("@/api/client");
+    for (const cru of ["Load failed", "Failed to fetch", "NetworkError when attempting to fetch resource."]) {
+      const e = new TypeError(cru);
+      expect(isConnectionFailure(e)).toBe(true);
+      expect(errorMessage(e)).toBe(CONNECTION_ERROR_MESSAGE);
+    }
+  });
+
+  it("não confunde um defeito do app com problema de rede", async () => {
+    const { errorMessage, isConnectionFailure } = await import("@/api/client");
+    const bug = new TypeError("Cannot read properties of undefined (reading 'title')");
+    expect(isConnectionFailure(bug)).toBe(false);
+    expect(errorMessage(bug)).toContain("Cannot read properties");
+  });
+});

@@ -9,6 +9,8 @@ import { AuthLayout } from "./layout";
 import { Button, Field, Input, Banner } from "@/components/ui";
 import { useAuthActions, usePublicConfig } from "@/api/session";
 import { errorMessage, API_BASE } from "@/api/client";
+import { isConnectionFailure } from "@/api/client";
+import { noteConnectionFailure } from "@/lib/error-report";
 
 const schema = z.object({
   email: z.string().email(t("Informe um e-mail válido.")),
@@ -38,6 +40,7 @@ export default function LoginPage() {
       const data = await login(v.email, v.password);
       nav(data.user.onboarding_completed_at ? from : "/onboarding", { replace: true });
     } catch (e) {
+      if (isConnectionFailure(e)) noteConnectionFailure("POST /auth/login", e);
       setError(errorMessage(e));
     }
   };

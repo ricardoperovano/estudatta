@@ -108,8 +108,25 @@ export function isNetworkError(e: unknown): boolean {
   return e instanceof ApiError ? e.status === 0 : e instanceof TypeError;
 }
 
+export const CONNECTION_ERROR_MESSAGE = t(
+  "Não foi possível conectar ao servidor. Confira sua internet e tente de novo.",
+);
+
+/**
+ * O pedido não chegou a ter resposta: a rede caiu ou algo no caminho o barrou. Cada navegador
+ * descreve isso com um texto próprio e cru ("Load failed" no Safari, "Failed to fetch" no
+ * Chrome), que chegava a aparecer na tela para a pessoa.
+ */
+export function isConnectionFailure(e: unknown): boolean {
+  if (e instanceof ApiError) return e.status === 0;
+  if (!(e instanceof TypeError)) return false;
+  const m = e.message.toLowerCase();
+  return m.includes("load failed") || m.includes("failed to fetch") || m.includes("networkerror");
+}
+
 export function errorMessage(e: unknown, fallback = t("Algo deu errado. Tente de novo.")): string {
   if (e instanceof ApiError) return e.status === 0 ? NETWORK_ERROR_MESSAGE : e.message;
+  if (isConnectionFailure(e)) return CONNECTION_ERROR_MESSAGE;
   if (e instanceof Error && e.message) return e.message;
   return fallback;
 }

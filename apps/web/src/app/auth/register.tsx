@@ -10,6 +10,8 @@ import { useAuthActions } from "@/api/session";
 import { errorMessage } from "@/api/client";
 import { detectTimezone } from "@/lib/device";
 import { siteLink } from "@/design/brand";
+import { isConnectionFailure } from "@/api/client";
+import { noteConnectionFailure } from "@/lib/error-report";
 
 const schema = z.object({
   name: z.string().max(120).optional(),
@@ -30,6 +32,7 @@ export default function RegisterPage() {
       await signup(v.email, v.password, v.name || "", detectTimezone());
       nav("/onboarding", { replace: true });
     } catch (e) {
+      if (isConnectionFailure(e)) noteConnectionFailure("POST /auth/register", e);
       setError(errorMessage(e));
     }
   };

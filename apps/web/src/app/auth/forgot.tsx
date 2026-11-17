@@ -6,7 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { AuthLayout } from "./layout";
 import { Button, Field, Input, Banner } from "@/components/ui";
-import { api, unwrap, errorMessage } from "@/api/client";
+import { api, unwrap, errorMessage, isConnectionFailure } from "@/api/client";
+import { noteConnectionFailure } from "@/lib/error-report";
 
 const schema = z.object({ email: z.string().email(t("Informe um e-mail válido.")) });
 type Form = z.infer<typeof schema>;
@@ -17,10 +18,21 @@ export default function ForgotPage() {
   const { register, handleSubmit, formState } = useForm<Form>({ resolver: zodResolver(schema) });
   const onSubmit = async (v: Form) => {
     setError(null);
-    try {
+    const send = async () =>
       unwrap(await api.POST("/api/v1/auth/forgot-password", { body: { email: v.email } }));
+    try {
+      try {
+        await send();
+      } catch (e) {
+        // falha de conexão: uma segunda tentativa resolve a maioria dos casos (rede oscilando,
+        // app voltando do segundo plano); pedir o link duas vezes não faz mal
+        if (!isConnectionFailure(e)) throw e;
+        await new Promise((r) => setTimeout(r, 1200));
+        await send();
+      }
       setDone(true);
     } catch (e) {
+      if (isConnectionFailure(e)) noteConnectionFailure("POST /auth/forgot-password", e);
       setError(errorMessage(e));
     }
   };

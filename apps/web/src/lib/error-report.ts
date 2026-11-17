@@ -75,6 +75,20 @@ export function reportError(kind: ClientErrorKind, err: unknown): void {
   }
 }
 
+/**
+ * Pedido que não completou numa tela onde isso trava a pessoa (entrar, criar conta, recuperar
+ * senha). Falha de rede comum é ruído e fica fora dos relatos; aqui ela é relatada de propósito,
+ * com a rota, porque um bloqueio no caminho (firewall, proxy) não deixa nenhum rastro no servidor
+ * e só o aparelho sabe que aconteceu. Se a rede estiver mesmo fora, o relato também não sai.
+ */
+export function noteConnectionFailure(route: string, err: unknown): void {
+  const original = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+  const relato = new Error(`Pedido não completou: ${route}`);
+  relato.name = "ConnectionFailure";
+  relato.stack = `${original}\nonline: ${navigator.onLine}`;
+  reportError("js_error", relato);
+}
+
 let installed = false;
 
 /** Liga a captura global: erros de script e promessas rejeitadas sem tratamento. */
