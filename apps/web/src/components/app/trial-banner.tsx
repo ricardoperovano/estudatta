@@ -10,6 +10,7 @@ import { Sparkle } from "@phosphor-icons/react";
 import { Button, Card } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { t } from "@/i18n";
+import { fmtChargeDay } from "@/components/app/card-trial";
 
 const KEY = "estudatta.trial.dismissed";
 const SHOW_WITHIN_DAYS = 7;
@@ -32,6 +33,7 @@ function dismissedToday(): boolean {
 export function TrialBanner() {
   const ent = useEntitlements();
   const [hidden, setHidden] = React.useState(dismissedToday);
+  if (ent?.subscription_status === "trialing") return <CardTrialNotice ent={ent} />;
   if (!ent || ent.source !== "trial") return null;
   const days = trialDaysLeft(ent.current_period_end);
   // na primeira semana o aviso é só ruído em cima da tela Hoje; ele entra quando falta uma semana
@@ -76,6 +78,44 @@ export function TrialBanner() {
           </Button>
         ) : null}
       </div>
+    </Card>
+  );
+}
+
+const CARD_NOTICE_WITHIN_DAYS = 3;
+
+/**
+ * Teste com cartão: nos últimos dias, lembra na tela Hoje que a primeira mensalidade vai ser
+ * cobrada, e que a cobrança se repete todo mês até o cancelamento. Não é dispensável: é o aviso
+ * de uma cobrança. Quem já cancelou o teste não vê.
+ */
+function CardTrialNotice({ ent }: { ent: NonNullable<ReturnType<typeof useEntitlements>> }) {
+  const days = trialDaysLeft(ent.current_period_end);
+  if (ent.cancel_at_period_end || days <= 0 || days > CARD_NOTICE_WITHIN_DAYS || !ent.current_period_end)
+    return null;
+  return (
+    <Card
+      as="section"
+      aria-label={t("Teste grátis")}
+      className="tint-soft flex-row flex-wrap items-center gap-x-3 gap-y-2 p-[14px] text-[14px]"
+    >
+      <Sparkle size={18} className="shrink-0 text-accent" aria-hidden />
+      <p className="min-w-0 flex-1 basis-[220px]">
+        <strong className="font-medium">
+          {t("Seu teste do {{v0}} termina em {{v1}}.", {
+            v0: ent.plan_name,
+            v1: fmtChargeDay(ent.current_period_end),
+          })}
+        </strong>{" "}
+        <span className="text-neutral-400">
+          {t(
+            "Nesse dia a mensalidade é cobrada no cartão, e depois todo mês, até você cancelar. Para não ser cobrado, cancele antes em Planos.",
+          )}
+        </span>
+      </p>
+      <Button asChild variant="primary" size="sm">
+        <Link to="/app/planos">{t("Ver meu plano")}</Link>
+      </Button>
     </Card>
   );
 }

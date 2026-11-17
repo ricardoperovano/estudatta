@@ -15,6 +15,7 @@ from app.core.timeutil import utcnow
 from app.models.system import ContactMessage, WaitlistEntry
 from app.models.user import User
 from app.schemas.billing import (
+    CardTrialOfferOut,
     ContactIn,
     PlanPriceOut,
     PublicPlanOut,
@@ -33,8 +34,10 @@ router = APIRouter(prefix="/public", tags=["public"])
 def public_plans(db: Session = Depends(get_db)) -> PublicPlansOut:
     """Catálogo ativo. Preços vêm só do banco; `amount_cents=null` = "Valor a definir"."""
     plans = billing_service.list_public_plans(db)
+    offer = billing_service.card_trial_offer(db)
     return PublicPlansOut(
         billing_mode=billing_service.billing_mode(),
+        card_trial=CardTrialOfferOut(**offer) if offer else None,
         plans=[
             PublicPlanOut(
                 code=p.code,

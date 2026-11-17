@@ -11294,6 +11294,40 @@
         "title": "CancelIn",
         "description": "Motivo do cancelamento: opcional, nunca impede cancelar."
       },
+      "CardTrialOfferOut": {
+        "properties": {
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "plan_code": {
+            "type": "string",
+            "title": "Plan Code"
+          },
+          "plan_name": {
+            "type": "string",
+            "title": "Plan Name"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "title": "Amount Cents"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          }
+        },
+        "type": "object",
+        "required": [
+          "days",
+          "plan_code",
+          "plan_name",
+          "amount_cents",
+          "currency"
+        ],
+        "title": "CardTrialOfferOut",
+        "description": "Teste grátis com cartão: dias de teste e o que é cobrado depois, todo mês, até cancelar."
+      },
       "ChallengeOut": {
         "properties": {
           "code": {
@@ -11451,6 +11485,20 @@
               }
             ],
             "title": "Coupon Code"
+          },
+          "trial": {
+            "type": "boolean",
+            "title": "Trial",
+            "default": false
+          },
+          "return_to": {
+            "type": "string",
+            "enum": [
+              "plans",
+              "signup"
+            ],
+            "title": "Return To",
+            "default": "plans"
           }
         },
         "type": "object",
@@ -17056,6 +17104,16 @@
             },
             "type": "array",
             "title": "Plans"
+          },
+          "card_trial": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CardTrialOfferOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -20302,6 +20360,11 @@
             "type": "integer",
             "title": "Active"
           },
+          "trialing": {
+            "type": "integer",
+            "title": "Trialing",
+            "default": 0
+          },
           "past_due": {
             "type": "integer",
             "title": "Past Due"
@@ -20404,6 +20467,11 @@
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "trial": {
+            "type": "boolean",
+            "title": "Trial",
+            "default": false
           },
           "provider": {
             "type": "string",
@@ -20570,6 +20638,16 @@
               }
             ],
             "title": "Message"
+          },
+          "card_trial": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CardTrialOfferOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",

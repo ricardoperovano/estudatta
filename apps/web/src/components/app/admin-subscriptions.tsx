@@ -29,7 +29,7 @@ import { fmtBRL } from "@/lib/format";
 
 const PAGE = 25;
 
-const STATUS_OPTIONS = ["pending", "active", "past_due", "paused", "cancelled", "expired"] as const;
+const STATUS_OPTIONS = ["pending", "trialing", "active", "past_due", "paused", "cancelled", "expired"] as const;
 
 function SubscriptionStatusTag({ status, periodEnd }: { status: string; periodEnd?: string | null }) {
   return (
@@ -203,6 +203,9 @@ function MetricsGrid({ m }: { m: SubscriptionMetrics }) {
       </StatCard>
       <StatCard label={t("Novas em 30 dias")} value={n(m.new_30d)} />
       <StatCard label={t("Canceladas em 30 dias")} value={n(m.churned_30d)} />
+      <StatCard label={t("Em teste com cartão")} value={n(m.trialing)}>
+        <span className="text-[12px] text-neutral-400">{t("cartão cadastrado, ainda sem cobrança")}</span>
+      </StatCard>
       <StatCard label={t("Em atraso")} value={n(m.past_due)} />
       <StatCard label={t("Pendentes")} value={n(m.pending)}>
         <span className="text-[12px] text-neutral-400">{t("checkout iniciado, sem pagamento")}</span>
@@ -236,7 +239,8 @@ function SubscriptionRow({ s }: { s: AdminSubscriptionRow }) {
   const [promoOpen, setPromoOpen] = React.useState(false);
   const cancel = useCancelUserSubscription();
   const canCancel =
-    (s.status === "active" || s.status === "past_due" || s.status === "pending") && !s.cancel_at_period_end;
+    (s.status === "active" || s.status === "trialing" || s.status === "past_due" || s.status === "pending") &&
+    !s.cancel_at_period_end;
 
   const doCancel = async () => {
     try {
@@ -250,7 +254,7 @@ function SubscriptionRow({ s }: { s: AdminSubscriptionRow }) {
 
   const renewal = s.cancel_at_period_end
     ? t("Não renova")
-    : s.status === "active" || s.status === "past_due"
+    : s.status === "active" || s.status === "past_due" || s.status === "trialing"
       ? fmtDay(s.current_period_end)
       : "—";
 

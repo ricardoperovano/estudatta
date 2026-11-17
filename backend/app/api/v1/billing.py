@@ -19,6 +19,7 @@ from app.schemas.auth import EntitlementsOut
 from app.schemas.billing import (
     CANCEL_REASONS,
     CancelIn,
+    CardTrialOfferOut,
     CheckoutIn,
     CheckoutOut,
     CouponCheckIn,
@@ -49,9 +50,11 @@ def _state(db: Session, user: User, message: str | None = None) -> SubscriptionS
         for s in billing_service.list_subscriptions(db, user.id)
     ]
     next_charge = None
-    if current is not None and current.status in ("active", "past_due"):
+    if current is not None and current.status in ("active", "trialing", "past_due"):
         next_charge = current.current_period_end
+    offer = billing_service.card_trial_offer(db, user.id)
     return SubscriptionStateOut(
+        card_trial=CardTrialOfferOut(**offer) if offer else None,
         billing_mode=billing_service.billing_mode(),
         subscription=SubscriptionOut(**billing_service.describe_subscription(db, current))
         if current
@@ -93,6 +96,8 @@ def checkout(
         interval=payload.interval,
         provider=provider,
         coupon_code=payload.coupon_code,
+        trial=payload.trial,
+        return_to=payload.return_to,
     )
     audit(
         db,
@@ -104,6 +109,7 @@ def checkout(
             "plan_code": payload.plan_code,
             "interval": payload.interval,
             "coupon_code": payload.coupon_code,
+            "trial": payload.trial,
         },
         ip=client_ip(request),
     )
@@ -275,7 +281,7 @@ def coupon_redeem(
     if coupon.kind != "trial":
         raise NotFound("Este cupom é de desconto: use-o ao assinar.", code="coupon_kind")
     current = billing_service.current_subscription(db, user.id)
-    if current is not None and current.status in ("active", "past_due"):
+    if current is not None and current.status in ("active", "trialing", "past_due"):
         raise NotFound("Você já tem uma assinatura ativa.", code="already_subscribed")
     grant = growth.redeem_trial(db, user, coupon)
     audit(

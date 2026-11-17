@@ -3714,6 +3714,22 @@ export interface components {
             /** Comment */
             comment?: string | null;
         };
+        /**
+         * CardTrialOfferOut
+         * @description Teste grátis com cartão: dias de teste e o que é cobrado depois, todo mês, até cancelar.
+         */
+        CardTrialOfferOut: {
+            /** Days */
+            days: number;
+            /** Plan Code */
+            plan_code: string;
+            /** Plan Name */
+            plan_name: string;
+            /** Amount Cents */
+            amount_cents: number;
+            /** Currency */
+            currency: string;
+        };
         /** ChallengeOut */
         ChallengeOut: {
             /** Code */
@@ -3774,6 +3790,17 @@ export interface components {
             interval: "month" | "year";
             /** Coupon Code */
             coupon_code?: string | null;
+            /**
+             * Trial
+             * @default false
+             */
+            trial: boolean;
+            /**
+             * Return To
+             * @default plans
+             * @enum {string}
+             */
+            return_to: "plans" | "signup";
         };
         /** CheckoutOut */
         CheckoutOut: {
@@ -5565,6 +5592,7 @@ export interface components {
             billing_mode: string;
             /** Plans */
             plans: components["schemas"]["PublicPlanOut"][];
+            card_trial?: components["schemas"]["CardTrialOfferOut"] | null;
         };
         /** PushKeys */
         PushKeys: {
@@ -6554,6 +6582,11 @@ export interface components {
             users_total: number;
             /** Active */
             active: number;
+            /**
+             * Trialing
+             * @default 0
+             */
+            trialing: number;
             /** Past Due */
             past_due: number;
             /** Pending */
@@ -6592,6 +6625,11 @@ export interface components {
             currency: string | null;
             /** Status */
             status: string;
+            /**
+             * Trial
+             * @default false
+             */
+            trial: boolean;
             /** Provider */
             provider: string;
             /** Current Period Start */
@@ -6625,6 +6663,7 @@ export interface components {
             history: components["schemas"]["SubscriptionOut"][];
             /** Message */
             message?: string | null;
+            card_trial?: components["schemas"]["CardTrialOfferOut"] | null;
         };
         /** SuggestPlanIn */
         SuggestPlanIn: {

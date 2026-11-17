@@ -22,6 +22,7 @@ import { errorMessage, api, unwrap } from "@/api/client";
 import { detectTimezone } from "@/lib/device";
 import { addDaysIso, todayIso } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { CardTrialOpening, CardTrialReturn, isTrialPending } from "@/components/app/card-trial";
 
 type Category = "idioma" | "concurso" | "outro_estudo" | "leitura" | "pratica" | "personalizado";
 const categories: { value: Category; label: string; sample: string }[] = [
@@ -45,6 +46,9 @@ const kickerOf: Record<Category, string> = {
  */
 export default function OnboardingPage() {
   const nav = useNavigate();
+  // quem escolheu o teste grátis no cadastro passa antes pela página do cartão
+  const [openingTrial, setOpeningTrial] = React.useState(isTrialPending);
+  const trialSettled = React.useCallback(() => setOpeningTrial(false), []);
   const user = useUser();
   const create = useCreateActivity();
   const complete = useCompleteOnboarding();
@@ -122,11 +126,14 @@ export default function OnboardingPage() {
     }
   };
 
+  if (openingTrial) return <CardTrialOpening onSettled={trialSettled} />;
+
   if (step === 0) {
     return (
       <div className="glow-top-right flex min-h-dvh flex-col">
         <div className="mx-auto flex w-full max-w-[440px] flex-1 flex-col gap-[18px] px-5 pb-6 pt-[max(64px,calc(40px+env(safe-area-inset-top,0px)))]">
           <Symbol size={40} />
+          <CardTrialReturn />
           <h1 className="mt-2 text-[32px] leading-[1.1]">{t("O que você quer acompanhar?")}</h1>
           <p className="text-[15px] text-neutral-300">
             {t("Você define a meta. O plano mostra o que fazer hoje e como retomar se atrasar.")}
@@ -187,6 +194,7 @@ export default function OnboardingPage() {
         {progress}
         <span className="text-[10px] uppercase tracking-[0.1em] text-accent">{kicker}</span>
         {error ? <Banner kind="error">{error}</Banner> : null}
+        <CardTrialReturn />
 
         {step === 1 ? (
           <>

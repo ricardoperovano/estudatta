@@ -26,7 +26,7 @@ import hashlib
 import hmac
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 import httpx
@@ -124,6 +124,8 @@ class BillingProvider(ABC):
     """Interface mínima para um provedor de assinaturas recorrentes."""
 
     name: str = PROVIDER_NAME
+    # teste grátis com cartão: o checkout aceita a primeira cobrança numa data futura
+    supports_card_trial: bool = False
 
     @abstractmethod
     def create_preapproval(
@@ -137,6 +139,7 @@ class BillingProvider(ABC):
         frequency: int,
         frequency_type: str,
         back_url: str,
+        first_charge_date: date | None = None,
     ) -> ProviderSubscription: ...
 
     @abstractmethod
@@ -225,6 +228,7 @@ class MercadoPagoClient(BillingProvider):
         frequency: int,
         frequency_type: str,
         back_url: str,
+        first_charge_date: date | None = None,  # sem suporte aqui (`supports_card_trial`)
     ) -> ProviderSubscription:
         body = {
             "reason": reason,

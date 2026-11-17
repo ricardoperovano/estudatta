@@ -11,6 +11,7 @@ export type PublicPlan = S["PublicPlanOut"];
 export type PlanPrice = S["PlanPriceOut"];
 export type SubscriptionState = S["SubscriptionStateOut"];
 export type Subscription = S["SubscriptionOut"];
+export type CardTrialOffer = S["CardTrialOfferOut"];
 export type BillingInterval = "month" | "year";
 
 export const billingKeys = {
@@ -38,8 +39,19 @@ export function useSubscription() {
 export function useCheckout() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (body: { plan_code: string; interval: BillingInterval; coupon_code?: string | null }) =>
-      unwrap(await api.POST("/api/v1/billing/checkout", { body })),
+    mutationFn: async (body: {
+      plan_code: string;
+      interval: BillingInterval;
+      coupon_code?: string | null;
+      /** teste grátis com cartão: a primeira cobrança fica para o fim dos dias de teste */
+      trial?: boolean;
+      return_to?: "plans" | "signup";
+    }) =>
+      unwrap(
+        await api.POST("/api/v1/billing/checkout", {
+          body: { ...body, trial: body.trial ?? false, return_to: body.return_to ?? "plans" },
+        }),
+      ),
     onSettled: () => qc.invalidateQueries({ queryKey: billingKeys.subscription }),
   });
 }
@@ -107,6 +119,7 @@ export function isFreePlan(plan: PublicPlan): boolean {
 
 const SUB_STATUS: Record<string, string> = {
   pending: t("Pagamento em confirmação"),
+  trialing: t("Em teste grátis"),
   active: "Ativa",
   past_due: t("Pagamento em atraso"),
   cancelled: "Cancelada",

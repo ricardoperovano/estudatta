@@ -234,6 +234,22 @@ def send_password_reset_email(to: str, link: str) -> bool:
     return send_email(to, _("Redefinir senha · Estudatta"), text, html)
 
 
+def send_billing_notice_email(to: str, *, title: str, paragraphs: list[str], url: str) -> bool:
+    """Aviso sobre cobrança (começo do teste grátis, lembrete antes da primeira mensalidade).
+    É mensagem de serviço: vai para toda conta, sem descadastro."""
+    html_body = "".join(f'<p style="margin:0 0 12px">{p}</p>' for p in paragraphs)
+    text = "\n\n".join([*paragraphs, _("Ver meu plano: {url}", url=url)])
+    html = _layout(
+        title,
+        html_body,
+        cta=(_("Ver meu plano"), url),
+        footer_note=_(
+            "Você recebeu este aviso porque cadastrou um cartão para testar um plano do Estudatta."
+        ),
+    )
+    return send_email(to, f"{title} · Estudatta", text, html)
+
+
 def send_weekly_summary_email(to: str, summary_text: str) -> bool:
     html = _layout(
         _("Resumo da semana"),

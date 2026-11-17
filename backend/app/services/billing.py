@@ -12,9 +12,10 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from dateutil.relativedelta import relativedelta
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.audit import audit
@@ -83,12 +84,22 @@ STATUS_MAP = {
     "cancelled": "cancelled",
     "pending": "pending",
 }
-OPEN_STATUSES = ("pending", "active", "past_due", "paused", "cancelled")
+OPEN_STATUSES = ("pending", "trialing", "active", "past_due", "paused", "cancelled")
+# estados em que a pessoa tem (ou teve) o plano de verdade: quem passou por um deles já usou o
+# teste grátis com cartão
+HAD_PLAN_STATUSES = ("trialing", "active", "past_due", "paused")
 PENDING_CHECK_AFTER = timedelta(hours=1)
 PENDING_EXPIRES_AFTER = timedelta(days=7)
 PAST_DUE_GRACE = timedelta(days=3)
 CHECKOUT_REUSE_WINDOW = timedelta(hours=1)
 DOWNGRADE_LOOKBACK = timedelta(days=2)
+# Teste grátis com cartão (`trialing`): cartão validado no checkout, primeira cobrança no fim do
+# teste. O Asaas tenta cobrar no dia do vencimento e no seguinte; passado isso sem pagamento, o
+# teste termina e a conta volta ao gratuito.
+TRIAL_CHARGE_GRACE = timedelta(days=1, hours=6)
+TRIAL_GIVE_UP_AFTER = timedelta(days=4)  # não deu para cancelar no provedor: encerra assim mesmo
+TRIAL_REMIND_BEFORE = timedelta(days=2)
+BR = ZoneInfo("America/Sao_Paulo")  # as datas de cobrança do Asaas são do horário de Brasília
 
 
 def billing_mode() -> str:
@@ -116,6 +127,84 @@ def active_prices(plan: Plan) -> list[PlanPrice]:
     )
 
 
+# --- Teste grátis com cartão ------------------------------------------------------------
+
+
+def card_trial_available() -> bool:
+    return (
+        settings.billing_enabled
+        and settings.CARD_TRIAL_DAYS > 0
+        and settings.BILLING_PROVIDER == "asaas"
+    )
+
+
+def in_card_trial(sub: Subscription) -> bool:
+    """Assinatura nascida do teste com cartão e ainda sem nenhuma cobrança confirmada."""
+    meta = sub.metadata_ or {}
+    return bool(meta.get("trial")) and not meta.get("trial_converted_at")
+
+
+def card_trial_offer(db: Session, user_id: uuid.UUID | None = None) -> dict[str, Any] | None:
+    """A oferta do teste com cartão (dias, plano e o valor cobrado depois), ou None quando ela
+    não vale: cobrança desligada, plano sem preço mensal ou conta que já teve o plano.
+
+    Um teste por conta: quem já concluiu um checkout (assinou, testou, cancelou) não testa de
+    novo. Checkout abandonado não conta.
+    """
+    if not card_trial_available():
+        return None
+    plan = db.execute(
+        select(Plan).where(Plan.code == settings.CARD_TRIAL_PLAN_CODE, Plan.active.is_(True))
+    ).scalar_one_or_none()
+    if plan is None or plan.code == "free":
+        return None
+    price = db.execute(
+        select(PlanPrice).where(
+            PlanPrice.plan_id == plan.id,
+            PlanPrice.interval == "month",
+            PlanPrice.active.is_(True),
+        )
+    ).scalar_one_or_none()
+    if price is None or not price.amount_cents or price.amount_cents <= 0:
+        return None
+    if user_id is not None:
+        used = db.execute(
+            select(Subscription.id)
+            .where(
+                Subscription.user_id == user_id,
+                or_(
+                    Subscription.provider_ref.is_not(None),
+                    Subscription.status.in_(HAD_PLAN_STATUSES),
+                ),
+            )
+            .limit(1)
+        ).first()
+        if used is not None:
+            return None
+    return {
+        "days": settings.CARD_TRIAL_DAYS,
+        "plan_code": plan.code,
+        "plan_name": _(plan.name),
+        "amount_cents": price.amount_cents,
+        "currency": price.currency,
+    }
+
+
+def _charge_day(when: datetime | None):
+    """Dia (de Brasília) em que o Asaas cobra: o fim do período guardado é o fim desse dia."""
+    return when.astimezone(BR).date() if when is not None else None
+
+
+def _fmt_money(cents: Any, currency: str | None = "BRL") -> str:
+    try:
+        value = f"{int(cents) / 100:.2f}"
+    except (TypeError, ValueError):
+        return ""
+    if current_locale() != "en":
+        value = value.replace(".", ",")
+    return f"R$ {value}" if (currency or "BRL") == "BRL" else f"{value} {currency}"
+
+
 # --- Consulta de assinaturas --------------------------------------------------------
 
 
@@ -132,10 +221,11 @@ def list_subscriptions(db: Session, user_id: uuid.UUID) -> list[Subscription]:
 def current_subscription(
     db: Session, user_id: uuid.UUID, *, now: datetime | None = None
 ) -> Subscription | None:
-    """Assinatura "atual" por prioridade: ativa/atrasada → cancelada com acesso → pendente → pausada."""
+    """Assinatura "atual" por prioridade: ativa/em teste/atrasada → cancelada com acesso →
+    pendente → pausada."""
     now = now or utcnow()
     subs = list_subscriptions(db, user_id)
-    for status in ("active", "past_due"):
+    for status in ("active", "trialing", "past_due"):
         for s in subs:
             if s.status == status:
                 return s
@@ -162,6 +252,8 @@ def describe_subscription(db: Session, sub: Subscription) -> dict[str, Any]:
         "amount_cents": meta.get("amount_cents"),
         "currency": meta.get("currency"),
         "status": sub.status,
+        # teste com cartão ainda sem cobrança confirmada (em teste, ou cancelado/encerrado nele)
+        "trial": in_card_trial(sub),
         "provider": sub.provider,
         "current_period_start": sub.current_period_start,
         "current_period_end": sub.current_period_end,
@@ -185,9 +277,15 @@ def start_checkout(
     interval: str,
     provider: BillingProvider,
     coupon_code: str | None = None,
+    trial: bool = False,
+    return_to: str = "plans",
 ) -> Subscription:
     """Cria a assinatura local `pending` e a preapproval no provedor. NÃO concede acesso:
-    só o webhook/reconciliação confirmando `authorized` ativa o plano."""
+    só o webhook/reconciliação confirmando `authorized` ativa o plano.
+
+    `trial=True` é o teste grátis com cartão: o checkout valida o cartão e marca a primeira
+    cobrança para daqui a `CARD_TRIAL_DAYS` dias. O plano é liberado quando o provedor confirma
+    que a assinatura existe (`trialing`), e a cobrança só acontece se a pessoa não cancelar."""
     if not settings.billing_enabled:
         raise ServiceUnavailable(BILLING_DISABLED_MESSAGE, code="billing_disabled")
     if interval not in INTERVALS:
@@ -213,8 +311,27 @@ def start_checkout(
 
     now = utcnow()
     existing = current_subscription(db, user.id, now=now)
-    if existing is not None and existing.status in ("active", "past_due"):
+    if existing is not None and existing.status in ("active", "trialing", "past_due"):
         raise Conflict("Você já tem uma assinatura ativa.", code="already_subscribed")
+    first_charge = None
+    if trial:
+        if not card_trial_available() or not getattr(provider, "supports_card_trial", False):
+            raise Conflict("O teste grátis não está disponível agora.", code="trial_unavailable")
+        if plan.code != settings.CARD_TRIAL_PLAN_CODE or interval != "month":
+            raise ValidationFailed(
+                "O teste grátis vale só para a assinatura mensal do plano indicado.",
+                code="trial_plan",
+            )
+        if coupon_code:
+            raise ValidationFailed(
+                "O teste grátis não pode ser combinado com cupom.", code="trial_coupon"
+            )
+        if card_trial_offer(db, user.id) is None:
+            raise Conflict(
+                "Você já usou o teste grátis. Para continuar com o plano, é só assinar.",
+                code="trial_used",
+            )
+        first_charge = now.astimezone(BR).date() + timedelta(days=settings.CARD_TRIAL_DAYS)
     coupon = None
     amount_cents = price.amount_cents
     if coupon_code:
@@ -234,6 +351,7 @@ def start_checkout(
         existing is not None
         and existing.status == "pending"
         and existing.price_id == price.id
+        and bool((existing.metadata_ or {}).get("trial")) == trial
         and existing.checkout_url
         and existing.created_at
         and existing.created_at > now - CHECKOUT_REUSE_WINDOW
@@ -255,6 +373,15 @@ def start_checkout(
             "coupon_code": coupon.code if coupon else None,
             "currency": price.currency,
             "billing_mode": settings.BILLING_MODE,
+            **(
+                {
+                    "trial": True,
+                    "trial_days": settings.CARD_TRIAL_DAYS,
+                    "trial_charge_date": first_charge.isoformat(),
+                }
+                if first_charge
+                else {}
+            ),
         },
         created_at=now,
         updated_at=now,
@@ -262,6 +389,13 @@ def start_checkout(
     db.add(sub)
     db.flush()
     frequency, frequency_type = INTERVALS[interval]
+    back_path = (
+        "/onboarding?retorno=checkout"
+        if return_to == "signup"
+        else ("/app/planos?retorno=checkout")
+    )
+    if first_charge:
+        back_path += "&teste=1"
     try:
         remote = provider.create_preapproval(
             reason=subscription_description(plan.name, interval),
@@ -271,7 +405,8 @@ def start_checkout(
             currency=price.currency,
             frequency=frequency,
             frequency_type=frequency_type,
-            back_url=f"{settings.APP_URL.rstrip('/')}/app/planos?retorno=checkout",
+            back_url=f"{settings.APP_URL.rstrip('/')}{back_path}",
+            **({"first_charge_date": first_charge} if first_charge else {}),
         )
     except ProviderError as exc:
         log.warning("billing.checkout_failed", user_id=str(user.id), error=exc.message)
@@ -372,6 +507,8 @@ def apply_provider_state(
             sub.current_period_end = now + _interval_delta(sub)
         sub.status = "active"
         sub.ended_at = None
+        if meta.get("trial") and not meta.get("trial_converted_at"):
+            meta["trial_converted_at"] = now.isoformat()  # primeira cobrança confirmada
         if not cancel_pending:
             sub.cancel_at_period_end = False
             sub.cancelled_at = None
@@ -392,6 +529,20 @@ def apply_provider_state(
             sub.current_period_end = period_end
         meta.pop("cancel_pending", None)
         meta.pop("cancel_requested_at", None)
+    elif new_status == "pending" and in_card_trial(sub) and remote.id:
+        # Teste com cartão: a assinatura existe no provedor (cartão validado no checkout) e a
+        # primeira cobrança ainda não foi paga. Só entra em teste quem vem do checkout; um teste
+        # já cancelado ou encerrado aqui não volta por causa de uma consulta atrasada.
+        if previous in ("pending", "trialing"):
+            sub.status = "trialing"
+            sub.current_period_start = sub.current_period_start or now
+            if period_end is not None:
+                sub.current_period_end = period_end
+            elif sub.current_period_end is None:
+                sub.current_period_end = now + timedelta(
+                    days=int(meta.get("trial_days") or settings.CARD_TRIAL_DAYS)
+                )
+            sub.ended_at = None
     elif new_status == "pending":
         if previous in ("active", "past_due", "paused"):
             log.warning(
@@ -409,8 +560,33 @@ def apply_provider_state(
     return sub.status
 
 
-def expire_if_ended(db: Session, sub: Subscription, *, now: datetime | None = None) -> bool:
+def expire_if_ended(
+    db: Session,
+    sub: Subscription,
+    *,
+    now: datetime | None = None,
+    provider: BillingProvider | None = None,
+) -> bool:
     now = now or utcnow()
+    if (
+        sub.status == "trialing"
+        and sub.current_period_end is not None
+        and sub.current_period_end + TRIAL_CHARGE_GRACE <= now
+    ):
+        # O teste acabou e a primeira cobrança não foi paga (cartão recusado nas tentativas do
+        # provedor). Remove a assinatura lá para não haver cobrança depois de a conta já ter
+        # voltado ao gratuito; se o provedor não responder, tenta de novo na próxima rodada.
+        if provider is not None and sub.provider_ref and sub.provider == provider.name:
+            try:
+                provider.cancel_preapproval(sub.provider_ref)
+            except ProviderError as exc:
+                log.warning(
+                    "billing.trial_cancel_failed", subscription_id=str(sub.id), error=exc.message
+                )
+                if sub.current_period_end + TRIAL_GIVE_UP_AFTER > now:
+                    return False
+        _expire(db, sub, now, reason="trial_unpaid")
+        return True
     if (
         sub.status in ("cancelled", "past_due")
         and sub.current_period_end is not None
@@ -438,6 +614,53 @@ def _fmt_date(d) -> str:
     return f"{d:%m/%d/%Y}" if current_locale() == "en" else f"{d:%d/%m/%Y}"
 
 
+def _trial_terms(sub: Subscription, plan_name: str, *, started: bool) -> tuple[str, list[str]]:
+    """Título e parágrafos que dizem, sem rodeios, quando e quanto será cobrado ao fim do teste.
+    `started=True` é o aviso do começo; `False`, o lembrete antes da cobrança."""
+    meta = sub.metadata_ or {}
+    day = _charge_day(sub.current_period_end)
+    data = _fmt_date(day) if day else ""
+    valor = _fmt_money(meta.get("amount_cents"), meta.get("currency"))
+    cobranca = _(
+        "Em {data}, se você não cancelar, cobraremos {valor} no cartão informado. Depois disso o mesmo valor é cobrado todo mês, no cartão, até você cancelar.",
+        data=data,
+        valor=valor,
+    )
+    cancelar = _(
+        "Para cancelar, abra Planos no app e toque em Cancelar teste. Cancelando antes de {data}, nada é cobrado e o plano continua liberado até essa data.",
+        data=data,
+    )
+    if started:
+        return _("Seu teste do {plano} começou", plano=plan_name), [
+            _(
+                "O plano {plano} está liberado até {data}, sem pagar nada.",
+                plano=plan_name,
+                data=data,
+            ),
+            cobranca,
+            cancelar,
+        ]
+    return _("Seu teste do {plano} termina em {data}", plano=plan_name, data=data), [
+        cobranca,
+        cancelar,
+    ]
+
+
+def _billing_email(user: User, title: str, paragraphs: list[str]) -> None:
+    """Aviso de cobrança por e-mail. Melhor esforço: falhar no envio não desfaz a transição."""
+    from app.integrations.email import send_billing_notice_email
+
+    try:
+        send_billing_notice_email(
+            user.email,
+            title=title,
+            paragraphs=paragraphs,
+            url=f"{settings.APP_URL.rstrip('/')}/app/planos",
+        )
+    except Exception as exc:  # noqa: BLE001
+        log.warning("billing.email_failed", user_id=str(user.id), error=type(exc).__name__)
+
+
 def _on_transition(db: Session, sub: Subscription, previous: str, now: datetime) -> None:
     audit(
         db,
@@ -454,13 +677,58 @@ def _on_transition(db: Session, sub: Subscription, previous: str, now: datetime)
         return
     plan = db.get(Plan, sub.plan_id)
     plan_name = _(plan.name) if plan else _("Completo")
-    if sub.status == "active" and previous != "active":
+    trial = in_card_trial(sub)  # teste com cartão que nunca chegou a ser cobrado
+    if sub.status == "trialing" and previous != "trialing":
+        title, paragraphs = _trial_terms(sub, plan_name, started=True)
+        notify_inapp(
+            db,
+            user_id=user.id,
+            kind="billing_trial_started",
+            title=title,
+            body=" ".join(paragraphs),
+            url="/app/planos",
+        )
+        _billing_email(user, title, paragraphs)
+    elif sub.status == "active" and previous == "trialing":
+        notify_inapp(
+            db,
+            user_id=user.id,
+            kind="billing_active",
+            title=_("Assinatura do plano {plan} confirmada", plan=plan_name),
+            body=_(
+                "O teste terminou e a primeira mensalidade foi cobrada no seu cartão. A cobrança se repete todo mês, até você cancelar em Planos."
+            ),
+            url="/app/planos",
+        )
+    elif sub.status == "active" and previous != "active":
         notify_inapp(
             db,
             user_id=user.id,
             kind="billing_active",
             title=_("Plano {plan} ativado", plan=plan_name),
             body=_("Sua assinatura foi confirmada. Todos os recursos do plano já estão liberados."),
+            url="/app/planos",
+        )
+    elif sub.status == "cancelled" and trial and previous not in ("cancelled", "expired"):
+        until = sub.current_period_end
+        extra = (
+            _(
+                " Você continua com o plano {plan} até {until}.",
+                plan=plan_name,
+                until=_fmt_date(_charge_day(until)),
+            )
+            if until and until > now
+            else ""
+        )
+        notify_inapp(
+            db,
+            user_id=user.id,
+            kind="billing_cancelled",
+            title=_("Teste cancelado"),
+            body=_(
+                "Nada será cobrado no seu cartão.{extra} Depois disso a conta volta ao plano gratuito, sem perder nada.",
+                extra=extra,
+            ),
             url="/app/planos",
         )
     elif sub.status == "cancelled" and previous not in ("cancelled", "expired"):
@@ -504,6 +772,22 @@ def _on_transition(db: Session, sub: Subscription, previous: str, now: datetime)
             ),
             url="/app/planos",
         )
+    elif sub.status == "expired" and trial and previous not in ("pending", "expired"):
+        unpaid = (sub.metadata_ or {}).get("expired_reason") == "trial_unpaid"
+        notify_inapp(
+            db,
+            user_id=user.id,
+            kind="billing_expired",
+            title=_("Seu teste do {plano} terminou", plano=plan_name),
+            body=_(
+                "Não conseguimos cobrar o cartão informado, então nada foi cobrado e a conta voltou ao plano gratuito. Tudo o que você registrou continua aqui. Para continuar com o plano, é só assinar em Planos."
+            )
+            if unpaid
+            else _(
+                "Nada foi cobrado e a conta voltou ao plano gratuito. Tudo o que você registrou continua aqui. Para ter o plano de volta, é só assinar em Planos."
+            ),
+            url="/app/planos",
+        )
     elif sub.status == "expired" and previous not in ("pending", "expired"):
         notify_inapp(
             db,
@@ -538,7 +822,7 @@ def sync_subscription(
         db.flush()
         return sub
     apply_provider_state(db, sub, remote, now=now)
-    expire_if_ended(db, sub, now=now)
+    expire_if_ended(db, sub, now=now, provider=provider)
     return sub
 
 
@@ -582,6 +866,10 @@ def cancel_subscription(
         return (
             sub,
             _(
+                "Cancelamento registrado. Vamos confirmar com o provedor de pagamento em breve; você não será cobrado."
+            )
+            if in_card_trial(sub)
+            else _(
                 "Cancelamento registrado. Vamos confirmar com o provedor de pagamento em breve; você não será cobrado novamente."
             ),
         )
@@ -606,6 +894,13 @@ def cancel_subscription(
         db.flush()
         _on_transition(db, sub, previous, now)
     until = sub.current_period_end
+    if in_card_trial(sub):
+        if until and until > now:
+            return sub, _(
+                "Teste cancelado: nada será cobrado no seu cartão. O plano continua liberado até {until}.",
+                until=_fmt_date(_charge_day(until)),
+            )
+        return sub, _("Teste cancelado: nada será cobrado no seu cartão.")
     if until and until > now:
         return sub, _(
             "Renovação cancelada. Você mantém o acesso até {until}.", until=_fmt_date(until)
@@ -1000,7 +1295,8 @@ def reconcile_subscriptions(
                     summary["synced"] += 1
                 continue
 
-            if expire_if_ended(db, sub, now=now):
+            # em teste: só encerra depois de conferir no provedor se a cobrança foi paga
+            if sub.status != "trialing" and expire_if_ended(db, sub, now=now):
                 summary["expired"] += 1
                 continue
 
@@ -1037,7 +1333,9 @@ def reconcile_subscriptions(
                 db.flush()
                 _on_transition(db, sub, previous, now)
                 summary["past_due"] += 1
-            if expire_if_ended(db, sub, now=now):
+            if sub.status == "expired":
+                summary["expired"] += 1  # encerrada durante a conferência com o provedor
+            elif expire_if_ended(db, sub, now=now, provider=provider):
                 summary["expired"] += 1
         except ProviderError as exc:
             summary["errors"] += 1
@@ -1055,8 +1353,52 @@ def reconcile_subscriptions(
         if user is not None and apply_entitlement_changes(db, user, now=now):
             summary["downgraded_users"] += 1
     summary["trial_notices"] = notify_trials(db, now=now)
+    summary["card_trial_reminders"] = remind_card_trials(db, now=now)
     db.flush()
     return summary
+
+
+def remind_card_trials(db: Session, *, now: datetime | None = None) -> int:
+    """Lembra uma vez, dois dias antes, que o teste com cartão vai virar cobrança (no app e por
+    e-mail). Quem já cancelou não é lembrado. A marca fica na própria assinatura."""
+    now = now or utcnow()
+    sent = 0
+    subs = db.execute(
+        select(Subscription).where(
+            Subscription.status == "trialing",
+            Subscription.current_period_end.is_not(None),
+            Subscription.current_period_end > now,
+            Subscription.current_period_end <= now + TRIAL_REMIND_BEFORE,
+        )
+    ).scalars()
+    for sub in subs:
+        meta = dict(sub.metadata_ or {})
+        if meta.get("trial_reminded_at") or meta.get("cancel_pending") or sub.cancel_at_period_end:
+            continue
+        user = db.get(User, sub.user_id)
+        if user is None:
+            continue
+        plan = db.get(Plan, sub.plan_id)
+        with_locale = current_locale()
+        set_locale(user.locale)
+        try:
+            title, paragraphs = _trial_terms(sub, _(plan.name) if plan else "", started=False)
+            notify_inapp(
+                db,
+                user_id=user.id,
+                kind="billing_trial_ending",
+                title=title,
+                body=" ".join(paragraphs),
+                url="/app/planos",
+            )
+            _billing_email(user, title, paragraphs)
+        finally:
+            set_locale(with_locale)
+        meta["trial_reminded_at"] = now.isoformat()
+        sub.metadata_ = meta
+        sent += 1
+    db.flush()
+    return sent
 
 
 TRIAL_WARN_BEFORE = timedelta(days=3)

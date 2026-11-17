@@ -9,7 +9,8 @@ webhook. `get_preapproval` lê a assinatura (`GET /subscriptions/{id}`) e as cob
 (`GET /subscriptions/{id}/payments`) e normaliza para `pending | authorized | cancelled`:
 
 - assinatura removida, `INACTIVE` ou `EXPIRED`             → `cancelled`;
-- `ACTIVE` sem nenhuma cobrança paga                        → `pending` (checkout não concluído);
+- `ACTIVE` sem nenhuma cobrança paga                        → `pending` (checkout não concluído
+  ou teste grátis com cartão: a primeira cobrança vence no futuro e a data dela vai junto);
 - `ACTIVE` com cobrança paga                                → `authorized`; o fim do período é o
   vencimento da cobrança em aberto mais antiga ou, sem nenhuma, o `nextDueDate`.
 
@@ -103,6 +104,7 @@ class AsaasClient(BillingProvider):
     """Cliente HTTP síncrono (httpx). `transport` permite testes com `httpx.MockTransport`."""
 
     name = ASAAS_PROVIDER_NAME
+    supports_card_trial = True
 
     def __init__(
         self,
@@ -167,9 +169,19 @@ class AsaasClient(BillingProvider):
         frequency: int,
         frequency_type: str,
         back_url: str,
+        first_charge_date: date | None = None,
     ) -> ProviderSubscription:
+        """`first_charge_date` no futuro = teste grátis com cartão: o Asaas valida o cartão no
+        checkout e só cobra nessa data (`subscription.nextDueDate`); sem ela, cobra na hora."""
         yearly = frequency_type == "months" and frequency == 12
         sep = "&" if "?" in back_url else "?"
+        description = reason
+        if first_charge_date is not None:
+            # a página do Asaas é onde a pessoa digita o cartão: a regra do teste vai escrita lá
+            description = (
+                f"{reason}. Teste grátis: a primeira cobrança é em "
+                f"{first_charge_date:%d/%m/%Y}; depois, todo mês, até você cancelar."
+            )
         payload = {
             "billingTypes": ["CREDIT_CARD"],  # recorrência no checkout do Asaas é só no cartão
             "chargeTypes": ["RECURRENT"],
@@ -183,7 +195,7 @@ class AsaasClient(BillingProvider):
             "items": [
                 {
                     "name": reason.split(" — ")[-1][:30],
-                    "description": reason[:150],
+                    "description": description[:150],
                     "quantity": 1,
                     "value": round(amount, 2),
                     "externalReference": external_reference,
@@ -192,7 +204,7 @@ class AsaasClient(BillingProvider):
             ],
             "subscription": {
                 "cycle": "YEARLY" if yearly else "MONTHLY",
-                "nextDueDate": datetime.now(BR).date().isoformat(),
+                "nextDueDate": (first_charge_date or datetime.now(BR).date()).isoformat(),
             },
         }
         data = self._request("POST", "/checkouts", json=payload)
@@ -269,8 +281,6 @@ class AsaasClient(BillingProvider):
             or []
         )
         paid = [p for p in payments if str(p.get("status") or "").upper() in PAID_STATUSES]
-        if not paid:
-            return ProviderSubscription(status="pending", **base)
         open_dues = sorted(
             d
             for d in (
@@ -281,6 +291,10 @@ class AsaasClient(BillingProvider):
             if d
         )
         period_end = open_dues[0] if open_dues else _due_to_datetime(sub.get("nextDueDate"))
+        if not paid:
+            # sem cobrança paga: checkout não concluído ou teste grátis com cartão (a primeira
+            # cobrança vence no futuro). A data dela vai junto: quem decide é o serviço.
+            return ProviderSubscription(status="pending", next_payment_date=period_end, **base)
         return ProviderSubscription(status="authorized", next_payment_date=period_end, **base)
 
     # --- Webhooks (cadastro via CLI) ------------------------------------------------------

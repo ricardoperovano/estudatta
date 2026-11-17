@@ -225,16 +225,20 @@ def get_entitlements(db: Session, user_id: uuid.UUID) -> Entitlements:
             select(Subscription)
             .where(
                 Subscription.user_id == user_id,
-                Subscription.status.in_(["active", "past_due", "cancelled"]),
+                Subscription.status.in_(["active", "trialing", "past_due", "cancelled"]),
             )
             .order_by(Subscription.created_at.desc())
         )
         .scalars()
         .first()
     )
-    if sub is not None and sub.status in ("active", "past_due", "cancelled"):
+    if sub is not None and sub.status in ("active", "trialing", "past_due", "cancelled"):
         period_ok = sub.current_period_end is None or sub.current_period_end > now
-        if sub.status == "active" or (sub.status in ("cancelled", "past_due") and period_ok):
+        # `trialing` = teste com cartão validado: vale como ativa até a cobrança ser confirmada
+        # ou o teste ser encerrado pela reconciliação
+        if sub.status in ("active", "trialing") or (
+            sub.status in ("cancelled", "past_due") and period_ok
+        ):
             plan = db.get(Plan, sub.plan_id)
             if plan and plan.active:
                 return Entitlements(

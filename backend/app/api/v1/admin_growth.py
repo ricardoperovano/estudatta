@@ -34,6 +34,7 @@ def _audit(db: Session, request: Request, actor: User, action: str, **kw) -> Non
 class SubscriptionMetricsOut(BaseModel):
     users_total: int
     active: int
+    trialing: int = 0  # teste grátis com cartão (ainda sem cobrança)
     past_due: int
     pending: int
     cancelled_access: int

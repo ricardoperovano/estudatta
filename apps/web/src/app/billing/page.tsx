@@ -18,6 +18,7 @@ import {
   type SubscriptionState,
 } from "@/api/billing";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
+import { CardTrialPitch, CardTrialReturn, CardTrialTerms, fmtChargeDay } from "@/components/app/card-trial";
 import {
   Banner,
   Button,
@@ -90,8 +91,10 @@ export default function BillingPage() {
   // o retorno do pagamento chega como ?checkout=sucesso ou ?retorno=checkout&status=sucesso|cancelado|expirado
   // (Asaas); nenhum deles ativa nada: só a confirmação do provedor libera o plano
   const retStatus = params.get("status");
-  const checkoutReturn =
-    params.get("checkout") ??
+  const trialReturn = params.get("teste") !== null; // volta do teste com cartão: `CardTrialReturn`
+  const checkoutReturn = trialReturn
+    ? null
+    : params.get("checkout") ??
     (params.get("retorno") === "checkout"
       ? retStatus === "cancelado" || retStatus === "expirado"
         ? "falhou"
@@ -111,10 +114,12 @@ export default function BillingPage() {
       onError: (e) => toast("error", t("Não foi possível verificar agora"), errorMessage(e)),
     });
 
-  const onSubscribe = (plan: PublicPlan) => {
-    setRedirectingTo(plan.code);
+  const onSubscribe = (plan: PublicPlan, trial = false) => {
+    setRedirectingTo(trial ? "teste" : plan.code);
     checkout.mutate(
-      { plan_code: plan.code, interval, coupon_code: coupon?.kind === "percent" ? coupon.code : null },
+      trial
+        ? { plan_code: plan.code, interval: "month", trial: true }
+        : { plan_code: plan.code, interval, coupon_code: coupon?.kind === "percent" ? coupon.code : null },
       {
         onSuccess: (out) => {
           if (out.checkout_url) window.location.assign(out.checkout_url);
@@ -139,7 +144,10 @@ export default function BillingPage() {
   const billingMode = state?.billing_mode ?? plans.data?.billing_mode ?? null;
   const currentCode = state?.entitlements.plan_code ?? null;
   const hasPaidSubscription =
-    !!state?.subscription && ["active", "past_due", "paused"].includes(state.subscription.status);
+    !!state?.subscription && ["active", "trialing", "past_due", "paused"].includes(state.subscription.status);
+  // teste grátis com cartão: só aparece para a conta que ainda pode usar (o servidor decide)
+  const trialOffer = state?.card_trial ?? null;
+  const trialPlan = trialOffer ? plans.data?.plans.find((p) => p.code === trialOffer.plan_code) : null;
 
   return (
     <div className="flex flex-col gap-[14px] desktop:max-w-[1000px] desktop:gap-8">
@@ -151,6 +159,8 @@ export default function BillingPage() {
           {t("Comece grátis com um objetivo. Amplie quando quiser acompanhar mais coisas ao mesmo tempo.")}
         </p>
       </header>
+
+      <CardTrialReturn />
 
       {checkoutReturn === "sucesso" ? (
         <Banner
@@ -284,6 +294,40 @@ export default function BillingPage() {
         <SubscriptionCard state={state} online={online} onVerify={onVerify} verifying={verify.isPending} />
       ) : null}
 
+      {trialOffer && trialPlan && billingMode !== "disabled" ? (
+        <Card
+          accent
+          as="section"
+          className="gap-3 p-4 desktop:p-6"
+          aria-label={t("Teste grátis do {{v0}}", { v0: trialOffer.plan_name })}
+        >
+          <div className="grid gap-4 tablet:grid-cols-2 tablet:gap-6">
+            <CardTrialPitch offer={trialOffer} plan={trialPlan} max={5} />
+            <div className="flex flex-col gap-3">
+              <span className="kicker">{t("Como funciona a cobrança")}</span>
+              <CardTrialTerms offer={trialOffer} />
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <Button
+              variant="primary"
+              size="lg"
+              className="min-h-[48px] desktop:min-h-[44px]"
+              loading={redirectingTo === "teste"}
+              disabled={redirectingTo !== null || !online}
+              onClick={() => onSubscribe(trialPlan, true)}
+            >
+              {t("Começar meu teste de {{v0}} dias", { v0: trialOffer.days })}
+            </Button>
+            <span className="text-[12px] text-neutral-400">
+              {online
+                ? t("Você informa o cartão na página segura do Asaas. Nada é cobrado hoje.")
+                : t("Começar o teste precisa de conexão com a internet.")}
+            </span>
+          </div>
+        </Card>
+      ) : null}
+
       <div className="self-start" data-tour="planos-periodicidade">
         <Seg<BillingInterval>
           label={t("Periodicidade")}
@@ -327,6 +371,7 @@ export default function BillingPage() {
               billingMode={billingMode}
               isCurrent={currentCode === plan.code}
               hasPaidSubscription={hasPaidSubscription}
+              inTrial={state?.subscription?.status === "trialing"}
               pendingCheckoutUrl={
                 state?.subscription?.status === "pending" && state.subscription.plan_code === plan.code
                   ? state.subscription.checkout_url
@@ -373,6 +418,8 @@ interface PlanCardProps {
   billingMode: string | null;
   isCurrent: boolean;
   hasPaidSubscription: boolean;
+  /** teste grátis com cartão em curso (ainda sem cobrança) */
+  inTrial?: boolean;
   pendingCheckoutUrl: string | null | undefined;
   online: boolean;
   loading: boolean;
@@ -387,6 +434,7 @@ function PlanCard({
   billingMode,
   isCurrent,
   hasPaidSubscription,
+  inTrial,
   pendingCheckoutUrl,
   online,
   loading,
@@ -413,9 +461,11 @@ function PlanCard({
       </Button>
     );
     if (!isCurrent && hasPaidSubscription)
-      note = t(
-        "Para voltar ao gratuito, cancele a renovação acima. O acesso continua até o fim do período já pago.",
-      );
+      note = inTrial
+        ? t("Para voltar ao gratuito, cancele o teste acima. Nada é cobrado e o plano continua liberado até o fim do teste.")
+        : t(
+            "Para voltar ao gratuito, cancele a renovação acima. O acesso continua até o fim do período já pago.",
+          );
   } else if (isCurrent) {
     action = (
       <Button variant="secondary" size="lg" disabled className="mt-2">
@@ -518,6 +568,9 @@ function SubscriptionCard({
   const canCancel = !!s && s.status !== "cancelled" && s.status !== "expired" && !state.cancel_at_period_end;
   const canVerify = !!s && state.billing_mode !== "disabled";
   const pastHistory = state.history.filter((h) => h.id !== s?.id);
+  // teste com cartão: em teste (ainda sem cobrança) ou cancelado antes da primeira cobrança
+  const trialing = s?.status === "trialing";
+  const trialDay = s?.current_period_end ? fmtChargeDay(s.current_period_end) : "";
 
   const [reason, setReason] = React.useState("");
   const [comment, setComment] = React.useState("");
@@ -525,7 +578,7 @@ function SubscriptionCard({
     cancel.mutate({ reason: reason || null, comment: comment.trim() || null }, {
       onSuccess: (next) => {
         setConfirmOpen(false);
-        toast("success", t("Renovação cancelada"), next.message ?? undefined);
+        toast("success", trialing ? t("Teste cancelado") : t("Renovação cancelada"), next.message ?? undefined);
       },
       onError: (e) => toast("error", t("Não foi possível cancelar agora"), errorMessage(e)),
     });
@@ -547,7 +600,9 @@ function SubscriptionCard({
           {s
             ? state.cancel_at_period_end && s.status === "active"
               ? t("Renovação cancelada")
-              : subscriptionStatusLabel(s.status)
+              : s.trial && s.status === "cancelled"
+                ? t("Teste cancelado")
+                : subscriptionStatusLabel(s.status)
             : sourceLabel(ent.source)}
         </Tag>
       </div>
@@ -587,10 +642,37 @@ function SubscriptionCard({
                 )}
               </span>
             ) : null}
-            {state.next_charge_at && !state.cancel_at_period_end ? (
+            {trialing && !state.cancel_at_period_end ? (
+              <>
+                <span>
+                  {t("Você está no teste grátis: nada foi cobrado até agora.")}{" "}
+                  <strong className="font-medium text-primary">
+                    {t(
+                      "Em {{v0}}, se você não cancelar, cobramos {{v1}} no cartão. Depois disso o mesmo valor é cobrado todo mês, na fatura do cartão, até você cancelar.",
+                      { v0: trialDay, v1: fmtBRL(s.amount_cents) },
+                    )}
+                  </strong>
+                </span>
+                <span>
+                  {t("Cancelando antes de {{v0}}, nada é cobrado e o plano continua liberado até essa data.", {
+                    v0: trialDay,
+                  })}
+                </span>
+              </>
+            ) : state.next_charge_at && !state.cancel_at_period_end ? (
               <span>{t("Próxima cobrança em {{v0}}.", { v0: fmtDateLong(state.next_charge_at) })}</span>
             ) : null}
-            {state.cancel_at_period_end || s.status === "cancelled" ? (
+            {s.trial && (state.cancel_at_period_end || s.status === "cancelled") ? (
+              <span>
+                {t("Teste cancelado: nada será cobrado no seu cartão. {{v0}}", {
+                  v0: s.current_period_end
+                    ? t("O plano continua liberado até {{v0}}; depois a conta volta ao gratuito, sem perder nada.", {
+                        v0: trialDay,
+                      })
+                    : "",
+                })}
+              </span>
+            ) : state.cancel_at_period_end || s.status === "cancelled" ? (
               <span>
                 {t("Renovação cancelada: você não será cobrado de novo. {{v0}}", {
                   v0: s.current_period_end
@@ -625,7 +707,11 @@ function SubscriptionCard({
               disabled={!online}
               onClick={() => setConfirmOpen(true)}
             >
-              {s.status === "pending" ? t("Desistir desta assinatura") : t("Cancelar renovação")}
+              {s.status === "pending"
+                ? t("Desistir desta assinatura")
+                : trialing
+                  ? t("Cancelar teste")
+                  : t("Cancelar renovação")}
             </Button>
           ) : null}
         </div>
@@ -669,10 +755,21 @@ function SubscriptionCard({
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title={s?.status === "pending" ? t("Desistir desta assinatura?") : t("Cancelar a renovação?")}
+        title={
+          s?.status === "pending"
+            ? t("Desistir desta assinatura?")
+            : trialing
+              ? t("Cancelar o teste?")
+              : t("Cancelar a renovação?")
+        }
         description={
           s?.status === "pending"
             ? t("O pagamento ainda não foi confirmado. Ao desistir, nada será cobrado.")
+            : trialing
+              ? t(
+                  "Nada será cobrado no seu cartão. O plano continua liberado até {{v0}}; depois a conta volta ao gratuito. Seus dados e seu histórico ficam como estão.",
+                  { v0: trialDay },
+                )
             : t("Você não será cobrado de novo.{{v0}} Seus dados e seu histórico ficam como estão.", {
                 v0: s?.current_period_end
                   ? " " +
@@ -680,7 +777,9 @@ function SubscriptionCard({
                   : "",
               })
         }
-        confirmLabel={s?.status === "pending" ? t("Desistir") : t("Cancelar renovação")}
+        confirmLabel={
+          s?.status === "pending" ? t("Desistir") : trialing ? t("Cancelar teste") : t("Cancelar renovação")
+        }
         cancelLabel={t("Voltar")}
         loading={cancel.isPending}
         onConfirm={onCancel}
@@ -725,7 +824,7 @@ function statusVariant(
   cancelAtEnd: boolean,
 ): "success" | "pending" | "neutral" | "error" {
   if (!s) return "neutral";
-  if (s.status === "active") return cancelAtEnd ? "neutral" : "success";
+  if (s.status === "active" || s.status === "trialing") return cancelAtEnd ? "neutral" : "success";
   if (s.status === "pending" || s.status === "past_due" || s.status === "paused") return "pending";
   return "neutral";
 }

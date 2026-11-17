@@ -78,6 +78,7 @@ def subscription_metrics(db: Session, *, now: datetime | None = None) -> dict:
     return {
         "users_total": int(users_total),
         "active": len(active),
+        "trialing": sum(1 for s in subs if s.status == "trialing"),
         "past_due": sum(1 for s in subs if s.status == "past_due"),
         "pending": sum(1 for s in subs if s.status == "pending"),
         "cancelled_access": sum(

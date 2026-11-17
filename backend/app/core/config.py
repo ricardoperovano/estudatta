@@ -109,10 +109,16 @@ class Settings(BaseSettings):
     AI_DAILY_ACTIONS_PRO: int = 20
     AI_GLOBAL_DAILY_BUDGET_ACTIONS: int = 2000
     # Voz do Tatá (ElevenLabs). Sem chave, o app usa o sintetizador do próprio aparelho.
-    # Teste grátis no cadastro: dias de acesso ao plano TRIAL_PLAN_CODE, sem cartão (0 desliga).
-    # Ao fim, a conta volta ao gratuito sem perder nada (mesmo caminho do acesso promocional).
-    TRIAL_DAYS: int = 14
+    # Teste grátis SEM cartão no cadastro: dias de acesso ao plano TRIAL_PLAN_CODE (0 desliga).
+    # Desligado por padrão desde o teste com cartão (abaixo); quem já estava no teste antigo segue
+    # até o fim dele. Ao fim, a conta volta ao gratuito sem perder nada.
+    TRIAL_DAYS: int = 0
     TRIAL_PLAN_CODE: str = "essencial"
+    # Teste grátis COM cartão: a pessoa cadastra o cartão no checkout, usa o plano
+    # CARD_TRIAL_PLAN_CODE (mensal) por CARD_TRIAL_DAYS dias e só então é cobrada, todo mês, até
+    # cancelar. Cancelando antes, nada é cobrado. 0 desliga. Só com o Asaas.
+    CARD_TRIAL_DAYS: int = 7
+    CARD_TRIAL_PLAN_CODE: str = "essencial"
     ELEVENLABS_API_KEY: str | None = None
     ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"  # troque pela voz escolhida no painel
     ELEVENLABS_MODEL: str = "eleven_multilingual_v2"

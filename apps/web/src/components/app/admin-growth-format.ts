@@ -17,6 +17,7 @@ type CouponLike = Pick<components["schemas"]["CouponOut"], "kind" | "value" | "p
 
 export const SUB_STATUS: Record<string, { label: string; variant: TagVariant }> = {
   pending: { label: t("Pendente"), variant: "pending" },
+  trialing: { label: t("Em teste (cartão)"), variant: "accent" },
   active: { label: t("Ativa"), variant: "success" },
   past_due: { label: t("Em atraso"), variant: "error" },
   paused: { label: t("Pausada"), variant: "neutral" },

@@ -380,3 +380,16 @@ Roteiro sugerido para a validação com credenciais de teste: (1) `BILLING_MODE=
 `billing_events` (`processed`) e a assinatura virar `active`; (4) cancelar e verificar acesso
 até `current_period_end`; (5) rodar `POST /admin/billing/reconcile` e conferir o sumário;
 (6) registrar em `docs/decisoes.md` qualquer diferença de contrato encontrada.
+
+## Teste grátis com cartão (`trialing`)
+
+Só com o Asaas (`CARD_TRIAL_DAYS`, `CARD_TRIAL_PLAN_CODE`; sempre a assinatura mensal). Um teste por conta: quem já concluiu um checkout não testa de novo.
+
+1. **Início.** `POST /billing/checkout` com `trial: true` cria o checkout com `subscription.nextDueDate` = hoje + dias de teste. O Asaas valida o cartão e não cobra nada. A assinatura local nasce `pending` com `metadata.trial`.
+2. **Cartão cadastrado.** O Asaas cria a assinatura e a primeira cobrança, pendente, com vencimento no fim do teste, e avisa por `PAYMENT_CREATED` (que traz `checkoutSession`, é ele que liga o cartão à conta). A consulta ao Asaas encontra a assinatura ativa sem cobrança paga → `trialing`: plano liberado, `current_period_end` = dia da cobrança, aviso no app e por e-mail com data e valor.
+3. **Lembrete.** Dois dias antes, uma vez, no app e por e-mail (`remind_card_trials`, na reconciliação).
+4. **Cobrança confirmada** → `active` (`metadata.trial_converted_at`), cobrança mensal até cancelar.
+5. **Cancelou no teste** → assinatura removida no Asaas (nada é cobrado), `cancelled` com acesso até o fim do teste, depois `expired`.
+6. **Cartão recusado.** O Asaas tenta no vencimento e no dia seguinte. Passado `TRIAL_CHARGE_GRACE` sem pagamento, a reconciliação remove a assinatura no Asaas e encerra (`expired_reason=trial_unpaid`): a conta volta ao gratuito.
+
+O retorno do checkout nunca libera nada: só a consulta ao provedor. No cadastro, a escolha do teste leva aos primeiros passos, que abrem o checkout (`return_to: "signup"` devolve a pessoa para `/onboarding`).
