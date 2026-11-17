@@ -122,12 +122,10 @@ export const POPULAR_LANGUAGES: LanguageCode[] = [
   "pt",
 ];
 
-/** Demais idiomas em ordem alfabética; "Outro idioma" por último. */
-export const OTHER_LANGUAGES: LanguageCode[] = (Object.keys(LANGUAGE_NAMES) as LanguageCode[])
-  .filter((c) => !POPULAR_LANGUAGES.includes(c) && c !== "und")
-  .sort((a, b) => (languageName(a) ?? a).localeCompare(languageName(b) ?? b, uiLocale === "en" ? "en" : "pt-BR"))
-  .concat("und");
-
+// ATENÇÃO À ORDEM: `OTHER_LANGUAGES`, logo abaixo, é ordenada na carga do módulo e chama
+// `languageName`, que em inglês lê estas duas constantes. Declaradas depois dela, o módulo
+// estourava ("Cannot access before initialization") só com a interface em inglês — e toda
+// conta nova em inglês caía na tela de erro na configuração inicial.
 // Em inglês os nomes vêm do próprio navegador (Intl.DisplayNames); o que o Intl não cobre
 // (línguas de sinais pelo código ISO 639-3, "outro idioma") fica aqui.
 const EN_OVERRIDES: Partial<Record<LanguageCode, string>> = {
@@ -144,6 +142,12 @@ const enDisplay = (() => {
     return null;
   }
 })();
+
+/** Demais idiomas em ordem alfabética; "Outro idioma" por último. */
+export const OTHER_LANGUAGES: LanguageCode[] = (Object.keys(LANGUAGE_NAMES) as LanguageCode[])
+  .filter((c) => !POPULAR_LANGUAGES.includes(c) && c !== "und")
+  .sort((a, b) => (languageName(a) ?? a).localeCompare(languageName(b) ?? b, uiLocale === "en" ? "en" : "pt-BR"))
+  .concat("und");
 
 export function languageName(code: string | null | undefined): string | null {
   if (!code || !(code in LANGUAGE_NAMES)) return null;
