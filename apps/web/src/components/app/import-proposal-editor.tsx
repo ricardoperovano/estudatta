@@ -271,16 +271,35 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
           </span>
         ) : null}
         {aiEnabled ? (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1" data-tour="importar-ia">
+          // Antes da primeira sugestão, a IA é o caminho recomendado: a leitura automática do PDF
+          // costuma trazer ruído ("ANEXO IV", linhas soltas) e o botão passava despercebido.
+          <div
+            className={cn(
+              "flex flex-col gap-2",
+              !aiNote && "tint-soft rounded-md p-3 shadow-accent-ring",
+            )}
+            data-tour="importar-ia"
+          >
+            {!aiNote ? (
+              <p className="m-0 text-[13px] leading-[1.5]">
+                <strong className="font-medium">{tx("Deixe a IA organizar para você.")}</strong>{" "}
+                <span className="text-neutral-400">
+                  {tx(
+                    "Ela lê o arquivo e monta as matérias e os tópicos. Você revisa tudo antes de criar.",
+                  )}
+                </span>
+              </p>
+            ) : null}
             <Button
-              variant="secondary"
-              className="min-h-[44px]"
+              variant={aiNote ? "secondary" : "selected"}
+              size="lg"
+              className={cn("self-start", !aiNote && "w-full bg-surface font-medium tablet:w-auto")}
               loading={suggest.isPending}
               disabled={blocked || remaining <= 0}
               onClick={() => (dirty ? setAskReplace(true) : runSuggest())}
             >
-              {suggest.isPending ? null : <Sparkle size={16} aria-hidden />}
-              {tx("Sugerir estrutura")}
+              {suggest.isPending ? null : <Sparkle size={18} weight="fill" aria-hidden />}
+              {aiNote ? tx("Sugerir de novo") : tx("Sugerir estrutura")}
             </Button>
             <span className="tnum text-[12px] text-neutral-400">
               {remaining > 0

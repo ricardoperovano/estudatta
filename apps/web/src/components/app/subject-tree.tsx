@@ -1,11 +1,13 @@
 import { t as tx } from "@/i18n";
 import * as React from "react";
+import { Link } from "react-router";
 import {
   ArrowDown,
   ArrowUp,
   CheckCircle,
   Circle,
   CircleHalf,
+  FileArrowUp,
   PencilSimple,
   Plus,
 } from "@phosphor-icons/react";
@@ -111,9 +113,19 @@ export function SubjectTree({ activityId }: { activityId: string }) {
   }
   const list = subjects.data;
   const p = progress.data;
+  const importUrl = `/app/importar?objetivo=${activityId}`;
 
   return (
     <div className="flex flex-col gap-[6px] text-[14px]">
+      {list.length > 0 ? (
+        <div className="flex justify-end">
+          <Button asChild variant="ghost" size="sm">
+            <Link to={importUrl}>
+              <FileArrowUp size={14} aria-hidden /> {tx("Importar matérias do edital")}
+            </Link>
+          </Button>
+        </div>
+      ) : null}
       {p && p.topics_total > 0 ? (
         <Card className="gap-2 p-3">
           <div className="flex items-baseline justify-between gap-2">
@@ -145,9 +157,16 @@ export function SubjectTree({ activityId }: { activityId: string }) {
             "Organize o objetivo em matérias e tópicos para vincular materiais e acompanhar o conteúdo.",
           )}
           action={
-            <Button variant="primary" onClick={() => setSubjectSheet({})}>
-              {tx("+ Adicionar matéria")}
-            </Button>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button asChild variant="primary">
+                <Link to={importUrl}>
+                  <FileArrowUp size={16} aria-hidden /> {tx("Importar do edital ou plano")}
+                </Link>
+              </Button>
+              <Button variant="secondary" onClick={() => setSubjectSheet({})}>
+                {tx("+ Adicionar matéria")}
+              </Button>
+            </div>
           }
         />
       ) : (
@@ -165,9 +184,16 @@ export function SubjectTree({ activityId }: { activityId: string }) {
         ))
       )}
       {list.length > 0 ? (
-        <Button variant="secondary" size="lg" onClick={() => setSubjectSheet({})}>
-          {tx("+ Adicionar matéria")}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" size="lg" className="flex-1" onClick={() => setSubjectSheet({})}>
+            {tx("+ Adicionar matéria")}
+          </Button>
+          <Button asChild variant="secondary" size="lg" className="flex-1">
+            <Link to={importUrl}>
+              <FileArrowUp size={16} aria-hidden /> {tx("Importar do edital ou plano")}
+            </Link>
+          </Button>
+        </div>
       ) : null}
 
       {subjectSheet ? (
