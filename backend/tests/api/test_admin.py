@@ -310,3 +310,14 @@ def test_billing_events_and_reconcile(client):
     assert actions == ["admin.billing.reconcile"]
     with SessionLocal() as db:
         assert db.execute(select(NotificationOutbox)).scalars().first() is None
+
+
+def test_last_seen_is_shown_for_someone_who_only_registered(client):
+    """Quem se cadastra entra logado e nunca passa pelo login: o painel precisa mostrar o último
+    acesso mesmo assim (antes aparecia "—" para quase todas as contas)."""
+    other = second_client()
+    signup(other, email="novata@example.com", name="Novata")
+    make_admin(client)
+    rows = client.get("/api/v1/admin/users", params={"q": "novata"}).json()["items"]
+    assert rows[0]["last_login_at"] is None  # nunca fez login com senha
+    assert rows[0]["last_seen_at"] is not None

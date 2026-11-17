@@ -419,6 +419,17 @@ def user_usage(db: Session, user: User, *, now: datetime | None = None) -> dict:
     }
 
 
+def last_seen(db: Session, user: User) -> datetime | None:
+    """Última vez que a conta foi vista. `last_login_at` só muda no login com senha: quem se
+    cadastra já entra logado e continua com a mesma sessão por semanas, então o painel mostrava
+    "Último acesso: —" para quase todo mundo. A sessão é tocada a cada uso (no máximo 1×/hora)."""
+    seen = db.execute(
+        select(func.max(AuthSession.last_seen_at)).where(AuthSession.user_id == user.id)
+    ).scalar_one_or_none()
+    known = [d for d in (seen, user.last_login_at) if d is not None]
+    return max(known) if known else None
+
+
 def set_role(db: Session, actor: User, user: User, role: str) -> User:
     if role not in ("user", "admin"):
         raise ValidationFailed("Papel inválido.", code="invalid_role")

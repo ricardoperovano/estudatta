@@ -34,6 +34,8 @@ class AdminUserOut(ORMModel):
     email_verified_at: datetime | None
     onboarding_completed_at: datetime | None
     last_login_at: datetime | None
+    # última vez que a conta foi vista no app (qualquer sessão), não só o último login com senha
+    last_seen_at: datetime | None = None
     created_at: datetime
     plan_code: str | None = None
     plan_source: str | None = None

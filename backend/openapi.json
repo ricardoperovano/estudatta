@@ -9823,6 +9823,18 @@
             ],
             "title": "Last Login At"
           },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen At"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",

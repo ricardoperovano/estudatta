@@ -115,7 +115,7 @@ function UserRow({ user }: { user: AdminUser }) {
         ) : null}
       </div>
       <span className="tnum shrink-0 text-[12px] text-neutral-400 tablet:w-[150px] tablet:text-right">
-        {t("Último acesso: {{v0}}", { v0: fmtDate(user.last_login_at) })}
+        {t("Último acesso: {{v0}}", { v0: fmtDate(user.last_seen_at ?? user.last_login_at) })}
       </span>
       <CaretRight size={16} aria-hidden className="hidden shrink-0 text-neutral-400 tablet:block" />
     </Link>
@@ -165,7 +165,7 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
             "fuso horário": user.timezone,
             "e-mail verificado em": user.email_verified_at,
             "primeiros passos concluídos em": user.onboarding_completed_at,
-            "último acesso": user.last_login_at,
+            "último acesso": user.last_seen_at ?? user.last_login_at,
             "conta criada em": user.created_at,
           }}
         />

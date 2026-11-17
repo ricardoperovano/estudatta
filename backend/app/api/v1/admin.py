@@ -76,6 +76,7 @@ def _user_out(db: Session, user: User) -> AdminUserOut:
     o.plan_code = summary["plan_code"]
     o.plan_source = summary["plan_source"]
     o.subscription_status = summary["subscription_status"]
+    o.last_seen_at = svc.last_seen(db, user)
     return o
 
 

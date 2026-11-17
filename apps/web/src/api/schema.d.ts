@@ -3178,6 +3178,8 @@ export interface components {
             onboarding_completed_at: string | null;
             /** Last Login At */
             last_login_at: string | null;
+            /** Last Seen At */
+            last_seen_at?: string | null;
             /**
              * Created At
              * Format: date-time
