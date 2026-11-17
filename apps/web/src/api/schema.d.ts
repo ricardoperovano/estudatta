@@ -5738,10 +5738,7 @@ export interface components {
             email: string;
             /** Password */
             password: string;
-            /**
-             * Name
-             * @default
-             */
+            /** Name */
             name: string;
             /**
              * Timezone

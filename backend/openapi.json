@@ -17556,8 +17556,8 @@
           "name": {
             "type": "string",
             "maxLength": 120,
-            "title": "Name",
-            "default": ""
+            "minLength": 1,
+            "title": "Name"
           },
           "timezone": {
             "type": "string",
@@ -17575,7 +17575,8 @@
         "type": "object",
         "required": [
           "email",
-          "password"
+          "password",
+          "name"
         ],
         "title": "RegisterRequest"
       },

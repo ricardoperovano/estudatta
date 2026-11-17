@@ -2922,5 +2922,7 @@
   "Deixe a IA organizar para você.": "Let the AI organize it for you.",
   "Ela lê o arquivo e monta as matérias e os tópicos. Você revisa tudo antes de criar.": "It reads the file and builds the subjects and topics. You review everything before creating.",
   "Sugerir de novo": "Suggest again",
-  "Não foi possível conectar ao servidor. Confira sua internet e tente de novo.": "Couldn’t reach the server. Check your connection and try again."
+  "Não foi possível conectar ao servidor. Confira sua internet e tente de novo.": "Couldn’t reach the server. Check your connection and try again.",
+  "Como quer ser chamado": "What should we call you",
+  "Diga como quer ser chamado.": "Tell us what to call you."
 }

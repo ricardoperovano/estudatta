@@ -14,7 +14,7 @@ import { isConnectionFailure } from "@/api/client";
 import { noteConnectionFailure } from "@/lib/error-report";
 
 const schema = z.object({
-  name: z.string().max(120).optional(),
+  name: z.string().trim().min(1, t("Diga como quer ser chamado.")).max(120),
   email: z.string().email(t("Informe um e-mail válido.")),
   password: z.string().min(8, t("Use pelo menos 8 caracteres.")),
 });
@@ -29,7 +29,7 @@ export default function RegisterPage() {
   const onSubmit = async (v: Form) => {
     setError(null);
     try {
-      await signup(v.email, v.password, v.name || "", detectTimezone());
+      await signup(v.email, v.password, v.name, detectTimezone());
       nav("/onboarding", { replace: true });
     } catch (e) {
       if (isConnectionFailure(e)) noteConnectionFailure("POST /auth/register", e);
@@ -53,8 +53,13 @@ export default function RegisterPage() {
     >
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
         {error ? <Banner kind="error">{error}</Banner> : null}
-        <Field label={t("Como quer ser chamado (opcional)")} htmlFor="name">
-          <Input id="name" autoComplete="given-name" {...register("name")} />
+        <Field label={t("Como quer ser chamado")} htmlFor="name" error={formState.errors.name?.message}>
+          <Input
+            id="name"
+            autoComplete="given-name"
+            invalid={!!formState.errors.name}
+            {...register("name")}
+          />
         </Field>
         <Field label={t("E-mail")} htmlFor="email" error={formState.errors.email?.message}>
           <Input

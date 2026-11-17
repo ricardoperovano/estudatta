@@ -20,7 +20,9 @@ def test_register_stores_locale_and_errors_follow_account(client):
     client.csrf = r.json()["csrf_token"]
     assert r.json()["user"]["locale"] == "en"
     # erro de domínio traduzido no handler
-    r = client.post(f"{API}/auth/register", json={"email": "en@example.com", "password": "x" * 9})
+    r = client.post(
+        f"{API}/auth/register", json={"email": "en@example.com", "password": "x" * 9, "name": "Ann"}
+    )
     assert r.status_code == 409
     assert r.json()["error"]["message"] == "There’s already an account with this email."
     # troca pelo PATCH /me e validação
@@ -28,7 +30,9 @@ def test_register_stores_locale_and_errors_follow_account(client):
     assert r.status_code == 422
     r = client.patch(f"{API}/me", json={"locale": "pt"})
     assert r.status_code == 200 and r.json()["locale"] == "pt-BR"
-    r = client.post(f"{API}/auth/register", json={"email": "en@example.com", "password": "x" * 9})
+    r = client.post(
+        f"{API}/auth/register", json={"email": "en@example.com", "password": "x" * 9, "name": "Ann"}
+    )
     assert r.json()["error"]["message"] == "Já existe uma conta com este e-mail."
 
 

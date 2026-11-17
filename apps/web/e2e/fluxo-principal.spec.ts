@@ -19,6 +19,7 @@ async function skipTours(page: Page) {
 async function register(page: Page, { keepTours = false } = {}) {
   if (!keepTours) await skipTours(page);
   await page.goto("/cadastro");
+  await page.getByLabel("Como quer ser chamado").fill("Ana");
   await page.getByLabel("E-mail").fill(newEmail());
   await page.getByLabel("Senha").fill(password);
   await page.getByRole("button", { name: "Criar conta" }).click();

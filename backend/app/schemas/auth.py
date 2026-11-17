@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.schemas.common import ORMModel
 
@@ -11,9 +11,19 @@ from app.schemas.common import ORMModel
 class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=256)
-    name: str = Field(default="", max_length=120)
+    # obrigatório: é como o app e os e-mails chamam a pessoa (contas sem nome apareciam no
+    # painel como "Sem nome")
+    name: str = Field(min_length=1, max_length=120)
     timezone: str = Field(default="America/Sao_Paulo", max_length=64)
     locale: str = Field(default="pt-BR", max_length=16)  # idioma da interface: pt-BR | en
+
+    @field_validator("name")
+    @classmethod
+    def _name(cls, v: str) -> str:
+        v = " ".join((v or "").split())
+        if not v:
+            raise ValueError("Informe como quer ser chamado.")
+        return v
 
 
 class LoginRequest(BaseModel):

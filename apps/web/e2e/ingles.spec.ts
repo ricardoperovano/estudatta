@@ -34,7 +34,13 @@ test("sign up in English → onboarding → Today, and the screens that list lan
   await skipTours(page);
 
   await page.goto("/cadastro");
+  // sem nome o cadastro não segue: o campo é obrigatório
   await page.getByLabel("Email").fill(newEmail());
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.getByText("Tell us what to call you.")).toBeVisible();
+  await expect(page).toHaveURL(/\/cadastro/);
+  await page.getByLabel("What should we call you").fill("Guilherme");
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page).toHaveURL(/\/onboarding/);
