@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import audit
 from app.core.db import get_db
-from app.core.deps import get_current_user
+from app.core.deps import client_ip, get_current_user
 from app.core.errors import NotFound, Unauthorized, ValidationFailed
 from app.core.i18n import _, normalize_locale, set_locale
 from app.core.security import verify_password
@@ -314,11 +314,20 @@ def delete_account(
     são mantidos de forma anonimizada pelo período definido pelo responsável (ver docs/privacidade)."""
     if user.password_hash and not verify_password(payload.password or "", user.password_hash):
         raise Unauthorized("Senha incorreta.", code="invalid_credentials")
-    audit(db, actor_id=user.id, action="account.delete", target_type="user", target_id=str(user.id))
-    from app.services import materials as materials_service
+    from app.api.v1.billing import optional_provider
+    from app.services import account_deletion
 
-    materials_service.delete_all_user_files(db, user)
-    db.delete(user)
+    # cancela a assinatura no provedor antes de apagar; se não der, a conta não é excluída
+    cancelled = account_deletion.delete_user(db, user, optional_provider())
+    audit(
+        db,
+        actor_id=None,
+        action="account.delete",
+        target_type="user",
+        target_id=str(user.id),
+        metadata={"subscriptions_cancelled": cancelled},
+        ip=client_ip(request),
+    )
     db.commit()
 
     resp = OkResponse(message=_("Conta excluída."))

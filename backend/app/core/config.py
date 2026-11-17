@@ -129,8 +129,11 @@ class Settings(BaseSettings):
 
     # --- Demonstração --------------------------------------------------------
     DEMO_MODE: bool = False
+    # Quem pode EXCLUIR contas de outras pessoas pelo painel admin: e-mails separados por vírgula.
+    # Vazio (padrão) = recurso desligado; ser administrador não basta.
+    ACCOUNT_DELETION_ADMINS: Annotated[list[str], NoDecode] = Field(default_factory=list)
 
-    @field_validator("CORS_ORIGINS", "TRUSTED_ORIGINS", mode="before")
+    @field_validator("CORS_ORIGINS", "TRUSTED_ORIGINS", "ACCOUNT_DELETION_ADMINS", mode="before")
     @classmethod
     def _split_csv(cls, v: object) -> object:
         if isinstance(v, str):

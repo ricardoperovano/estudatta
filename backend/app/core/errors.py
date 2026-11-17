@@ -101,7 +101,6 @@ async def _note(
     path = request.url.path
     if path.endswith("/client-errors"):
         return  # o próprio canal de relato não gera relato (evita laço)
-    sess = getattr(request.state, "auth_session", None)
     await run_in_threadpool(
         health.record,
         source="server",
@@ -111,7 +110,7 @@ async def _note(
         path=path,
         method=request.method,
         status=status,
-        user_id=getattr(sess, "user_id", None),
+        user_id=getattr(request.state, "user_id", None),
         request_id=getattr(request.state, "request_id", None),
         detail=detail,
     )

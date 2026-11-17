@@ -2379,6 +2379,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/users/{user_id}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete User
+         * @description Exclui a conta de outra pessoa. Irreversível e restrito de propósito:
+         *
+         *     - só administradores cujo e-mail está em ACCOUNT_DELETION_ADMINS (vazio = desligado);
+         *     - a senha de quem exclui é pedida de novo, e o e-mail da conta-alvo precisa ser digitado;
+         *     - nunca a própria conta nem a de outro administrador;
+         *     - a assinatura é cancelada no provedor antes; se isso falhar, nada é apagado;
+         *     - no máximo 5 tentativas por hora, e toda tentativa (aceita ou recusada) vai para a auditoria.
+         */
+        post: operations["delete_user_api_v1_admin_users__user_id__delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/users/{user_id}/role": {
         parameters: {
             query?: never;
@@ -3099,6 +3125,18 @@ export interface components {
             /** Sort Order */
             sort_order?: number | null;
         };
+        /**
+         * AdminDeleteUserIn
+         * @description Exclusão de conta pelo painel: exige a senha de quem exclui e o e-mail da conta-alvo.
+         */
+        AdminDeleteUserIn: {
+            /** Confirm Email */
+            confirm_email: string;
+            /** Password */
+            password: string;
+            /** Reason */
+            reason?: string | null;
+        };
         /** AdminSubscriptionOut */
         AdminSubscriptionOut: {
             /**
@@ -3154,6 +3192,11 @@ export interface components {
             usage: {
                 [key: string]: unknown;
             };
+            /**
+             * Can Delete
+             * @default false
+             */
+            can_delete: boolean;
         };
         /** AdminUserOut */
         AdminUserOut: {
@@ -12190,6 +12233,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminUserDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_user_api_v1_admin_users__user_id__delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminDeleteUserIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OkResponse"];
                 };
             };
             /** @description Validation Error */

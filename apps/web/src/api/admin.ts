@@ -159,6 +159,24 @@ export function useSetUserActive() {
   });
 }
 
+/**
+ * Exclui a conta de outra pessoa. Irreversível: a API exige a senha de quem exclui e o e-mail da
+ * conta-alvo, e só aceita o responsável pelo serviço (ver ACCOUNT_DELETION_ADMINS no servidor).
+ */
+export function useDeleteUser() {
+  const invalidate = useInvalidateAdmin();
+  return useMutation({
+    mutationFn: async (v: { id: string; confirm_email: string; password: string; reason?: string | null }) =>
+      unwrap(
+        await api.POST("/api/v1/admin/users/{user_id}/delete", {
+          params: { path: { user_id: v.id } },
+          body: { confirm_email: v.confirm_email, password: v.password, reason: v.reason ?? null },
+        }),
+      ),
+    onSuccess: () => invalidate(adminKeys.usersScope, adminKeys.overview),
+  });
+}
+
 export function useGrantPromo() {
   const invalidate = useInvalidateAdmin();
   return useMutation({

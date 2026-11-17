@@ -6981,6 +6981,60 @@
         }
       }
     },
+    "/api/v1/admin/users/{user_id}/delete": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Delete User",
+        "description": "Exclui a conta de outra pessoa. Irreversível e restrito de propósito:\n\n- só administradores cujo e-mail está em ACCOUNT_DELETION_ADMINS (vazio = desligado);\n- a senha de quem exclui é pedida de novo, e o e-mail da conta-alvo precisa ser digitado;\n- nunca a própria conta nem a de outro administrador;\n- a assinatura é cancelada no provedor antes; se isso falhar, nada é apagado;\n- no máximo 5 tentativas por hora, e toda tentativa (aceita ou recusada) vai para a auditoria.",
+        "operationId": "delete_user_api_v1_admin_users__user_id__delete_post",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminDeleteUserIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/users/{user_id}/role": {
       "post": {
         "tags": [
@@ -9570,6 +9624,39 @@
         "type": "object",
         "title": "ActivityUpdate"
       },
+      "AdminDeleteUserIn": {
+        "properties": {
+          "confirm_email": {
+            "type": "string",
+            "maxLength": 320,
+            "title": "Confirm Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 256,
+            "title": "Password"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "confirm_email",
+          "password"
+        ],
+        "title": "AdminDeleteUserIn",
+        "description": "Exclusão de conta pelo painel: exige a senha de quem exclui e o e-mail da conta-alvo."
+      },
       "AdminSubscriptionOut": {
         "properties": {
           "id": {
@@ -9748,6 +9835,11 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Usage"
+          },
+          "can_delete": {
+            "type": "boolean",
+            "title": "Can Delete",
+            "default": false
           }
         },
         "type": "object",

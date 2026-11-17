@@ -42,6 +42,9 @@ def get_optional_user(request: Request, db: Session = Depends(get_db)) -> User |
         return None
     sess, user = loaded
     request.state.auth_session = sess
+    # valor simples, lido pelo registro de erros: o objeto da sessão pode estar expirado ou
+    # desligado do banco quando o erro acontece (por exemplo, depois de um rollback)
+    request.state.user_id = user.id
     # toca last_seen no máximo uma vez por hora
     if sess.last_seen_at < utcnow() - timedelta(hours=1):
         sess.last_seen_at = utcnow()

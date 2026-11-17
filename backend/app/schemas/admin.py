@@ -62,6 +62,17 @@ class AdminUserDetailOut(BaseModel):
     subscriptions: list[SubscriptionOut]
     promo_grants: list[PromoGrantOut]
     usage: dict
+    # quem está olhando pode excluir esta conta? (só o responsável pelo serviço; nunca a
+    # própria conta nem a de outro administrador)
+    can_delete: bool = False
+
+
+class AdminDeleteUserIn(BaseModel):
+    """Exclusão de conta pelo painel: exige a senha de quem exclui e o e-mail da conta-alvo."""
+
+    confirm_email: str = Field(max_length=320)
+    password: str = Field(max_length=256)
+    reason: str | None = Field(default=None, max_length=300)
 
 
 class RoleIn(BaseModel):

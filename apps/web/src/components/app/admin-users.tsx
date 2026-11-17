@@ -1,13 +1,14 @@
 /** Painel administrativo — usuários (lista + detalhe). Não existe "entrar como usuário". */
 import { t } from "@/i18n";
 import * as React from "react";
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { errorMessage } from "@/api/client";
 import {
   useAdminPlans,
   useAdminUser,
   useAdminUsers,
+  useDeleteUser,
   useGrantPromo,
   useRevokePromo,
   useSetUserActive,
@@ -243,6 +244,7 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
         ) : null}
         <RoleForm key={`${user.id}:${user.role}`} user={user} />
         <ActiveToggle user={user} />
+        {detail.can_delete ? <DeleteAccount user={user} usage={usage} hasBilling={subscriptions.length > 0} /> : null}
       </AdminSection>
     </>
   );
@@ -350,6 +352,121 @@ function ActiveToggle({ user }: { user: AdminUser }) {
         loading={setActive.isPending}
         onConfirm={apply}
       />
+    </div>
+  );
+}
+
+/**
+ * Excluir a conta de outra pessoa. Só aparece para o responsável pelo serviço (a API decide), e
+ * pede duas provas de intenção: o e-mail da conta digitado e a senha de quem exclui.
+ */
+function DeleteAccount({
+  user,
+  usage,
+  hasBilling,
+}: {
+  user: AdminUser;
+  usage: Record<string, unknown>;
+  hasBilling: boolean;
+}) {
+  const nav = useNavigate();
+  const del = useDeleteUser();
+  const [open, setOpen] = React.useState(false);
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [reason, setReason] = React.useState("");
+  const [error, setError] = React.useState<string | null>(null);
+  const matches = email.trim().toLowerCase() === user.email.toLowerCase();
+
+  const close = (o: boolean) => {
+    setOpen(o);
+    if (!o) {
+      setEmail("");
+      setPassword("");
+      setReason("");
+      setError(null);
+    }
+  };
+  const apply = async () => {
+    setError(null);
+    try {
+      await del.mutateAsync({ id: user.id, confirm_email: email.trim(), password, reason: reason.trim() || null });
+      toast("success", t("Conta excluída"), user.email);
+      nav("/admin/usuarios", { replace: true });
+    } catch (e) {
+      setPassword("");
+      setError(errorMessage(e));
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-divider pt-3">
+      <span className="text-[13px] text-neutral-400">
+        {t("Excluir apaga a conta e tudo o que ela registrou. Não dá para desfazer.")}
+      </span>
+      <Button size="lg" variant="danger" onClick={() => setOpen(true)}>
+        {t("Excluir conta")}
+      </Button>
+      <Dialog open={open} onOpenChange={close}>
+        <DialogContent
+          title={t("Excluir esta conta para sempre?")}
+          description={t(
+            "{{v0}} perde o acesso e todos os dados: {{v1}} objetivo(s), sessões, materiais e histórico. Não há como recuperar.",
+            { v0: user.email, v1: Number(usage.activities_total ?? 0) },
+          )}
+        >
+          {hasBilling ? (
+            <p className="tint-soft rounded-md p-3 text-[13px] leading-[1.5]">
+              {t(
+                "Esta conta tem assinatura. Ela é cancelada no provedor de pagamento antes; se o cancelamento falhar, nada é excluído.",
+              )}
+            </p>
+          ) : null}
+          {error ? (
+            <p className="rounded-md bg-error-tint p-3 text-[13px] text-error" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <Field label={t("Digite o e-mail da conta para confirmar")} htmlFor="del-email">
+            <Input
+              id="del-email"
+              type="email"
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              placeholder={user.email}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </Field>
+          <Field label={t("Sua senha de administrador")} htmlFor="del-password">
+            <Input
+              id="del-password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </Field>
+          <Field label={t("Motivo (opcional, fica na auditoria)")} htmlFor="del-reason">
+            <Input id="del-reason" maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} />
+          </Field>
+          <DialogActions>
+            <Button variant="secondary" size="lg" disabled={del.isPending} onClick={() => close(false)}>
+              {t("Voltar")}
+            </Button>
+            <Button
+              variant="danger"
+              size="lg"
+              loading={del.isPending}
+              disabled={!matches || password.length === 0}
+              onClick={() => void apply()}
+            >
+              {t("Excluir para sempre")}
+            </Button>
+          </DialogActions>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

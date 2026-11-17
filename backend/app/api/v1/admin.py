@@ -8,14 +8,17 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
+from app.api.v1.billing import optional_provider
 from app.core.audit import audit
 from app.core.db import get_db
-from app.core.deps import client_ip, get_admin_user
-from app.core.errors import NotFound
+from app.core.deps import client_ip, get_admin_user, rate_limit
+from app.core.errors import ApiError, NotFound
 from app.core.i18n import _
+from app.integrations.mercadopago import BillingProvider
 from app.models.notification import NotificationOutbox
 from app.models.user import User
 from app.schemas.admin import (
+    AdminDeleteUserIn,
     AdminUserDetailOut,
     AdminUserOut,
     AuditOut,
@@ -40,6 +43,7 @@ from app.schemas.admin import (
 from app.schemas.auth import EntitlementsOut
 from app.schemas.billing import SubscriptionOut
 from app.schemas.common import OkResponse, Page
+from app.services import account_deletion
 from app.services import admin as svc
 from app.services import billing as billing_service
 from app.services import health as health_service
@@ -92,7 +96,9 @@ def list_users(
 
 
 @router.get("/users/{user_id}", response_model=AdminUserDetailOut)
-def user_detail(user_id: UUID, db: Session = Depends(get_db)) -> AdminUserDetailOut:
+def user_detail(
+    user_id: UUID, db: Session = Depends(get_db), admin: User = Depends(get_admin_user)
+) -> AdminUserDetailOut:
     user = svc.get_user(db, user_id)
     ent = get_entitlements(db, user.id)
     return AdminUserDetailOut(
@@ -106,7 +112,77 @@ def user_detail(user_id: UUID, db: Session = Depends(get_db)) -> AdminUserDetail
             PromoGrantOut(**svc.promo_out(db, g)) for g in svc.list_promo_grants(db, user.id)
         ],
         usage=svc.user_usage(db, user),
+        can_delete=account_deletion.is_owner(admin)
+        and user.id != admin.id
+        and user.role != "admin",
     )
+
+
+@router.post(
+    "/users/{user_id}/delete",
+    response_model=OkResponse,
+    dependencies=[Depends(rate_limit("admin_delete_user", 5, 3600))],
+)
+def delete_user(
+    user_id: UUID,
+    payload: AdminDeleteUserIn,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+    provider: BillingProvider | None = Depends(optional_provider),
+) -> OkResponse:
+    """Exclui a conta de outra pessoa. Irreversível e restrito de propósito:
+
+    - só administradores cujo e-mail está em ACCOUNT_DELETION_ADMINS (vazio = desligado);
+    - a senha de quem exclui é pedida de novo, e o e-mail da conta-alvo precisa ser digitado;
+    - nunca a própria conta nem a de outro administrador;
+    - a assinatura é cancelada no provedor antes; se isso falhar, nada é apagado;
+    - no máximo 5 tentativas por hora, e toda tentativa (aceita ou recusada) vai para a auditoria.
+    """
+    target = svc.get_user(db, user_id)
+    try:
+        account_deletion.check_admin_delete(
+            admin, target, password=payload.password, confirm_email=payload.confirm_email
+        )
+    except ApiError as exc:
+        _audit(
+            db,
+            request,
+            admin,
+            "admin.user.delete_denied",
+            target_type="user",
+            target_id=str(target.id),
+            metadata={"why": exc.code},
+        )
+        db.commit()
+        raise
+    snap = account_deletion.snapshot(db, target)
+    try:
+        cancelled = account_deletion.delete_user(db, target, provider)
+    except ApiError as exc:
+        db.rollback()
+        _audit(
+            db,
+            request,
+            admin,
+            "admin.user.delete_failed",
+            target_type="user",
+            target_id=str(user_id),
+            metadata={"why": exc.code},
+        )
+        db.commit()
+        raise
+    _audit(
+        db,
+        request,
+        admin,
+        "admin.user.delete",
+        target_type="user",
+        target_id=str(user_id),
+        metadata={**snap, "subscriptions_cancelled": cancelled, "reason": payload.reason},
+    )
+    db.commit()
+    return OkResponse(message=_("Conta excluída."))
 
 
 @router.post("/users/{user_id}/role", response_model=AdminUserOut)

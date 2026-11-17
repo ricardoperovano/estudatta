@@ -2924,5 +2924,13 @@
   "Sugerir de novo": "Suggest again",
   "Não foi possível conectar ao servidor. Confira sua internet e tente de novo.": "Couldn’t reach the server. Check your connection and try again.",
   "Como quer ser chamado": "What should we call you",
-  "Diga como quer ser chamado.": "Tell us what to call you."
+  "Diga como quer ser chamado.": "Tell us what to call you.",
+  "Excluir apaga a conta e tudo o que ela registrou. Não dá para desfazer.": "Deleting removes the account and everything it logged. It can’t be undone.",
+  "Excluir esta conta para sempre?": "Delete this account forever?",
+  "{{v0}} perde o acesso e todos os dados: {{v1}} objetivo(s), sessões, materiais e histórico. Não há como recuperar.": "{{v0}} loses access and all data: {{v1}} goal(s), sessions, materials and history. It cannot be recovered.",
+  "Esta conta tem assinatura. Ela é cancelada no provedor de pagamento antes; se o cancelamento falhar, nada é excluído.": "This account has a subscription. It is cancelled with the payment provider first; if that fails, nothing is deleted.",
+  "Digite o e-mail da conta para confirmar": "Type the account’s email to confirm",
+  "Sua senha de administrador": "Your administrator password",
+  "Motivo (opcional, fica na auditoria)": "Reason (optional, kept in the audit log)",
+  "Excluir para sempre": "Delete forever"
 }
