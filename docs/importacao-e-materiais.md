@@ -36,6 +36,28 @@ página no fim da linha ("..... 12") viram `page`. No máximo dois níveis abaix
 (tópico → subtópico). Sem matéria identificável, usa-se "Geral". Em PDF a leitura é mais
 estrita (só linhas com cara de sumário).
 
+## Edital em itens numerados
+Editais verticalizados e tabelas de edital têm leitor próprio
+(`backend/app/services/import_numbered.py`), usado antes da heurística acima em PDF e em texto
+colado. Nesses documentos o item ocupa várias linhas, a matéria vem como "Direito
+Constitucional" (não em maiúsculas) e o número do item fica sozinho numa linha, então a
+heurística linha a linha devolvia uma matéria só com centenas de pedaços de frase.
+
+- O item começa num número sem pontuação (`7`, `7 Texto`, `1.2`, `1.2.1`) que **continua a
+  sequência**; página, ano e número de lei ficam de fora.
+- A numeração que **volta para 1** abre uma matéria; o título é a linha curta, sem ponto final,
+  logo acima (pode quebrar em até três linhas).
+- Saem as linhas repetidas de página em página (cabeçalho, rodapé, cabeçalho da tabela) e as
+  caixas de marcação.
+- O texto do item é remontado: a **primeira frase vira o tópico** e as demais, subtópicos.
+  Grupo com subitens curtos (`1 TÍTULO`, `1.1 …`) vira um tópico com os subitens dentro; com
+  subitens em parágrafo, cada subitem vira um tópico com o nome do grupo na frente.
+- Dois desenhos de tabela: número antes do texto, ou número centralizado na célula (ele sai no
+  meio das linhas do item, e a divisão é conferida pelo ponto final).
+- Precisa de ao menos 8 itens numerados; senão, segue a heurística geral. A proposta marca
+  `stats.layout = "numbered"`, e a revisão no app troca o aviso de "muita coisa" e a sugestão
+  de IA por uma nota de que os itens do edital foram reconhecidos.
+
 ## Modelo CSV
 `GET /api/v1/imports/template.csv` (arquivo `backend/app/templates/import-modelo-conteudo.csv`):
 

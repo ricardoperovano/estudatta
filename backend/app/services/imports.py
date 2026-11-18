@@ -32,6 +32,7 @@ from app.models.content import ImportJob, Material, MaterialTopic, Subject, Topi
 from app.models.user import User
 from app.schemas.imports import MAX_SUBJECTS, MAX_TOPICS, ProposalIn, clean_title
 from app.services import materials as materials_service
+from app.services.import_numbered import numbered_proposal
 
 MAX_TEXT_CHARS = 400_000  # texto/CSV colado ou enviado
 MAX_LINES = 20_000
@@ -185,6 +186,9 @@ def build_proposal(lines: list[Line], *, source: str = "text", strict: bool = Fa
         else:
             cur_topic["children"].append({"title": title, "page": page})
         n_topics += 1
+    if strict and any(s["topics"] for s in subjects):
+        # PDF: linha em maiúsculas sem nada embaixo é capa, rodapé ou chamada ("CLIQUE AQUI!")
+        subjects = [s for s in subjects if s["topics"]]
     stats["subjects"] = len(subjects)
     stats["topics"] = sum(len(s["topics"]) for s in subjects)
     stats["subtopics"] = sum(len(t["children"]) for s in subjects for t in s["topics"])
@@ -192,7 +196,9 @@ def build_proposal(lines: list[Line], *, source: str = "text", strict: bool = Fa
 
 
 def parse_text(content: str) -> dict:
-    return build_proposal([Line(t) for t in content.splitlines()], source="text")
+    lines = [Line(t) for t in content.splitlines()]
+    # texto copiado de um edital em itens numerados tem o mesmo desenho do PDF
+    return numbered_proposal(lines, source="text") or build_proposal(lines, source="text")
 
 
 # --- CSV -------------------------------------------------------------------------
@@ -465,7 +471,11 @@ def _process_pdf(job: ImportJob) -> dict:
             )
         pages = ocr_pages
     job.raw_text = "\f".join(t for _p, t in pages)[:MAX_RAW_TEXT_CHARS]
-    proposal = build_proposal(pdf_lines(pages), source="pdf", strict=True)
+    lines = pdf_lines(pages)
+    # edital em itens numerados (tabela, verticalizado) tem leitor próprio; o resto segue no geral
+    proposal = numbered_proposal(lines, source="pdf") or build_proposal(
+        lines, source="pdf", strict=True
+    )
     proposal["stats"]["pages_total"] = total
     proposal["stats"]["ocr"] = not job.has_text_layer
     return proposal

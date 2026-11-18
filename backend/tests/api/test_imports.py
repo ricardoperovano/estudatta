@@ -263,6 +263,73 @@ def test_pdf_with_text_layer_yields_items_with_pages(user_client, eager_celery):
     assert user_client.get(_download_path(m["download_url"])).status_code == 200
 
 
+NUMBERED_PDF = make_text_pdf(
+    [
+        ["EDITAL VERTICALIZADO", "Concurso Exemplo", "COMO USAR"],
+        [
+            "Matematica Basica",
+            "1",
+            "Conjuntos numericos. Operacoes com",
+            "naturais e inteiros.",
+            "2 Razao e proporcao. Regra de tres.",
+            "3",
+            "Equacoes do primeiro grau.",
+            "4 Funcoes.",
+        ],
+        [
+            "Lingua Portuguesa",
+            "1 Fonologia. Acentuacao grafica.",
+            "2",
+            "Morfologia. Classes de palavras e",
+            "formacao de palavras.",
+            "3 Sintaxe.",
+            "4 Pontuacao.",
+            "CLIQUE AQUI!",
+        ],
+    ]
+)
+
+
+def test_pdf_with_numbered_items_becomes_subjects_topics_and_subtopics(user_client, eager_celery):
+    """Edital em itens numerados: a matéria vem em "Título" (não em maiúsculas), o item ocupa
+    várias linhas e o número fica sozinho. Antes isso virava uma matéria só, com uma linha por
+    "tópico" e a capa como matéria."""
+    act = make_activity(user_client)
+    r = _import_file(user_client, act["id"], NUMBERED_PDF, "edital.pdf")
+    assert r.status_code == 201, r.text
+    job = r.json()
+    assert job["status"] == "needs_review", job
+    stats = job["proposal"]["stats"]
+    assert stats["layout"] == "numbered" and stats["pages_total"] == 3 and stats["ocr"] is False
+    subjects = job["proposal"]["subjects"]
+    assert [s["title"] for s in subjects] == ["Matematica Basica", "Lingua Portuguesa"]
+    assert subjects[0]["topics"] == [
+        {
+            "title": "Conjuntos numericos",
+            "page": 2,
+            "children": [{"title": "Operacoes com naturais e inteiros", "page": 2}],
+        },
+        {
+            "title": "Razao e proporcao",
+            "page": 2,
+            "children": [{"title": "Regra de tres", "page": 2}],
+        },
+        {"title": "Equacoes do primeiro grau", "page": 2, "children": []},
+        {"title": "Funcoes", "page": 2, "children": []},
+    ]
+    assert [t["title"] for t in subjects[1]["topics"]] == [
+        "Fonologia",
+        "Morfologia",
+        "Sintaxe",
+        "Pontuacao",
+    ]
+    r = user_client.post(f"{API}/imports/{job['id']}/confirm")
+    assert r.status_code == 200, r.text
+    assert r.json()["created_subjects"] == 2 and r.json()["created_topics"] == 12
+    tree = _tree(user_client, act["id"])
+    assert [s["title"] for s in tree] == ["Matematica Basica", "Lingua Portuguesa"]
+
+
 def test_pdf_without_text_layer_fails_with_honest_message(user_client, eager_celery):
     act = make_activity(user_client)
     r = _import_file(user_client, act["id"], BLANK_PDF, "digitalizado.pdf")

@@ -216,6 +216,9 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
         ? (aiReasonLabel(ai.data.reason) ?? AI_UNAVAILABLE_NOTE)
         : null;
   const skipped = typeof stats?.skipped === "number" ? stats.skipped : 0;
+  // Edital em itens numerados (tabela, verticalizado): o leitor já devolve as matérias e os itens
+  // do próprio documento. Não é "coisa demais", e a sugestão da IA só leria parte do arquivo.
+  const numbered = stats?.layout === "numbered";
 
   return (
     <div className="flex flex-col gap-[14px]">
@@ -247,7 +250,15 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
             {tx("O conteúdo era longo: só a primeira parte virou proposta. Confira se falta algo.")}
           </span>
         ) : null}
-        {counts.topics > MANY_TOPICS ? (
+        {numbered ? (
+          <p className="tint-soft rounded-md p-3 text-[13px] leading-[1.5]" role="note">
+            <strong className="font-medium">{tx("Reconhecemos os itens numerados do edital.")}</strong>{" "}
+            {tx(
+              "Cada item virou um tópico, e as frases dele, subtópicos, com o texto do próprio documento. Confira as matérias abaixo e confirme.",
+            )}
+          </p>
+        ) : null}
+        {counts.topics > MANY_TOPICS && !numbered ? (
           <p className="tint-soft rounded-md p-3 text-[13px] leading-[1.5]" role="note">
             <strong className="font-medium">
               {tx("{{v0}} é muita coisa para um plano.", {
@@ -270,7 +281,7 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
             })}
           </span>
         ) : null}
-        {aiEnabled ? (
+        {aiEnabled && !numbered ? (
           // Antes da primeira sugestão, a IA é o caminho recomendado: a leitura automática do PDF
           // costuma trazer ruído ("ANEXO IV", linhas soltas) e o botão passava despercebido.
           <div
