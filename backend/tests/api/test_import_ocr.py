@@ -108,9 +108,12 @@ def test_low_confidence_noise_is_dropped_and_boxes_need_a_pair():
     assert ocr._clean_row("1 = . R Doo") == "1"
     assert ocr._clean_row("3 Idade Moderna. Dodo") == "3 Idade Moderna."
     assert ocr._clean_row("| Antiguidade. Grécia e Roma |") == "Antiguidade. Grécia e Roma"
-    assert (
-        ocr._clean_row("L 4") == "" and ocr._clean_row("Tipos de clima do") == "Tipos de clima do"
-    )
+    assert ocr._clean_row('"Nº Conteúdo') == "Nº Conteúdo"
+    assert ocr._clean_row("5 nono") == "5" and ocr._clean_row("no nono ano") == "no nono ano"
+    assert ocr._clean_row("L 5 | População. Migrações.") == "5 População. Migrações."
+    # canto da tabela + número: fica o número (fora da sequência, o leitor de itens o ignora)
+    assert ocr._clean_row("L 4") == "4" and ocr._clean_row("e a") == ""
+    assert ocr._clean_row("Tipos de clima do") == "Tipos de clima do"
 
 
 def test_only_one_ocr_at_a_time(tmp_path):

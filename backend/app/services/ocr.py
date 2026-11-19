@@ -43,6 +43,10 @@ MIN_CONFIDENCE = 25.0  # abaixo disso o Tesseract está chutando (ruído, borda 
 RE_BOX_TOKEN = re.compile(r"^(?:[O0DQoCU]|\[\]|\[J|CJ|LJ|L\]|\[_?\]|\(\)|□|☐|▢|O\]|\[O)$")
 # as três caixas lidas como uma "palavra" só: "Doo", "OOO", "Dodo"
 RE_BOX_WORD = re.compile(r"^[DOQo0d□☐▢\[\]]{3,6}$")
+# ao lado de um número sozinho, as caixas também saem como "nono", "noo", "ono"
+RE_LOOSE_BOX_WORD = re.compile(r"^[DOQo0dnNuUcC□☐▢\[\]]{3,6}$")
+RULE_STUBS = frozenset({"|", "||", "¦", "_", "—", "="})
+LEADING_STUBS = frozenset({"L", "I", "l", "[", "]", "-", "'", '"', "E", "F", "T", "r"})
 RE_ITEM_NUMBER = re.compile(r"^\d{1,3}(?:\.\d{1,3}){0,2}\.?$")
 NUMBER_STRIP = 0.13  # largura da faixa dos números, em fração da página
 
@@ -226,17 +230,22 @@ def _drop_boxes(line: str) -> str:
 
 
 def _clean_row(line: str) -> str:
-    """Tira da linha o que é resto de tabela: caixas de marcação, barras nas pontas e os
-    rabiscos curtos que sobram ao lado de um número sozinho na célula."""
-    tokens = _drop_boxes(line).split()
+    """Tira da linha o que é resto de tabela: caixas de marcação, tocos dos traços (lidos como
+    "|", "L", "-") e os rabiscos curtos que sobram ao lado de um número sozinho na célula."""
+    tokens = [t for t in _drop_boxes(line).split() if t not in RULE_STUBS]
     while tokens and not any(c.isalnum() for c in tokens[0]):
         tokens.pop(0)
-    while tokens and tokens[-1] in ("|", "||", "¦", "_", "—", "="):
-        tokens.pop()
-    if not tokens:
+    if len(tokens) >= 2 and tokens[0] in LEADING_STUBS and RE_ITEM_NUMBER.match(tokens[1]):
+        tokens.pop(0)  # canto da tabela antes do número do item ("L 5 População")
+    if tokens:
+        tokens[0] = tokens[0].lstrip("\"'|“”‘’`´.,;:_=~-")  # toco de traço colado à 1ª palavra
+    if not tokens or not tokens[0]:
         return ""
+    numbered = bool(RE_ITEM_NUMBER.match(tokens[0]))
+    if numbered and len(tokens) == 2 and RE_LOOSE_BOX_WORD.match(tokens[1]):
+        return tokens[0]  # número sozinho na célula e as caixas da mesma altura ("5 nono")
     rest_is_scrap = all(len(t) <= 2 for t in tokens[1:])
-    if RE_ITEM_NUMBER.match(tokens[0]) and rest_is_scrap:
+    if numbered and rest_is_scrap:
         return tokens[0]  # número sozinho na célula, com rabiscos de uma ou duas letras ao lado
     if rest_is_scrap and len(tokens[0]) <= 2:
         return ""  # linha só de rabiscos
@@ -278,10 +287,10 @@ def remove_rules(image):
     horizontal = ink.resize((max(1, width // k), height), Image.Resampling.BOX)
     mask = Image.new("L", (width, height), 0)
     for reduced in (vertical, horizontal):
+        # Só o bloco quase todo coberto pelo traço. A ponta que sobra no bloco vizinho fica: apagar
+        # o vizinho inteiro cortava o título que está logo acima da tabela ("Geografia" virava
+        # "Geog"). O toco que resta sai como "|" ou "-" e é descartado em `_clean_row`.
         hit = reduced.point(lambda v: 255 if v > 215 else 0)
-        # o traço raramente termina na divisa de um bloco: o bloco vizinho, na mesma direção,
-        # guarda a ponta dele
-        hit = hit.filter(ImageFilter.MaxFilter(3))
         mask = ImageChops.lighter(mask, hit.resize((width, height), Image.Resampling.NEAREST))
     mask = mask.filter(ImageFilter.MaxFilter(5))  # pega também a borda do traço
     out = image.copy()
