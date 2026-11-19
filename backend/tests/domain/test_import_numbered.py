@@ -291,3 +291,55 @@ def test_long_items_keep_within_title_size_and_limits():
     first = p["subjects"][0]["topics"][0]
     assert len(first["title"]) <= 200 and first["title"].endswith("…")
     assert first["children"] == [{"title": "Segunda frase do item 1", "page": 1}]
+
+
+# --- edital oficial em texto corrido ("1. Texto…") -----------------------------------------
+
+OFFICIAL = [
+    "ANEXO II",
+    "Obs: Considerar-se-á a legislação vigente até a data da publicação do Edital.",
+    "HISTÓRIA GERAL",
+    "1. Antiguidade. Grécia e Roma. Formação das cidades-Estado e a expansão do",
+    "império romano.",
+    "2. Idade Média. Feudalismo.",
+    "3. Idade Moderna. Lei Federal nº 3.850 de 1990. Renascimento.",
+    "4. Revolução Industrial.",
+    "GEOGRAFIA DO BRASIL",
+    "Conceitos fundamentais da geografia. Espaço, território e",
+    "paisagem.",
+    "1. RELEVO. 1.1. Planaltos e planícies. 1.2 Depressões. Classificações do",
+    "relevo brasileiro.",
+    "2. Clima. Massas de ar.",
+    "3. Hidrografia: 3.1. Bacias hidrográficas. 3.2. Aquíferos.",
+    "4. Vegetação.",
+    "5. População.",
+]
+
+
+def test_official_syllabus_in_running_text():
+    """Anexo de edital como sai no Diário Oficial (e do OCR de um digitalizado): matéria em
+    maiúsculas, itens "1. Texto" em parágrafo, subitens numerados dentro do próprio parágrafo
+    e, às vezes, um parágrafo de abertura sem número."""
+    p = numbered_proposal([Line(t, 1) for t in OFFICIAL])
+    assert p is not None
+    assert [s["title"] for s in p["subjects"]] == ["HISTÓRIA GERAL", "GEOGRAFIA DO BRASIL"]
+    historia, geografia = (s["topics"] for s in p["subjects"])
+    assert [flat(t) for t in historia] == [
+        [
+            "Antiguidade",
+            "Grécia e Roma",
+            "Formação das cidades-Estado e a expansão do império romano",
+        ],
+        ["Idade Média", "Feudalismo"],
+        # "3.850" é número de lei, não o subitem 3.850 do item 3
+        ["Idade Moderna", "Lei Federal nº 3.850 de 1990", "Renascimento"],
+        ["Revolução Industrial"],
+    ]
+    assert [flat(t) for t in geografia] == [
+        ["Conceitos fundamentais da geografia", "Espaço, território e paisagem"],
+        ["RELEVO", "Planaltos e planícies", "Depressões", "Classificações do relevo brasileiro"],
+        ["Clima", "Massas de ar"],
+        ["Hidrografia: Bacias hidrográficas", "Aquíferos"],
+        ["Vegetação"],
+        ["População"],
+    ]

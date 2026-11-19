@@ -7,7 +7,7 @@ era uma matéria só, com centenas de "tópicos" que eram pedaços de frase.
 
 Este módulo reconhece esse formato pelo que ele tem de mais estável, a numeração:
 
-- o item começa num número sem pontuação (`7`, `7 Texto…`, `1.2`, `1.2 Texto…`) que continua a
+- o item começa num número (`7`, `7 Texto…`, `7. Texto…`, `1.2`, `1.2.1`) que continua a
   sequência; números fora da sequência (página, ano, artigo de lei) são texto comum;
 - a numeração que volta para 1 marca uma matéria nova, e o título dela é a linha curta, sem ponto
   final, que vem logo antes;
@@ -41,7 +41,8 @@ MAX_ITEM_LINES = 60  # item sem fim claro (último do documento) não engole o r
 
 TABLE_HEADER_STARTS = frozenset({"Nº", "N°", "Nº.", "N.º", "No.", "Item", "Itens"})
 RE_BOXES = re.compile(r"[☐☑☒□■▢▣❏❐❑❒✓✔✗✘]")
-_NUM = r"(\d{1,3})(?:\.(\d{1,3}))?(?:\.(\d{1,3}))?"
+# "7", "7." ou "7)"; "1.2", "1.2."; "1.2.1"
+_NUM = r"(\d{1,3})(?:\.(\d{1,3}))?(?:\.(\d{1,3}))?[.)]?"
 RE_NUM_ALONE = re.compile(rf"^{_NUM}$")
 RE_NUM_INLINE = re.compile(rf"^{_NUM}\s+(\S.*)$")
 RE_DASH_MARK = re.compile(r"^[—–]\s+(?=[a-zà-ÿ])")
@@ -316,15 +317,22 @@ def _top_items(toks: list[_Tok], marks: list[int]) -> list[_Subject]:
             if span is not None or not subjects:
                 title = " ".join(x.text for x in toks[span[0] : span[1]]) if span else ""
                 subjects.append(_Subject(title=title))
-                if span is not None and boxes:
-                    # item sem número antes do 1: o texto entre o título e o 1 que termina
-                    # numa linha de caixas
+                if span is not None:
+                    # Item sem número antes do 1 (parágrafo de abertura da matéria): o texto
+                    # entre o título e o 1. Com caixas de marcação, vai até a última delas;
+                    # sem caixas, só vale se fechar numa frase.
                     body = toks[span[1] : i]
-                    while body and _is_label(body[0].text):
+                    while body and (
+                        _is_label(body[0].text) or body[0].text.split()[0] in TABLE_HEADER_STARTS
+                    ):
                         body = body[1:]
-                    last = max((n for n, x in enumerate(body) if x.boxed), default=-1)
-                    if last >= 0:
-                        lead = body[: last + 1][-MAX_ITEM_LINES:]
+                    if boxes:
+                        last = max((n for n, x in enumerate(body) if x.boxed), default=-1)
+                        body = body[: last + 1]
+                    elif not (body and _ends_sentence(body[-1].text)):
+                        body = []
+                    if body:
+                        lead = body[-MAX_ITEM_LINES:]
                         subjects[-1].items.append(
                             _Item(num=(0,), page=lead[0].page, lines=[x.text for x in lead])
                         )
@@ -497,6 +505,16 @@ def _topic(text: str, page: int | None, *, prefix: str = "") -> dict | None:
     return {"title": title, "page": page, "children": children[:MAX_CHILDREN]}
 
 
+def _drop_inline_subnumbers(text: str, item: int) -> str:
+    """Edital em texto corrido numera os subitens dentro do parágrafo ("1. PROCESSO COLETIVO.
+    1.1. Teoria geral… 1.2. Classificação…"). O número some; as frases viram os subtópicos.
+    Só sai o que começa pelo número do próprio item, tem até dois dígitos depois do ponto e
+    vem antes de maiúscula: "12.850" numa lei citada no item 12 fica."""
+    if item <= 0:
+        return text
+    return re.sub(rf"(?<![\w.,/]){item}\.\d{{1,2}}(?:\.\d{{1,2}})?\.?\s+(?=[A-ZÀ-Ý“\"])", "", text)
+
+
 def _subject_topics(items: list[_Item]) -> list[dict]:
     """Itens da matéria → tópicos. Item com subitens (1, 1.1, 1.2, 1.2.1…) é um grupo: quando os
     subitens são curtos, o grupo vira o tópico e eles, os subtópicos; quando são parágrafos,
@@ -511,6 +529,8 @@ def _subject_topics(items: list[_Item]) -> list[dict]:
             j += 1
         subs = [(s, join_lines(s.lines)) for s in items[i + 1 : j]] if len(it.num) == 1 else []
         subs = [(s, tx) for s, tx in subs if tx]
+        if not subs and len(it.num) == 1:
+            text = _drop_inline_subnumbers(text, it.num[0])
         if not subs:
             if text and (tp := _topic(text, it.page)):
                 topics.append(tp)

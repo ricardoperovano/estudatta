@@ -43,8 +43,11 @@ colado. Nesses documentos o item ocupa várias linhas, a matéria vem como "Dire
 Constitucional" (não em maiúsculas) e o número do item fica sozinho numa linha, então a
 heurística linha a linha devolvia uma matéria só com centenas de pedaços de frase.
 
-- O item começa num número sem pontuação (`7`, `7 Texto`, `1.2`, `1.2.1`) que **continua a
-  sequência**; página, ano e número de lei ficam de fora.
+- O item começa num número (`7`, `7 Texto`, `7. Texto`, `1.2`, `1.2.1`) que **continua a
+  sequência**; página, ano e número de lei ficam de fora. Vale também para o anexo oficial em
+  texto corrido ("DIREITO CIVIL" e, abaixo, "1. Texto do item…"): o parágrafo sem número logo
+  depois do título vira o primeiro item, e subitens numerados dentro do parágrafo ("1.1.",
+  "1.2") perdem o número e viram subtópicos.
 - A numeração que **volta para 1** abre uma matéria; o título é a linha curta, sem ponto final,
   logo acima (pode quebrar em até três linhas).
 - Saem as linhas repetidas de página em página (cabeçalho, rodapé, cabeçalho da tabela) e as
@@ -54,6 +57,8 @@ heurística linha a linha devolvia uma matéria só com centenas de pedaços de 
   subitens em parágrafo, cada subitem vira um tópico com o nome do grupo na frente.
 - Dois desenhos de tabela: número antes do texto, ou número centralizado na célula (ele sai no
   meio das linhas do item, e a divisão é conferida pelo ponto final).
+- Um número que a leitura perdeu (acontece no OCR) não derruba a sequência: ela segue no
+  seguinte, e o texto do item sem número fica junto do anterior.
 - Precisa de ao menos 8 itens numerados; senão, segue a heurística geral. A proposta marca
   `stats.layout = "numbered"`, e a revisão no app troca o aviso de "muita coisa" e a sugestão
   de IA por uma nota de que os itens do edital foram reconhecidos.
