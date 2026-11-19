@@ -373,7 +373,10 @@ export default function BillingPage() {
               hasPaidSubscription={hasPaidSubscription}
               inTrial={state?.subscription?.status === "trialing"}
               pendingCheckoutUrl={
-                state?.subscription?.status === "pending" && state.subscription.plan_code === plan.code
+                // o checkout do teste grátis tem o próprio cartão acima: aqui é a assinatura paga
+                state?.subscription?.status === "pending" &&
+                !state.subscription.trial &&
+                state.subscription.plan_code === plan.code
                   ? state.subscription.checkout_url
                   : null
               }
@@ -602,7 +605,11 @@ function SubscriptionCard({
               ? t("Renovação cancelada")
               : s.trial && s.status === "cancelled"
                 ? t("Teste cancelado")
-                : subscriptionStatusLabel(s.status)
+                : s.status === "pending" && (s.trial || s.checkout_expired)
+                  ? s.trial
+                    ? t("Cartão não cadastrado")
+                    : t("Pagamento não concluído")
+                  : subscriptionStatusLabel(s.status)
             : sourceLabel(ent.source)}
         </Tag>
       </div>
@@ -632,7 +639,22 @@ function SubscriptionCard({
               {s.interval ? ` · ${s.interval === "year" ? "anual" : "mensal"}` : ""}
               {s.amount_cents != null ? ` · ${fmtBRL(s.amount_cents)}` : ""}
             </span>
-            {s.status === "pending" ? (
+            {s.status === "pending" && s.trial ? (
+              <span>
+                {t(
+                  "Você começou o teste grátis, mas o cartão não foi cadastrado. Nada foi cobrado e sua conta está no plano gratuito.",
+                )}{" "}
+                {s.checkout_url
+                  ? t("Para começar o teste, continue o cadastro do cartão.")
+                  : t("O link do cadastro expirou: para começar o teste, use o botão do teste grátis abaixo.")}
+              </span>
+            ) : s.status === "pending" && s.checkout_expired ? (
+              <span>
+                {t(
+                  "O pagamento não foi concluído e o link expirou. Nada foi cobrado e seu plano continua o mesmo. Para assinar, escolha o plano abaixo.",
+                )}
+              </span>
+            ) : s.status === "pending" ? (
               <span>{t("Estamos aguardando a confirmação do pagamento. O plano só muda depois dela.")}</span>
             ) : null}
             {s.status === "past_due" ? (
@@ -691,7 +713,9 @@ function SubscriptionCard({
         <div className="flex flex-wrap gap-2">
           {s.status === "pending" && s.checkout_url ? (
             <Button asChild variant="primary" size="lg">
-              <a href={s.checkout_url}>{t("Continuar pagamento")}</a>
+              <a href={s.checkout_url}>
+                {s.trial ? t("Continuar cadastro do cartão") : t("Continuar pagamento")}
+              </a>
             </Button>
           ) : null}
           {canVerify ? (
@@ -764,7 +788,9 @@ function SubscriptionCard({
         }
         description={
           s?.status === "pending"
-            ? t("O pagamento ainda não foi confirmado. Ao desistir, nada será cobrado.")
+            ? s.trial
+              ? t("O cartão não foi cadastrado. Ao desistir, nada será cobrado, e você pode começar o teste depois.")
+              : t("O pagamento ainda não foi confirmado. Ao desistir, nada será cobrado.")
             : trialing
               ? t(
                   "Nada será cobrado no seu cartão. O plano continua liberado até {{v0}}; depois a conta volta ao gratuito. Seus dados e seu histórico ficam como estão.",

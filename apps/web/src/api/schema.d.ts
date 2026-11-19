@@ -6646,6 +6646,11 @@ export interface components {
             last_synced_at: string | null;
             /** Checkout Url */
             checkout_url: string | null;
+            /**
+             * Checkout Expired
+             * @default false
+             */
+            checkout_expired: boolean;
             /** Created At */
             created_at: string | null;
         };

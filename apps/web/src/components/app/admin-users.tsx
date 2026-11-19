@@ -200,12 +200,28 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
               <li key={s.id} className="flex flex-col gap-1 rounded-md border border-divider p-3 text-[13px]">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[14px] font-medium">{s.plan_name}</span>
-                  <Tag variant={statusVariant(s.status)}>{statusLabel(s.status)}</Tag>
+                  <Tag variant={statusVariant(s.status)}>
+                    {s.status === "pending" ? t("checkout não concluído") : statusLabel(s.status)}
+                  </Tag>
                   <span className="tnum text-neutral-400">
                     {fmtBRL(s.amount_cents)}
                     {s.interval ? ` / ${intervalLabel(s.interval)}` : ""}
                   </span>
                 </div>
+                {s.status === "pending" ? (
+                  <span className="text-pending">
+                    {s.trial
+                      ? t(
+                          "Escolheu o teste grátis no cadastro, mas não informou o cartão: o teste não começou e nada foi cobrado. O plano da conta é o de “Direitos de acesso”, acima.",
+                        )
+                      : t(
+                          "Abriu o pagamento e não concluiu: nada foi cobrado. O plano da conta é o de “Direitos de acesso”, acima.",
+                        )}{" "}
+                    {s.checkout_expired
+                      ? t("O link do checkout já expirou.")
+                      : t("O link do checkout ainda está válido.")}
+                  </span>
+                ) : null}
                 <span className="tnum text-neutral-400">
                   {t("{{v0}} · período {{v1}} → {{v2}}", {
                     v0: s.provider,

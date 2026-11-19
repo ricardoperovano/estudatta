@@ -241,9 +241,22 @@ def current_subscription(
     return None
 
 
+def checkout_expired(sub: Subscription, *, now: datetime | None = None) -> bool:
+    """O link do checkout do Asaas vale `ASAAS_CHECKOUT_MINUTES`. Depois disso, a assinatura
+    pendente que nunca chegou ao provedor (a pessoa não informou o cartão) tem um link morto:
+    para tentar de novo é preciso abrir outro checkout."""
+    if sub.status != "pending" or sub.provider != "asaas" or sub.provider_ref:
+        return False
+    if sub.created_at is None:
+        return False
+    limit = timedelta(minutes=settings.ASAAS_CHECKOUT_MINUTES)
+    return sub.created_at + limit <= (now or utcnow())
+
+
 def describe_subscription(db: Session, sub: Subscription) -> dict[str, Any]:
     plan = db.get(Plan, sub.plan_id)
     meta = sub.metadata_ or {}
+    expired_link = checkout_expired(sub)
     return {
         "id": sub.id,
         "plan_code": plan.code if plan else "",
@@ -261,7 +274,8 @@ def describe_subscription(db: Session, sub: Subscription) -> dict[str, Any]:
         "cancelled_at": sub.cancelled_at,
         "ended_at": sub.ended_at,
         "last_synced_at": sub.last_synced_at,
-        "checkout_url": sub.checkout_url if sub.status == "pending" else None,
+        "checkout_url": sub.checkout_url if sub.status == "pending" and not expired_link else None,
+        "checkout_expired": expired_link,
         "created_at": sub.created_at,
     }
 

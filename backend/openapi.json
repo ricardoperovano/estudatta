@@ -20552,6 +20552,11 @@
             ],
             "title": "Checkout Url"
           },
+          "checkout_expired": {
+            "type": "boolean",
+            "title": "Checkout Expired",
+            "default": false
+          },
           "created_at": {
             "anyOf": [
               {

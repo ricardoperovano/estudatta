@@ -2995,5 +2995,19 @@
   "A IA pode sugerir uma estrutura resumida.": "AI can suggest a summarized structure.",
   "Ela organiza as matérias, mas junta e encurta os tópicos: não traz tudo o que está no arquivo. Use quando a leitura automática vier bagunçada, e revise antes de criar.": "It organizes the subjects, but merges and shortens topics: it does not bring everything in the file. Use it when the automatic reading comes out messy, and review before creating.",
   "Prévia sugerida pela IA, que resume: podem faltar tópicos do arquivo. Nada foi criado; revise e confirme.": "Preview suggested by AI, which summarizes: topics from the file may be missing. Nothing was created; review and confirm.",
-  "Prévia sugerida pela IA a partir de parte do conteúdo (o texto era longo), e resumida: faltam tópicos do arquivo. Nada foi criado; revise e confirme.": "Preview suggested by AI from part of the content (the text was long), and summarized: topics from the file are missing. Nothing was created; review and confirm."
+  "Prévia sugerida pela IA a partir de parte do conteúdo (o texto era longo), e resumida: faltam tópicos do arquivo. Nada foi criado; revise e confirme.": "Preview suggested by AI from part of the content (the text was long), and summarized: topics from the file are missing. Nothing was created; review and confirm.",
+  "Cartão não cadastrado": "Card not registered",
+  "Pagamento não concluído": "Payment not completed",
+  "Você começou o teste grátis, mas o cartão não foi cadastrado. Nada foi cobrado e sua conta está no plano gratuito.": "You started the free trial, but the card was not registered. Nothing was charged and your account is on the free plan.",
+  "Para começar o teste, continue o cadastro do cartão.": "To start the trial, continue registering the card.",
+  "O link do cadastro expirou: para começar o teste, use o botão do teste grátis abaixo.": "The registration link has expired: to start the trial, use the free trial button below.",
+  "O pagamento não foi concluído e o link expirou. Nada foi cobrado e seu plano continua o mesmo. Para assinar, escolha o plano abaixo.": "The payment was not completed and the link has expired. Nothing was charged and your plan stays the same. To subscribe, choose a plan below.",
+  "Continuar cadastro do cartão": "Continue registering the card",
+  "O cartão não foi cadastrado. Ao desistir, nada será cobrado, e você pode começar o teste depois.": "The card was not registered. If you give up, nothing will be charged, and you can start the trial later.",
+  "O link do checkout já expirou.": "The checkout link has already expired.",
+  "O link do checkout ainda está válido.": "The checkout link is still valid.",
+  "checkout não concluído": "checkout not completed",
+  "Checkout não concluído": "Checkout not completed",
+  "Escolheu o teste grátis no cadastro, mas não informou o cartão: o teste não começou e nada foi cobrado. O plano da conta é o de “Direitos de acesso”, acima.": "Chose the free trial at signup but did not enter the card: the trial did not start and nothing was charged. The account's plan is the one under “Access rights”, above.",
+  "Abriu o pagamento e não concluiu: nada foi cobrado. O plano da conta é o de “Direitos de acesso”, acima.": "Opened the payment and did not complete it: nothing was charged. The account's plan is the one under “Access rights”, above."
 }

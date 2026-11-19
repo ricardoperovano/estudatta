@@ -71,6 +71,8 @@ class SubscriptionOut(BaseModel):
     ended_at: datetime | None
     last_synced_at: datetime | None
     checkout_url: str | None
+    # checkout aberto e não concluído cujo link já venceu: nada foi pago nem cadastrado
+    checkout_expired: bool = False
     created_at: datetime | None
 
 

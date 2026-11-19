@@ -321,3 +321,25 @@ def test_new_accounts_no_longer_get_the_cardless_trial(client, asaas):
     ent = client.get("/api/v1/auth/session").json()["entitlements"]
     assert ent["plan_code"] == "free" and ent["source"] == "free"
     assert settings.TRIAL_DAYS == 0
+
+
+def test_abandoned_checkout_stays_free_and_the_dead_link_is_not_offered(user_client, asaas):
+    """Quem escolhe o teste e não informa o cartão continua no gratuito. O registro do checkout
+    fica como pendente; passada a validade do link no Asaas, ele deixa de ser oferecido."""
+    start_trial(user_client)
+    state = user_client.get(STATE).json()
+    sub = state["subscription"]
+    assert sub["status"] == "pending" and sub["trial"] is True
+    assert sub["checkout_url"] and sub["checkout_expired"] is False
+    assert state["entitlements"]["plan_code"] == "free"
+    with SessionLocal() as db:
+        row = db.execute(select(Subscription)).scalar_one()
+        row.created_at = utcnow() - timedelta(minutes=settings.ASAAS_CHECKOUT_MINUTES + 1)
+        db.commit()
+    state = user_client.get(STATE).json()
+    sub = state["subscription"]
+    assert sub["status"] == "pending" and sub["checkout_expired"] is True
+    assert sub["checkout_url"] is None
+    assert state["entitlements"]["plan_code"] == "free"
+    assert state["card_trial"]["days"] == 7  # pode começar de novo: o teste não foi usado
+    assert start_trial(user_client) == "chk_2"  # e o recomeço abre um checkout novo
