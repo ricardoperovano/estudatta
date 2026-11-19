@@ -79,7 +79,17 @@ class Settings(BaseSettings):
     MAX_UPLOAD_MB: int = 25
     MAX_PDF_PAGES: int = 800
     PDF_EXTRACTION_TIMEOUT_SECONDS: int = 120
+    # OCR de PDF digitalizado (Tesseract na imagem do worker). Pesado: um arquivo por vez, um
+    # núcleo, com teto de páginas e de tempo. Desligado, o PDF sem texto é recusado com aviso.
     OCR_ENABLED: bool = False
+    OCR_LANGS: str = "por"
+    OCR_MAX_PAGES: int = 60
+    OCR_TIMEOUT_SECONDS: int = 300
+    OCR_DPI: int = 200
+    # Segmentação de página do Tesseract. 6 = um bloco só: lê as palavras sem tentar adivinhar
+    # colunas (a ordem das linhas é remontada depois, pela posição); é o que menos perde número
+    # de item em tabela.
+    OCR_PSM: int = 6
 
     # --- Cobrança (Asaas ou Mercado Pago) ------------------------------------
     BILLING_PROVIDER: Literal["asaas", "mercadopago", "none"] = "mercadopago"

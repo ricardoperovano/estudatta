@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.errors import Conflict, NotFound, ValidationFailed
 from app.core.i18n import _
+from app.core.logging import get_logger
 from app.core.timeutil import utcnow
 from app.integrations.storage import get_storage
 from app.models.activity import Activity
@@ -33,6 +34,8 @@ from app.models.user import User
 from app.schemas.imports import MAX_SUBJECTS, MAX_TOPICS, ProposalIn, clean_title
 from app.services import materials as materials_service
 from app.services.import_numbered import numbered_proposal
+
+log = get_logger("imports")
 
 MAX_TEXT_CHARS = 400_000  # texto/CSV colado ou enviado
 MAX_LINES = 20_000
@@ -87,7 +90,9 @@ def _looks_like_heading(s: str) -> bool:
     return s[:1].isupper() or s.isupper()
 
 
-def _classify(raw: str, *, strict: bool, has_subject: bool) -> tuple[int, str, int | None] | None:
+def _classify(
+    raw: str, *, strict: bool, has_subject: bool, flat_numbers: bool = False
+) -> tuple[int, str, int | None] | None:
     """Classifica uma linha em (nível 0/1/2, título, página referenciada) ou None para ignorar.
 
     Nível 0 = matéria; 1 = tópico; 2 = subtópico. Determinístico, sem IA.
@@ -113,7 +118,9 @@ def _classify(raw: str, *, strict: bool, has_subject: bool) -> tuple[int, str, i
     if m := RE_NUM2.match(stripped):
         return 1, stripped[m.end() :], page_ref
     if m := RE_NUM1.match(stripped):
-        return ind_level, stripped[m.end() :], page_ref
+        # lista simples ("1. Ortografia", "2. Pontuação") sob a matéria: cada número é um tópico
+        level = max(1, ind_level) if flat_numbers else ind_level
+        return level, stripped[m.end() :], page_ref
     if m := RE_ROMAN.match(stripped):
         return min(ind_level, 1), stripped[m.end() :], page_ref
     if m := RE_HASH.match(stripped):
@@ -151,12 +158,17 @@ def build_proposal(lines: list[Line], *, source: str = "text", strict: bool = Fa
     cur_topic: dict | None = None
     stats = _empty_stats(source)
     n_topics = 0
+    # Em PDF, "1." só é matéria quando o documento tem o nível de baixo ("1.1"). Sem ele, a
+    # numeração é uma lista de tópicos sob a matéria em maiúsculas (ou sob "Geral").
+    flat_numbers = strict and not any(RE_NUM2.match(ln.text.strip()) for ln in lines)
     for ln in lines:
         if stats["lines"] >= MAX_LINES:
             stats["truncated"] = True
             break
         stats["lines"] += 1
-        c = _classify(ln.text, strict=strict, has_subject=cur_subject is not None)
+        c = _classify(
+            ln.text, strict=strict, has_subject=cur_subject is not None, flat_numbers=flat_numbers
+        )
         if c is None:
             stats["skipped"] += 1
             continue
@@ -398,41 +410,37 @@ def has_text_layer(pages: list[tuple[int, str]]) -> bool:
     return (empty / len(pages)) < NO_TEXT_LAYER_RATIO
 
 
-def _try_ocr(data: bytes) -> tuple[list[tuple[int, str]] | None, str]:
-    """OCR opcional: só se OCR_ENABLED e `pytesseract` estiver instalado. Nunca finge sucesso."""
+def _ocr_pages(data: bytes) -> tuple[list[tuple[int, str]], bool]:
+    """Texto de um PDF digitalizado, por OCR. Devolve as páginas e se a leitura ficou incompleta
+    (limite de páginas ou de tempo). Nunca finge sucesso: sem OCR ou sem texto reconhecido, a
+    importação falha com o motivo. `OcrBusy` sobe para a tarefa, que tenta de novo depois."""
+    from app.services import ocr
+
     if not settings.OCR_ENABLED:
-        return None, (
-            "O reconhecimento de texto em imagens (OCR) não está disponível. Gere uma versão "
-            "com texto (por exemplo, 'PDF pesquisável' no scanner ou exportação do editor original) "
-            "ou cole o sumário como texto."
+        why = _(
+            "O reconhecimento de texto em imagens (OCR) não está disponível. Gere uma versão com texto (por exemplo, 'PDF pesquisável' no scanner ou exportação do editor original) ou cole o sumário como texto."
         )
-    try:
-        import pytesseract  # type: ignore[import-not-found]
-        from pypdf import PdfReader
-    except ImportError:
-        return None, (
-            "O OCR está habilitado na configuração, mas o componente de reconhecimento não está "
-            "instalado neste servidor. Envie uma versão do PDF com texto ou cole o sumário."
-        )
-    out: list[tuple[int, str]] = []
-    started = time.monotonic()
-    try:
-        reader = PdfReader(io.BytesIO(data))
-        for i, page in enumerate(reader.pages, start=1):
-            if time.monotonic() - started > settings.PDF_EXTRACTION_TIMEOUT_SECONDS:
-                break
-            text = ""
-            try:
-                for img in page.images:
-                    text += pytesseract.image_to_string(img.image, lang="por+eng") + "\n"
-            except Exception:  # noqa: BLE001
-                pass
-            out.append((i, text))
-    except Exception:  # noqa: BLE001
-        return None, "O OCR falhou ao ler o arquivo. Envie uma versão do PDF com texto."
-    if not has_text_layer(out):
-        return None, "O OCR não reconheceu texto suficiente. Envie uma versão do PDF com texto."
-    return out, ""
+    else:
+        try:
+            result = ocr.ocr_pdf(data)
+        except ocr.OcrUnavailable as exc:
+            log.warning("import.ocr_unavailable", reason=str(exc))
+            why = _(
+                "O OCR está habilitado na configuração, mas o componente de reconhecimento não está instalado neste servidor. Envie uma versão do PDF com texto ou cole o sumário."
+            )
+        except ocr.OcrBusy:
+            raise
+        except Exception as exc:  # noqa: BLE001  (PDF que o renderizador não abre, etc.)
+            log.warning("import.ocr_failed", error=type(exc).__name__)
+            why = _("O OCR falhou ao ler o arquivo. Envie uma versão do PDF com texto.")
+        else:
+            if has_text_layer(result.pages):
+                return result.pages, result.truncated
+            why = _("O OCR não reconheceu texto suficiente. Envie uma versão do PDF com texto.")
+    raise ImportFailure(
+        _("O PDF não tem camada de texto (parece digitalizado como imagem). {why}", why=why),
+        code="no_text_layer",
+    )
 
 
 def pdf_lines(pages: list[tuple[int, str]]) -> list[Line]:
@@ -456,20 +464,12 @@ def _process_pdf(job: ImportJob) -> dict:
         raise ImportFailure("O arquivo não é um PDF válido.", code="not_pdf")
     pages, total = extract_pdf_pages(data)
     job.pages_total = total
+    ocr_truncated = False
     if has_text_layer(pages):
         job.has_text_layer = True
     else:
         job.has_text_layer = False
-        ocr_pages, why = _try_ocr(data)
-        if ocr_pages is None:
-            raise ImportFailure(
-                _(
-                    "O PDF não tem camada de texto (parece digitalizado como imagem). {why}",
-                    why=why,
-                ),
-                code="no_text_layer",
-            )
-        pages = ocr_pages
+        pages, ocr_truncated = _ocr_pages(data)
     job.raw_text = "\f".join(t for _p, t in pages)[:MAX_RAW_TEXT_CHARS]
     lines = pdf_lines(pages)
     # edital em itens numerados (tabela, verticalizado) tem leitor próprio; o resto segue no geral
@@ -478,6 +478,8 @@ def _process_pdf(job: ImportJob) -> dict:
     )
     proposal["stats"]["pages_total"] = total
     proposal["stats"]["ocr"] = not job.has_text_layer
+    if ocr_truncated:
+        proposal["stats"]["truncated"] = True  # o OCR parou no limite de páginas ou de tempo
     return proposal
 
 
@@ -672,6 +674,16 @@ def process(db: Session, import_id: uuid.UUID) -> ImportJob:
     job.finished_at = utcnow()
     db.flush()
     return job
+
+
+def requeue(db: Session, import_id: uuid.UUID) -> None:
+    """Devolve o job para a fila (o OCR está ocupado com outro arquivo): a tela mostra "na
+    fila" em vez de "processando" enquanto ele espera a vez."""
+    job = db.get(ImportJob, import_id)
+    if job is not None and job.status == "processing":
+        job.status = "queued"
+        job.started_at = None
+        db.flush()
 
 
 def mark_failed(db: Session, import_id: uuid.UUID, code: str, message: str) -> None:

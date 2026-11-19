@@ -39,6 +39,7 @@ RESTART_LOOKAHEAD = 400
 RESTART_REACH = 10  # linhas acima do "1" em que o título da matéria pode estar
 MAX_ITEM_LINES = 60  # item sem fim claro (último do documento) não engole o resto do arquivo
 
+TABLE_HEADER_STARTS = frozenset({"Nº", "N°", "Nº.", "N.º", "No.", "Item", "Itens"})
 RE_BOXES = re.compile(r"[☐☑☒□■▢▣❏❐❑❒✓✔✗✘]")
 _NUM = r"(\d{1,3})(?:\.(\d{1,3}))?(?:\.(\d{1,3}))?"
 RE_NUM_ALONE = re.compile(rf"^{_NUM}$")
@@ -85,8 +86,8 @@ def _title_shape(s: str) -> bool:
     ("rótulo: valor", duas frases)."""
     if not s or len(s) > HEADING_MAX or len(s.split()) > HEADING_MAX_WORDS:
         return False
-    if not s[0].isalpha():
-        return False
+    if not s[0].isalpha() or s.split()[0] in TABLE_HEADER_STARTS:
+        return False  # "Nº Conteúdo Teoria…" é o cabeçalho da tabela, não o título da matéria
     if s.endswith((".", ",", ";", ":", "-", "–", "—", "(", "/")):
         return False
     if ". " in s or ": " in s or "; " in s:
@@ -201,6 +202,15 @@ def _heading_before(toks: list[_Tok], start: int, end: int) -> tuple[int, int] |
     return None
 
 
+def _follows(toks: list[_Tok], i: int, want: int) -> bool:
+    """O próximo número de item depois de `toks[i]` é `want`?"""
+    for t in toks[i + 1 : i + 1 + RESTART_LOOKAHEAD]:
+        m = RE_NUM_ALONE.match(t.text) or RE_NUM_INLINE.match(t.text)
+        if m is not None and not m.group(2):
+            return int(m.group(1)) == want
+    return False
+
+
 def _restart_confirmed(toks: list[_Tok], i: int, resume: int) -> bool:
     """Depois do "1" em `toks[i]`, o 2 e o 3 aparecem antes de `resume` (o número que
     continuaria a sequência antiga)?"""
@@ -241,6 +251,10 @@ def _mark_numbers(toks: list[_Tok]) -> list[int]:
         accept = False
         if len(num) == 1:
             if cur is not None and num[0] == cur[0] + 1:
+                accept = True
+            elif cur is not None and num[0] == cur[0] + 2 and _follows(toks, i, num[0] + 1):
+                # um número que a leitura perdeu (OCR): a sequência segue no seguinte, e o
+                # texto do item sem número fica junto do anterior
                 accept = True
             elif num[0] == 1:
                 # A numeração recomeça de verdade quando há um título de matéria logo acima ou
@@ -342,13 +356,18 @@ def _top_items(toks: list[_Tok], marks: list[int]) -> list[_Subject]:
     return subjects
 
 
-def _centered_items(toks: list[_Tok], marks: list[int]) -> list[_Subject]:
+def _centered_items(
+    toks: list[_Tok], marks: list[int], alone_extra: int = 2
+) -> tuple[list[_Subject], int]:
     """Número centralizado na célula: ele sai no meio das linhas do item.
 
     Com `h` linhas do item antes do número, o item tem mais `h` linhas depois quando o número
-    divide a linha com o texto (item de altura ímpar) e `h + 2` quando ele sai sozinho (altura
-    par). A conta é conferida com a pontuação: o item termina numa linha com ponto final.
+    divide a linha com o texto (item de altura ímpar). Quando ele sai sozinho (altura par), são
+    `h + alone_extra`: 2 na extração do texto de um PDF, 0 quando as linhas vêm da posição na
+    página (OCR). A conta é conferida com a pontuação: o item termina numa linha com ponto
+    final. Devolve também em quantos itens a conta fechou de primeira, para escolher a regra.
     """
+    hits = 0
     subjects: list[_Subject] = []
     cursor = 0  # primeira linha ainda não atribuída a um item
     for k, i in enumerate(marks):
@@ -361,6 +380,11 @@ def _centered_items(toks: list[_Tok], marks: list[int]) -> list[_Subject]:
                 title = " ".join(x.text for x in toks[span[0] : span[1]]) if span else ""
                 subjects.append(_Subject(title=title))
                 lo, new_subject = (span[1] if span else i), True
+                # entre o título e o primeiro item: "Onde cai: …" e o cabeçalho da tabela
+                while lo < i and (
+                    _is_label(toks[lo].text) or toks[lo].text.split()[0] in TABLE_HEADER_STARTS
+                ):
+                    lo += 1
         elif not subjects:
             subjects.append(_Subject(title=""))
             lo, new_subject = i, True
@@ -372,13 +396,15 @@ def _centered_items(toks: list[_Tok], marks: list[int]) -> list[_Subject]:
                 limit = span[0] - (i + 1)
         if nxt == len(toks):
             limit = min(limit, MAX_ITEM_LINES)
-        extra = 0 if t.rest else 2
+        extra = 0 if t.rest else alone_extra
 
         def fits(tail: int, i: int = i, limit: int = limit) -> bool:
             return 0 <= tail <= limit and (tail == 0 or _ends_sentence(toks[i + tail].text))
 
         p, tail = lo, (i - lo) + extra
-        if not fits(tail):
+        if fits(tail):
+            hits += 1
+        else:
             found = False
             if tail <= limit + 2:  # a conta quase fecha: acerta pelo ponto final mais próximo
                 for delta in (1, -1, 2, -2):
@@ -407,7 +433,7 @@ def _centered_items(toks: list[_Tok], marks: list[int]) -> list[_Subject]:
         ]
         subjects[-1].items.append(_Item(num=t.num, page=t.page, lines=lines))
         cursor = i + 1 + tail
-    return subjects
+    return subjects, hits
 
 
 # --- Do item ao tópico ------------------------------------------------------------------
@@ -514,8 +540,13 @@ def numbered_proposal(lines: list, *, source: str = "pdf") -> dict | None:
     marks = _mark_numbers(toks)
     if len(marks) < MIN_ITEMS:
         return None
-    centered = _is_centered(toks, marks)
-    raw_subjects = (_centered_items if centered else _top_items)(toks, marks)
+    if _is_centered(toks, marks):
+        # a regra do número sozinho varia com a origem do texto: fica a que fecha mais itens
+        raw_subjects, _hits = max(
+            (_centered_items(toks, marks, extra) for extra in (2, 0, 1)), key=lambda r: r[1]
+        )
+    else:
+        raw_subjects = _top_items(toks, marks)
 
     subjects: list[dict] = []
     for n, subj in enumerate(raw_subjects, start=1):

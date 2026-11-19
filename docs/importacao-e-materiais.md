@@ -88,9 +88,30 @@ Listening;Podcasts curtos;;;25
 Um PDF é considerado "sem camada de texto" quando ≥ 90% das páginas têm menos de 20
 caracteres. Nesse caso:
 - `OCR_ENABLED=false` (padrão): falha com `no_text_layer` e orientação para gerar um PDF com texto;
-- `OCR_ENABLED=true`: tenta `pytesseract` (`por+eng`). Se o componente não estiver instalado ou
-  não reconhecer texto suficiente, a falha é a mesma — com o motivo na mensagem.
-A proposta registra `stats.ocr` e `stats.pages_total`.
+- `OCR_ENABLED=true`: lê as páginas por OCR (`backend/app/services/ocr.py`). Se faltar um
+  componente ou nada for reconhecido, a falha é a mesma, com o motivo na mensagem.
+
+Como a leitura funciona:
+- cada página é renderizada pelo pdfium (`OCR_DPI`, padrão 200) e lida pelo Tesseract em
+  português (`OCR_LANGS=por`), os dois já instalados na imagem do backend;
+- antes da leitura, as **linhas de tabela são apagadas** da imagem; depois dela, uma **segunda
+  leitura só da faixa dos números** recupera os números de item que o Tesseract perde quando
+  estão sozinhos na célula;
+- o texto é **remontado pela posição das palavras** (linha a linha, da esquerda para a direita;
+  em página de duas colunas, uma coluna inteira antes da outra), e segue para os mesmos leitores
+  do PDF com texto.
+
+Travas, porque o servidor é compartilhado:
+- **um arquivo por vez** na máquina (trava de arquivo). Quem chega com outro em leitura volta
+  para a fila e tenta de novo a cada 20 s, por até 15 min; depois disso falha com `ocr_busy`;
+- o Tesseract usa **um núcleo** (`OMP_THREAD_LIMIT=1`);
+- `OCR_MAX_PAGES` (60) e `OCR_TIMEOUT_SECONDS` (300): passou disso, o que foi lido vira proposta
+  parcial, com `stats.truncated`.
+
+A proposta registra `stats.ocr` e `stats.pages_total`; com `stats.ocr`, a revisão avisa que o
+texto veio de imagem e pode ter erros de leitura. Para conferir a leitura real numa máquina sem
+Tesseract em português: `docker build -t estudatta-backend backend` e rode `ocr.ocr_pdf` dentro
+da imagem.
 
 ## Materiais
 - Tipos: **link** (`POST /materials/link`, só `https://`; caminhos locais como `C:\` ou

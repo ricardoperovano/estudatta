@@ -645,6 +645,13 @@ function JobPanel({ importId, query, online, activityName, confirmed, onConfirme
             v0: processing ? t("Lendo o arquivo e montando a proposta.") : t("Aguardando a vez de ser lido."),
           })}
         </p>
+        {job.source === "pdf" ? (
+          <p className="m-0 text-[12px] text-neutral-400">
+            {t(
+              "PDF digitalizado (páginas em imagem) leva alguns minutos, e só um arquivo desse tipo é lido por vez.",
+            )}
+          </p>
+        ) : null}
         {!online ? (
           <span className="text-[13px] text-neutral-400">
             {t("Sem conexão: o andamento volta a atualizar quando a internet voltar.")}

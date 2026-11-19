@@ -1,6 +1,9 @@
 FROM python:3.12-slim AS base
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
-RUN apt-get update && apt-get install -y --no-install-recommends libmagic1 curl && rm -rf /var/lib/apt/lists/*
+# tesseract-ocr + português: OCR de PDF digitalizado na importação (só roda com OCR_ENABLED=true)
+RUN apt-get update && apt-get install -y --no-install-recommends libmagic1 curl \
+      tesseract-ocr tesseract-ocr-por \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 WORKDIR /app
 COPY pyproject.toml uv.lock .python-version ./

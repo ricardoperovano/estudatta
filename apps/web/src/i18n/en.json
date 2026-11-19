@@ -2986,5 +2986,8 @@
   "Sua conta já está criada. Você vai informar o cartão na página do Asaas; nada é cobrado hoje.": "Your account is already created. You will enter the card on the Asaas page; nothing is charged today.",
   "Para voltar ao gratuito, cancele o teste acima. Nada é cobrado e o plano continua liberado até o fim do teste.": "To go back to the free plan, cancel the trial above. Nothing is charged and the plan stays unlocked until the end of the trial.",
   "Reconhecemos os itens numerados do edital.": "We recognized the numbered items of the syllabus.",
-  "Cada item virou um tópico, e as frases dele, subtópicos, com o texto do próprio documento. Confira as matérias abaixo e confirme.": "Each item became a topic, and its sentences became subtopics, using the document's own text. Check the subjects below and confirm."
+  "Cada item virou um tópico, e as frases dele, subtópicos, com o texto do próprio documento. Confira as matérias abaixo e confirme.": "Each item became a topic, and its sentences became subtopics, using the document's own text. Check the subjects below and confirm.",
+  "PDF digitalizado (páginas em imagem) leva alguns minutos, e só um arquivo desse tipo é lido por vez.": "A scanned PDF (image pages) takes a few minutes, and only one file of this kind is read at a time.",
+  "Este PDF era digitalizado.": "This PDF was scanned.",
+  "O texto foi reconhecido a partir da imagem das páginas e pode ter letras ou números trocados. Confira com mais atenção antes de confirmar.": "The text was recognized from the page images and may have swapped letters or numbers. Check it more carefully before confirming."
 }

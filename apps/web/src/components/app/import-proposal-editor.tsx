@@ -250,6 +250,14 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
             {tx("O conteúdo era longo: só a primeira parte virou proposta. Confira se falta algo.")}
           </span>
         ) : null}
+        {stats?.ocr === true ? (
+          <p className="rounded-md bg-warning-tint p-3 text-[13px] leading-[1.5]" role="note">
+            <strong className="font-medium">{tx("Este PDF era digitalizado.")}</strong>{" "}
+            {tx(
+              "O texto foi reconhecido a partir da imagem das páginas e pode ter letras ou números trocados. Confira com mais atenção antes de confirmar.",
+            )}
+          </p>
+        ) : null}
         {numbered ? (
           <p className="tint-soft rounded-md p-3 text-[13px] leading-[1.5]" role="note">
             <strong className="font-medium">{tx("Reconhecemos os itens numerados do edital.")}</strong>{" "}
