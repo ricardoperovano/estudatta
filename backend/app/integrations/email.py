@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import smtplib
 from dataclasses import dataclass, field
 from email.message import EmailMessage
@@ -148,7 +149,14 @@ def _asset(path: str) -> str:
     return f"{settings.APP_URL.rstrip('/')}{path}"
 
 
+def _esc(text: str) -> str:
+    """Texto para dentro do HTML do e-mail. Título de objetivo, nome e resumo podem trazer o que
+    a pessoa digitou ou importou de um documento: nada disso é interpretado como marcação."""
+    return html.escape(text or "", quote=False)
+
+
 def _button(label: str, url: str) -> str:
+    label, url = _esc(label), html.escape(url or "", quote=True)
     return (
         '<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0 8px">'
         f'<tr><td style="border-radius:12px;background:#5d5294">'
@@ -180,6 +188,7 @@ def _layout(
     note = footer_note or _(
         "Você recebeu este e-mail porque tem uma conta no Estudatta. Se não foi você, ignore esta mensagem."
     )
+    title = _esc(title)
     return f"""<!doctype html><html lang="{"en" if current_locale() == "en" else "pt-BR"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>{title}</title></head>
 <body style="margin:0;padding:0;background:#f3f5fe">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f3f5fe"><tr><td align="center" style="padding:28px 14px">
@@ -237,7 +246,7 @@ def send_password_reset_email(to: str, link: str) -> bool:
 def send_billing_notice_email(to: str, *, title: str, paragraphs: list[str], url: str) -> bool:
     """Aviso sobre cobrança (começo do teste grátis, lembrete antes da primeira mensalidade).
     É mensagem de serviço: vai para toda conta, sem descadastro."""
-    html_body = "".join(f'<p style="margin:0 0 12px">{p}</p>' for p in paragraphs)
+    html_body = "".join(f'<p style="margin:0 0 12px">{_esc(p)}</p>' for p in paragraphs)
     text = "\n\n".join([*paragraphs, _("Ver meu plano: {url}", url=url)])
     html = _layout(
         title,
@@ -253,7 +262,7 @@ def send_billing_notice_email(to: str, *, title: str, paragraphs: list[str], url
 def send_weekly_summary_email(to: str, summary_text: str) -> bool:
     html = _layout(
         _("Resumo da semana"),
-        f'<p style="margin:0">{summary_text}</p>',
+        f'<p style="margin:0">{_esc(summary_text)}</p>',
         cta=(_("Ver relatório completo"), f"{settings.APP_URL.rstrip('/')}/app/relatorio"),
     )
     return send_email(to, _("Resumo da semana · Estudatta"), summary_text, html)
@@ -269,7 +278,7 @@ def send_nudge_email(to: str, *, title: str, body: str, url: str, unsubscribe_ur
     )
     html = _layout(
         title,
-        f'<p style="margin:0">{body}</p>',
+        f'<p style="margin:0">{_esc(body)}</p>',
         cta=(_("Abrir o Estudatta"), url),
         footer_note=_(
             "Você recebe este lembrete porque ativou os lembretes de retorno no Estudatta."
@@ -294,7 +303,7 @@ def send_campaign_email(
     """Campanha do administrador (dicas, desconto, chamada de volta). Parágrafos por linha em branco."""
     paras = [p.strip() for p in body.split("\n\n") if p.strip()]
     html_body = "".join(
-        f'<p style="margin:0 0 12px">{p.replace(chr(10), "<br>")}</p>' for p in paras
+        f'<p style="margin:0 0 12px">{_esc(p).replace(chr(10), "<br>")}</p>' for p in paras
     )
     text = _(
         "{body}\n\n{cta_label}: {url}\n\nNão quer mais receber? {unsubscribe_url}",

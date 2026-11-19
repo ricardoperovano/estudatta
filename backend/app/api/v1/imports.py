@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from app.api.v1.materials import _parse_optional_uuid, read_upload
 from app.core.audit import audit
 from app.core.db import get_db
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, rate_limit
 from app.core.errors import ValidationFailed
 from app.core.i18n import _
 from app.core.logging import get_logger
@@ -120,7 +120,13 @@ def _create_from_file(
     return job
 
 
-@router.post("", response_model=ImportOut, status_code=201)
+@router.post(
+    "",
+    response_model=ImportOut,
+    status_code=201,
+    # cada PDF ocupa o worker (e, se for digitalizado, minutos de OCR): teto por conta
+    dependencies=[Depends(rate_limit("imports", 30, 3600))],
+)
 async def create_import(
     request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)
 ) -> ImportOut:

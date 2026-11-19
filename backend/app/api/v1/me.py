@@ -12,6 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.audit import audit
+from app.core.csvsafe import safe_row
 from app.core.db import get_db
 from app.core.deps import client_ip, get_current_user
 from app.core.errors import NotFound, Unauthorized, ValidationFailed
@@ -284,17 +285,19 @@ def export_csv(db: Session = Depends(get_db), user: User = Depends(get_current_u
     for alloc, s in db.execute(q).all():
         pages = f"{s.page_from or ''}-{s.page_to or ''}" if (s.page_from or s.page_to) else ""
         w.writerow(
-            [
-                alloc.local_date.isoformat(),
-                acts.get(s.activity_id, ""),
-                alloc.seconds,
-                round(alloc.seconds / 60, 1),
-                s.kind,
-                s.started_at.isoformat() if s.started_at else "",
-                s.ended_at.isoformat() if s.ended_at else "",
-                (s.note or "").replace("\n", " "),
-                pages,
-            ]
+            safe_row(
+                [
+                    alloc.local_date.isoformat(),
+                    acts.get(s.activity_id, ""),
+                    alloc.seconds,
+                    round(alloc.seconds / 60, 1),
+                    s.kind,
+                    s.started_at.isoformat() if s.started_at else "",
+                    s.ended_at.isoformat() if s.ended_at else "",
+                    (s.note or "").replace("\n", " "),
+                    pages,
+                ]
+            )
         )
     return Response(
         content="﻿" + buf.getvalue(),

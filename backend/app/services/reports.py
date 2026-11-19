@@ -16,6 +16,7 @@ from datetime import date, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
+from app.core.csvsafe import safe_row
 from app.core.errors import ValidationFailed
 from app.core.i18n import _, current_locale
 from app.core.timeutil import today_in
@@ -513,23 +514,25 @@ def export_csv(
         for alloc, s in pairs:
             pages = f"{s.page_from or ''}-{s.page_to or ''}" if (s.page_from or s.page_to) else ""
             w.writerow(
-                [
-                    alloc.local_date.isoformat(),
-                    titles["activity"].get(s.activity_id, ""),
-                    titles["subject"].get(s.subject_id, "") if s.subject_id else "",
-                    titles["topic"].get(s.topic_id, "") if s.topic_id else "",
-                    titles["material"].get(s.material_id, "") if s.material_id else "",
-                    alloc.seconds,
-                    round(alloc.seconds / 60, 1),
-                    s.kind,
-                    s.entry_mode,
-                    s.started_at.isoformat() if s.started_at else "",
-                    s.ended_at.isoformat() if s.ended_at else "",
-                    pages,
-                    (s.note or "").replace("\n", " ").replace("\r", " "),
-                    "sim" if s.counts_toward_goal else "nao",
-                    "sim" if s.needs_review else "nao",
-                ]
+                safe_row(
+                    [
+                        alloc.local_date.isoformat(),
+                        titles["activity"].get(s.activity_id, ""),
+                        titles["subject"].get(s.subject_id, "") if s.subject_id else "",
+                        titles["topic"].get(s.topic_id, "") if s.topic_id else "",
+                        titles["material"].get(s.material_id, "") if s.material_id else "",
+                        alloc.seconds,
+                        round(alloc.seconds / 60, 1),
+                        s.kind,
+                        s.entry_mode,
+                        s.started_at.isoformat() if s.started_at else "",
+                        s.ended_at.isoformat() if s.ended_at else "",
+                        pages,
+                        (s.note or "").replace("\n", " ").replace("\r", " "),
+                        "sim" if s.counts_toward_goal else "nao",
+                        "sim" if s.needs_review else "nao",
+                    ]
+                )
             )
     return "﻿" + buf.getvalue()
 

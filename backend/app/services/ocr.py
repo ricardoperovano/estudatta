@@ -48,6 +48,9 @@ RE_LOOSE_BOX_WORD = re.compile(r"^[DOQo0dnNuUcC□☐▢\[\]]{3,6}$")
 RULE_STUBS = frozenset({"|", "||", "¦", "_", "—", "="})
 LEADING_STUBS = frozenset({"L", "I", "l", "[", "]", "-", "'", '"', "E", "F", "T", "r"})
 RE_ITEM_NUMBER = re.compile(r"^\d{1,3}(?:\.\d{1,3}){0,2}\.?$")
+# Teto da imagem de uma página. A4 a 200 dpi tem 3,9 milhões de pixels; um PDF pode declarar uma
+# página de dezenas de metros e, renderizada na mesma escala, ela ocuparia gigabytes de memória.
+MAX_PAGE_PIXELS = 16_000_000
 NUMBER_STRIP = 0.13  # largura da faixa dos números, em fração da página
 
 
@@ -298,6 +301,16 @@ def remove_rules(image):
     return out
 
 
+def render_scale(width_pt: float, height_pt: float, dpi: int) -> float:
+    """Escala de renderização (pontos → pixels) para o dpi pedido, reduzida o quanto for preciso
+    para a página caber em `MAX_PAGE_PIXELS`."""
+    scale = dpi / 72
+    pixels = max(1.0, width_pt * scale) * max(1.0, height_pt * scale)
+    if pixels > MAX_PAGE_PIXELS:
+        scale *= (MAX_PAGE_PIXELS / pixels) ** 0.5
+    return scale
+
+
 def _numbers_in_strips(image, data: dict, read) -> None:
     """Segunda leitura, só da faixa onde ficam os números dos itens (a margem esquerda de cada
     coluna de texto). Acrescenta a `data` os números que a leitura da página inteira perdeu."""
@@ -388,7 +401,8 @@ def ocr_pdf(data: bytes) -> OcrResult:
                 text = ""
                 try:
                     page = pdf[index]
-                    rendered = page.render(scale=settings.OCR_DPI / 72, grayscale=True).to_pil()
+                    scale = render_scale(*page.get_size(), settings.OCR_DPI)
+                    rendered = page.render(scale=scale, grayscale=True).to_pil()
                     page.close()
                     image = remove_rules(rendered)
                     rendered.close()
