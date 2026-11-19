@@ -191,9 +191,11 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
           setAiNote(
             out.truncated
               ? tx(
-                  "Prévia sugerida a partir de parte do conteúdo (o texto era longo). Nada foi criado; revise e confirme.",
+                  "Prévia sugerida pela IA a partir de parte do conteúdo (o texto era longo), e resumida: faltam tópicos do arquivo. Nada foi criado; revise e confirme.",
                 )
-              : tx("Prévia sugerida automaticamente. Nada foi criado; revise e confirme."),
+              : tx(
+                  "Prévia sugerida pela IA, que resume: podem faltar tópicos do arquivo. Nada foi criado; revise e confirme.",
+                ),
           );
         },
         onError: (e) => {
@@ -219,6 +221,10 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
   // Edital em itens numerados (tabela, verticalizado): o leitor já devolve as matérias e os itens
   // do próprio documento. Não é "coisa demais", e a sugestão da IA só leria parte do arquivo.
   const numbered = stats?.layout === "numbered";
+  // Edital em parágrafos por matéria ("LÍNGUA PORTUGUESA: Ortografia. Crase."): cada frase já
+  // veio como tópico, com o texto do documento.
+  const labeled = stats?.layout === "labeled";
+  const recognized = numbered || labeled;
 
   return (
     <div className="flex flex-col gap-[14px]">
@@ -266,7 +272,15 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
             )}
           </p>
         ) : null}
-        {counts.topics > MANY_TOPICS && !numbered ? (
+        {labeled ? (
+          <p className="tint-soft rounded-md p-3 text-[13px] leading-[1.5]" role="note">
+            <strong className="font-medium">{tx("Lemos o conteúdo programático como está no edital.")}</strong>{" "}
+            {tx(
+              "Cada matéria do documento virou uma matéria, e cada frase do conteúdo, um tópico, sem resumir. Se o edital tem mais de um cargo, remova as matérias que não são do seu e confirme.",
+            )}
+          </p>
+        ) : null}
+        {counts.topics > MANY_TOPICS && !recognized ? (
           <p className="tint-soft rounded-md p-3 text-[13px] leading-[1.5]" role="note">
             <strong className="font-medium">
               {tx("{{v0}} é muita coisa para um plano.", {
@@ -289,7 +303,7 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
             })}
           </span>
         ) : null}
-        {aiEnabled && !numbered ? (
+        {aiEnabled && !recognized ? (
           // Antes da primeira sugestão, a IA é o caminho recomendado: a leitura automática do PDF
           // costuma trazer ruído ("ANEXO IV", linhas soltas) e o botão passava despercebido.
           <div
@@ -301,10 +315,10 @@ export function ImportProposalEditor({ job, activityName, online, onConfirmed }:
           >
             {!aiNote ? (
               <p className="m-0 text-[13px] leading-[1.5]">
-                <strong className="font-medium">{tx("Deixe a IA organizar para você.")}</strong>{" "}
+                <strong className="font-medium">{tx("A IA pode sugerir uma estrutura resumida.")}</strong>{" "}
                 <span className="text-neutral-400">
                   {tx(
-                    "Ela lê o arquivo e monta as matérias e os tópicos. Você revisa tudo antes de criar.",
+                    "Ela organiza as matérias, mas junta e encurta os tópicos: não traz tudo o que está no arquivo. Use quando a leitura automática vier bagunçada, e revise antes de criar.",
                   )}
                 </span>
               </p>

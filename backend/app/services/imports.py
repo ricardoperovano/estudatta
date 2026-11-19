@@ -33,6 +33,7 @@ from app.models.content import ImportJob, Material, MaterialTopic, Subject, Topi
 from app.models.user import User
 from app.schemas.imports import MAX_SUBJECTS, MAX_TOPICS, ProposalIn, clean_title
 from app.services import materials as materials_service
+from app.services.import_labeled import labeled_proposal
 from app.services.import_numbered import numbered_proposal
 
 log = get_logger("imports")
@@ -207,10 +208,70 @@ def build_proposal(lines: list[Line], *, source: str = "text", strict: bool = Fa
     return {"subjects": subjects, "stats": stats}
 
 
+def _coverage(proposal: dict) -> int:
+    """Quanto do documento a proposta aproveita: os caracteres que viraram tópico ou subtópico."""
+    return sum(
+        len(t["title"]) + sum(len(c["title"]) for c in t.get("children", []))
+        for s in proposal["subjects"]
+        for t in s["topics"]
+    )
+
+
+RE_SYLLABUS_HEADER = re.compile(r"CONTE[ÚU]DOS?\s+PROGRAM[ÁA]TICOS?", re.IGNORECASE)
+RE_ANNEX_HEADER = re.compile(r"^ANEXO\s+(?:[IVXLC]+|\d+|[A-Z])\b")
+SYLLABUS_MIN_LINES = 15
+
+
+def _is_title_line(text: str) -> bool:
+    letters = [c for c in text if c.isalpha()]
+    return (
+        3 <= len(letters)
+        and len(text) <= 90
+        and not text.endswith(".")
+        and sum(c.isupper() for c in letters) >= 0.6 * len(letters)
+    )
+
+
+def syllabus_region(lines: list[Line]) -> list[Line]:
+    """O trecho do conteúdo programático dentro de um edital inteiro: do título "CONTEÚDO
+    PROGRAMÁTICO" até o anexo seguinte. Sem isso, as cláusulas numeradas do edital (inscrição,
+    provas, recursos) entram como se fossem matéria. Documento sem esse título, ou que já é só
+    o conteúdo programático, volta inteiro."""
+    texts = [ln.text.strip() for ln in lines]
+    best: tuple[int, int] | None = None
+    for i, text in enumerate(texts):
+        if not (RE_SYLLABUS_HEADER.search(text) and _is_title_line(text)):
+            continue
+        end = len(lines)
+        for j in range(i + 1, len(lines)):
+            if RE_ANNEX_HEADER.match(texts[j]) and _is_title_line(texts[j]):
+                end = j
+                break
+        # com o título repetido (sumário, cabeçalho de página), vale o trecho mais longo
+        if best is None or end - i > best[1] - best[0]:
+            best = (i, end)
+    if best is None or best[1] - best[0] < SYLLABUS_MIN_LINES:
+        return lines
+    return lines[best[0] + 1 : best[1]]
+
+
+def edital_proposal(lines: list[Line], *, source: str) -> dict | None:
+    """Proposta pelos leitores de edital (itens numerados; parágrafos "MATÉRIA: frases"), ou None
+    quando o documento não tem nenhum dos dois desenhos. Um edital pode ter os dois (matérias em
+    parágrafo e uma seção de itens numerados): fica o leitor que aproveita mais do texto."""
+    lines = syllabus_region(lines)
+    found = [
+        p
+        for p in (numbered_proposal(lines, source=source), labeled_proposal(lines, source=source))
+        if p is not None
+    ]
+    return max(found, key=_coverage) if found else None
+
+
 def parse_text(content: str) -> dict:
     lines = [Line(t) for t in content.splitlines()]
-    # texto copiado de um edital em itens numerados tem o mesmo desenho do PDF
-    return numbered_proposal(lines, source="text") or build_proposal(lines, source="text")
+    # texto copiado de um edital tem o mesmo desenho do PDF
+    return edital_proposal(lines, source="text") or build_proposal(lines, source="text")
 
 
 # --- CSV -------------------------------------------------------------------------
@@ -472,8 +533,8 @@ def _process_pdf(job: ImportJob) -> dict:
         pages, ocr_truncated = _ocr_pages(data)
     job.raw_text = "\f".join(t for _p, t in pages)[:MAX_RAW_TEXT_CHARS]
     lines = pdf_lines(pages)
-    # edital em itens numerados (tabela, verticalizado) tem leitor próprio; o resto segue no geral
-    proposal = numbered_proposal(lines, source="pdf") or build_proposal(
+    # edital (itens numerados, parágrafos por matéria) tem leitor próprio; o resto segue no geral
+    proposal = edital_proposal(lines, source="pdf") or build_proposal(
         lines, source="pdf", strict=True
     )
     proposal["stats"]["pages_total"] = total

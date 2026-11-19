@@ -36,6 +36,36 @@ página no fim da linha ("..... 12") viram `page`. No máximo dois níveis abaix
 (tópico → subtópico). Sem matéria identificável, usa-se "Geral". Em PDF a leitura é mais
 estrita (só linhas com cara de sumário).
 
+## Edital: onde está o conteúdo e qual leitor vale
+`imports.edital_proposal` roda antes da heurística geral, em PDF e em texto colado:
+
+1. **Recorte.** Num edital inteiro, só vale o trecho entre o título "CONTEÚDO PROGRAMÁTICO" e o
+   anexo seguinte (`syllabus_region`). Sem isso, as cláusulas numeradas de inscrição e provas
+   entravam como matéria. Documento sem esse título volta inteiro.
+2. **Dois leitores**, descritos abaixo: itens numerados e parágrafos por matéria. Quando os dois
+   reconhecem o documento, fica o que aproveita mais do texto.
+
+Os dois são determinísticos e **não resumem**: o que está no documento vira tópico com a redação
+do documento. A sugestão da IA (`POST /ai/suggest-structure`) fica para o que nenhum dos dois
+reconhece, e a tela diz que ela resume: medido com o modelo em produção num anexo de 20 mil
+caracteres, a IA devolveu 5% do conteúdo (37 tópicos) e, instruída a transcrever tudo, levou
+62 s e ainda devolveu menos da metade.
+
+## Edital em parágrafos por matéria
+`backend/app/services/import_labeled.py`, para o desenho "LÍNGUA PORTUGUESA: Ortografia e
+acentuação. Emprego da crase. …" (FCC, FGV, Cebraspe):
+
+- rótulo em maiúsculas seguido de dois pontos abre uma **matéria**; cada **frase** do parágrafo
+  vira um **tópico**. Frase que não cabe num título não é cortada: a primeira parte fica no
+  tópico e o resto vira subtópicos;
+- linhas de seção ("CONHECIMENTOS GERAIS – Para todos os cargos", "TB – TÉCNICO BANCÁRIO") não
+  viram matéria, mas acompanham o título dela quando há mais de uma seção
+  ("MATEMÁTICA FINANCEIRA · TB – TÉCNICO BANCÁRIO"), para a pessoa remover o que não é do cargo;
+- seção sem rótulos, só com itens numerados, vira uma matéria lida pelo leitor de numeração;
+- rótulo no meio de um parágrafo ("LGPD: fundamentos…" depois de uma quebra de linha) e avisos
+  ("OBS:", "ATENÇÃO:") não abrem matéria;
+- precisa de ao menos 3 matérias rotuladas. A proposta marca `stats.layout = "labeled"`.
+
 ## Edital em itens numerados
 Editais verticalizados e tabelas de edital têm leitor próprio
 (`backend/app/services/import_numbered.py`), usado antes da heurística acima em PDF e em texto
