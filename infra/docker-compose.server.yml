@@ -20,6 +20,9 @@ x-backend: &backend
     DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-estudatta}:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@db:5432/${POSTGRES_DB:-estudatta}
     REDIS_URL: redis://redis:6379/0
     STORAGE_LOCAL_PATH: /data/storage
+    # OCR de PDF digitalizado: ligado neste servidor (um arquivo por vez, um núcleo, com teto de
+    # páginas e de tempo). Para desligar, ponha OCR_ENABLED=false no .env e rode o deploy.
+    OCR_ENABLED: ${OCR_ENABLED:-true}
   volumes:
     - storage:/data/storage
   depends_on:

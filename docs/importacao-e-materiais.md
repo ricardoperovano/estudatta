@@ -92,7 +92,9 @@ Listening;Podcasts curtos;;;25
 ## OCR
 Um PDF é considerado "sem camada de texto" quando ≥ 90% das páginas têm menos de 20
 caracteres. Nesse caso:
-- `OCR_ENABLED=false` (padrão): falha com `no_text_layer` e orientação para gerar um PDF com texto;
+- `OCR_ENABLED=false` (padrão do código e do ambiente local): falha com `no_text_layer` e
+  orientação para gerar um PDF com texto. No servidor, `infra/docker-compose.server.yml` liga o
+  OCR por padrão; `OCR_ENABLED=false` no `.env` de produção desliga;
 - `OCR_ENABLED=true`: lê as páginas por OCR (`backend/app/services/ocr.py`). Se faltar um
   componente ou nada for reconhecido, a falha é a mesma, com o motivo na mensagem.
 
